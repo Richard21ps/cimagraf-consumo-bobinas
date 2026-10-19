@@ -4,7 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f6f8">
-  <title>Calculadora de consumo de bobina</title>
+  <title>CIMAGRAF | Calculadora de consumo de bobinas</title>
+  <meta name="description" content="Calculadora CIMAGRAF para consumo y devolución estimada de bobinas por orden de producción.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CIMAGRAF">
+  <meta property="og:title" content="CIMAGRAF | Calculadora de consumo de bobinas">
+  <meta property="og:description" content="Calcula metros, kilogramos consumidos y devolución estimada por OP.">
+  <meta property="og:url" content="https://richard21ps.github.io/cimagraf-consumo-bobinas/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CIMAGRAF | Calculadora de consumo de bobinas">
   <style>
     :root {
       color-scheme: light;
@@ -301,7 +309,7 @@
   <script>
     (() => {
       const defaultMaterials = [
-        { name: 'Bookcrim', gsm: 70 },
+        { name: 'Book Cream', gsm: 70 },
         { name: 'Bond', gsm: 90 }
       ];
       const materialsKey = 'consumo-bobina-materiales-v1';
@@ -341,7 +349,25 @@
       function loadMaterials() {
         try {
           const saved = JSON.parse(localStorage.getItem(materialsKey));
-          if (Array.isArray(saved) && saved.some(x => x.name === 'Bookcrim') && saved.some(x => x.name === 'Bond')) return saved;
+          if (Array.isArray(saved)) {
+            // Conserva los materiales personalizados de instalaciones anteriores,
+            // pero corrige el nombre escrito incorrectamente en localStorage.
+            const normalized = saved
+              .filter(x => x && typeof x.name === 'string' && Number.isFinite(Number(x.gsm)) && Number(x.gsm) > 0)
+              .map(x => ({
+                name: /^book\s*crim$/i.test(x.name.trim()) ? 'Book Cream' : x.name.trim(),
+                gsm: Number(x.gsm)
+              }));
+            const unique = [];
+            for (const item of normalized) {
+              if (!unique.some(x => x.name.toLocaleLowerCase() === item.name.toLocaleLowerCase())) unique.push(item);
+            }
+            for (const standard of defaultMaterials) {
+              if (!unique.some(x => x.name.toLocaleLowerCase() === standard.name.toLocaleLowerCase())) unique.push(standard);
+            }
+            try { localStorage.setItem(materialsKey, JSON.stringify(unique)); } catch (_) {}
+            return unique;
+          }
         } catch (_) {}
         return defaultMaterials.slice();
       }
@@ -405,7 +431,7 @@
       // Al pasar a la siguiente OP, conservar únicamente el catálogo de materiales.
       function clearOrder() {
         form.reset();
-        renderMaterials('Bookcrim');
+        renderMaterials('Book Cream');
         calculate();
         document.getElementById('op').focus();
       }
@@ -498,7 +524,7 @@
         renderMaterials(name);
         closeModal();
       });
-      renderMaterials('Bookcrim');
+      renderMaterials('Book Cream');
       calculate();
     })();
   </script>
