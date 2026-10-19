@@ -72,7 +72,7 @@
     input:focus, select:focus, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-color: var(--blue); }
     input[readonly] { background: #f1f5f7; color: var(--blue-dark); font-weight: 800; }
     .material-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-    .add-material { min-width: 54px; border: 1.5px solid #b6cbd7; border-radius: 10px; background: var(--blue-soft); color: var(--blue-dark); font-size: 25px; font-weight: 700; cursor: pointer; }
+    .add-material { min-width: 105px; padding: 6px 11px; border: 1.5px solid #b6cbd7; border-radius: 10px; background: var(--blue-soft); color: var(--blue-dark); font-size: 14px; font-weight: 800; cursor: pointer; }
     .add-material:hover { background: #dceef6; }
     .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
     button { font: inherit; }
@@ -226,13 +226,14 @@
                 <label for="material">Tipo de material</label>
                 <div class="material-row">
                   <select id="material" name="material" required aria-describedby="material-hint"></select>
-                  <button class="add-material" id="open-material" type="button" aria-label="Agregar material" title="Agregar material">+</button>
+                  <button class="add-material" id="open-material" type="button" aria-label="Agregar papel o gramaje" title="Agregar papel o gramaje">+ Agregar</button>
                 </div>
-                <span class="hint" id="material-hint">El gramaje se completa automáticamente.</span>
+                <span class="hint" id="material-hint">Selecciona el papel y su gramaje. Usa «+ Agregar» para añadir otras opciones.</span>
               </div>
               <div class="field">
-                <label for="gsm">Gramaje</label>
-                <input id="gsm" name="gsm" type="text" value="70 g/m²" readonly aria-live="polite">
+                <label for="gsm">Gramaje (g/m²)</label>
+                <select id="gsm" name="gsm" required aria-describedby="gsm-hint"></select>
+                <span class="hint" id="gsm-hint">Elige un gramaje disponible para este papel.</span>
               </div>
               <div class="field">
                 <label for="width">Ancho de bobina (mm)</label>
@@ -311,10 +312,12 @@
 
   <div class="modal-backdrop" id="material-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <form class="modal" id="material-form">
-      <h2 id="modal-title">Agregar material</h2>
+      <h2 id="modal-title">Agregar papel o gramaje</h2>
       <div class="field">
-        <label for="new-name">Nombre del material</label>
-        <input id="new-name" type="text" maxlength="40" placeholder="Ej.: Couche" required>
+        <label for="new-name">Tipo de papel (existente o nuevo)</label>
+        <input id="new-name" type="text" maxlength="40" placeholder="Ej.: Book Cream o Couche" list="material-name-suggestions" required>
+        <datalist id="material-name-suggestions"></datalist>
+        <span class="hint">Puedes usar un papel existente y añadirle un gramaje diferente.</span>
       </div>
       <div class="field">
         <label for="new-gsm">Gramaje (g/m²)</label>
@@ -323,7 +326,7 @@
       <p class="error" id="material-error" role="alert"></p>
       <div class="modal-actions">
         <button class="reset" id="cancel-material" type="button">Cancelar</button>
-        <button class="save-material" type="submit">Guardar material</button>
+        <button class="save-material" type="submit">Guardar papel / gramaje</button>
       </div>
     </form>
   </div>
@@ -360,7 +363,8 @@
       const materialsKey = 'consumo-bobina-materiales-v1';
       const form = document.getElementById('calculator');
       const materialSelect = document.getElementById('material');
-      const gsmInput = document.getElementById('gsm');
+      const gsmSelect = document.getElementById('gsm');
+      const materialNameSuggestions = document.getElementById('material-name-suggestions');
       const modal = document.getElementById('material-modal');
       const materialForm = document.getElementById('material-form');
       const error = document.getElementById('material-error');
@@ -388,30 +392,33 @@
       const formsBaseUrl = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
       let materials = loadMaterials();
 
+      function cleanMaterialName(name) {
+        const cleaned = String(name || '').trim().replace(/\s+/g, ' ');
+        return /^book\s*crim$/i.test(cleaned) ? 'Book Cream' : cleaned;
+      }
+      function sameMaterialName(left, right) {
+        return cleanMaterialName(left).toLocaleLowerCase() === cleanMaterialName(right).toLocaleLowerCase();
+      }
       function loadMaterials() {
+        // Versiones anteriores guardaban un registro por nombre de papel.
+        // Ahora conservamos todas las combinaciones distintas de papel + gramaje.
+        let saved = [];
         try {
-          const saved = JSON.parse(localStorage.getItem(materialsKey));
-          if (Array.isArray(saved)) {
-            // Conserva los materiales personalizados de instalaciones anteriores,
-            // pero corrige el nombre escrito incorrectamente en localStorage.
-            const normalized = saved
-              .filter(x => x && typeof x.name === 'string' && Number.isFinite(Number(x.gsm)) && Number(x.gsm) > 0)
-              .map(x => ({
-                name: /^book\s*crim$/i.test(x.name.trim()) ? 'Book Cream' : x.name.trim(),
-                gsm: Number(x.gsm)
-              }));
-            const unique = [];
-            for (const item of normalized) {
-              if (!unique.some(x => x.name.toLocaleLowerCase() === item.name.toLocaleLowerCase())) unique.push(item);
-            }
-            for (const standard of defaultMaterials) {
-              if (!unique.some(x => x.name.toLocaleLowerCase() === standard.name.toLocaleLowerCase())) unique.push(standard);
-            }
-            try { localStorage.setItem(materialsKey, JSON.stringify(unique)); } catch (_) {}
-            return unique;
-          }
+          const stored = JSON.parse(localStorage.getItem(materialsKey));
+          if (Array.isArray(stored)) saved = stored;
         } catch (_) {}
-        return defaultMaterials.slice();
+        const unique = [];
+        for (const entry of [...saved, ...defaultMaterials]) {
+          if (!entry || typeof entry.name !== 'string') continue;
+          const name = cleanMaterialName(entry.name);
+          const gsm = Number(entry.gsm);
+          if (!name || !Number.isFinite(gsm) || gsm <= 0) continue;
+          if (unique.some(x => sameMaterialName(x.name, name) && x.gsm === gsm)) continue;
+          const matchingName = unique.find(x => sameMaterialName(x.name, name));
+          unique.push({ name: matchingName ? matchingName.name : name, gsm });
+        }
+        try { localStorage.setItem(materialsKey, JSON.stringify(unique)); } catch (_) {}
+        return unique;
       }
       function saveMaterials() { try { localStorage.setItem(materialsKey, JSON.stringify(materials)); } catch (_) {} }
       function formatNumber(value, maxDigits = 2) { return new Intl.NumberFormat('es-PE', { maximumFractionDigits: maxDigits }).format(value); }
@@ -419,21 +426,38 @@
         return Number.isFinite(value) ? String(Number(value.toFixed(maxDigits))) : '';
       }
       function readNumber(id) { const raw = document.getElementById(id).value.trim(); return raw === '' ? NaN : Number(raw); }
-      function renderMaterials(selectedName) {
+      function renderMaterials(selectedName, selectedGsm) {
+        // Cada papel aparece una sola vez aunque tenga varios gramajes registrados.
         materialSelect.replaceChildren();
-        materials.forEach(item => { const option = document.createElement('option'); option.value = item.name; option.textContent = item.name; option.dataset.gsm = String(item.gsm); materialSelect.append(option); });
-        if (selectedName && materials.some(item => item.name === selectedName)) materialSelect.value = selectedName;
-        updateGsm();
+        for (const entry of materials) {
+          if (Array.from(materialSelect.options).some(option => sameMaterialName(option.value, entry.name))) continue;
+          const option = document.createElement('option');
+          option.value = entry.name;
+          option.textContent = entry.name;
+          materialSelect.append(option);
+        }
+        const requestedName = Array.from(materialSelect.options).find(option => sameMaterialName(option.value, selectedName));
+        if (requestedName) materialSelect.value = requestedName.value;
+        renderGrammages(selectedGsm);
       }
-      function updateGsm() {
-        const item = materials.find(x => x.name === materialSelect.value);
-        gsmInput.value = item ? formatNumber(item.gsm) + ' g/m²' : '';
+      function renderGrammages(selectedGsm) {
+        gsmSelect.replaceChildren();
+        const available = materials.filter(entry => sameMaterialName(entry.name, materialSelect.value));
+        for (const item of available) {
+          const option = document.createElement('option');
+          option.value = String(item.gsm);
+          option.textContent = formatNumber(item.gsm) + ' g/m²';
+          gsmSelect.append(option);
+        }
+        if (selectedGsm !== undefined && available.some(item => item.gsm === Number(selectedGsm))) {
+          gsmSelect.value = String(Number(selectedGsm));
+        }
         calculate();
       }
       function calculate() {
         const books = readNumber('books'), copies = readNumber('copies'), width = readNumber('width'), advance = readNumber('advance');
         const initialMeters = readNumber('roll-meters');
-        const material = materials.find(x => x.name === materialSelect.value);
+        const material = materials.find(x => sameMaterialName(x.name, materialSelect.value) && x.gsm === Number(gsmSelect.value));
         const inputs = [
           ['books', books, 'cantidad de libros'],
           ['copies', copies, 'copias por libro'],
@@ -493,11 +517,12 @@
         }
       });
       form.addEventListener('input', calculate);
-      materialSelect.addEventListener('change', updateGsm);
+      materialSelect.addEventListener('change', () => renderGrammages());
+      gsmSelect.addEventListener('change', calculate);
       // Al pasar a la siguiente OP, conservar únicamente el catálogo de materiales.
       function clearOrder() {
         form.reset();
-        renderMaterials('Book Cream');
+        renderMaterials('Book Cream', 70);
         calculate();
         document.getElementById('op').focus();
       }
@@ -569,22 +594,43 @@
         window.scrollTo({ top: 0, behavior: 'instant' });
       });
       function closeModal() { modal.classList.remove('open'); error.textContent = ''; materialForm.reset(); document.getElementById('open-material').focus(); }
-      document.getElementById('open-material').addEventListener('click', () => { modal.classList.add('open'); document.getElementById('new-name').focus(); });
+      document.getElementById('open-material').addEventListener('click', () => {
+        // Facilita registrar un segundo gramaje para el mismo papel.
+        materialForm.reset();
+        materialNameSuggestions.replaceChildren();
+        for (const option of materialSelect.options) {
+          const suggestion = document.createElement('option');
+          suggestion.value = option.value;
+          materialNameSuggestions.append(suggestion);
+        }
+        document.getElementById('new-name').value = materialSelect.value;
+        modal.classList.add('open');
+        error.textContent = '';
+        document.getElementById('new-gsm').focus();
+      });
       document.getElementById('cancel-material').addEventListener('click', closeModal);
       modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
       document.addEventListener('keydown', event => { if (event.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
       materialForm.addEventListener('submit', event => {
         event.preventDefault();
-        const name = document.getElementById('new-name').value.trim();
+        const typedName = cleanMaterialName(document.getElementById('new-name').value);
         const gsm = Number(document.getElementById('new-gsm').value);
-        if (!name || !Number.isFinite(gsm) || gsm <= 0) { error.textContent = 'Escribe un nombre y un gramaje válido.'; return; }
-        if (materials.some(x => x.name.toLocaleLowerCase() === name.toLocaleLowerCase())) { error.textContent = 'Ese material ya existe. Elige otro nombre.'; return; }
+        if (!typedName || !Number.isFinite(gsm) || gsm <= 0) {
+          error.textContent = 'Escribe un papel y un gramaje válido mayor que cero.';
+          return;
+        }
+        const existingPaper = materials.find(x => sameMaterialName(x.name, typedName));
+        const name = existingPaper ? existingPaper.name : typedName;
+        if (materials.some(x => sameMaterialName(x.name, name) && x.gsm === gsm)) {
+          error.textContent = 'Este papel ya tiene registrado ese gramaje. Elige uno diferente.';
+          return;
+        }
         materials.push({ name, gsm });
         saveMaterials();
-        renderMaterials(name);
+        renderMaterials(name, gsm);
         closeModal();
       });
-      renderMaterials('Book Cream');
+      renderMaterials('Book Cream', 70);
       calculate();
     })();
   </script>
