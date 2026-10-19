@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f8">
+  <title>Calculadora de consumo de bobina</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172b3a;
+      --muted: #627381;
+      --line: #d8e0e6;
+      --blue: #145b83;
+      --blue-dark: #0d4669;
+      --blue-soft: #eaf4f9;
+      --green: #176b4b;
+      --green-soft: #eaf6ef;
+      --paper: #fff;
+      --bg: #f3f6f8;
+      --focus: #87c8e6;
+      --shadow: 0 12px 32px rgba(24, 49, 67, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.45;
+    }
+    .page { width: min(100% - 32px, 1020px); margin: 0 auto; padding: 30px 0 40px; }
+    header { margin-bottom: 22px; }
+    .eyebrow { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(27px, 4vw, 38px); line-height: 1.12; letter-spacing: -.025em; }
+    .intro { max-width: 680px; margin: 10px 0 0; color: var(--muted); font-size: 17px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(320px, .88fr); gap: 0; align-items: stretch; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+    .card { background: var(--paper); }
+    .form-card { padding: 26px; border: 0; border-radius: 0; box-shadow: none; }
+    .section-title { margin: 0 0 17px; font-size: 19px; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field { min-width: 0; }
+    .field.full { grid-column: 1 / -1; }
+    .entry-label { margin: 0 0 16px; padding: 9px 12px; border-radius: 9px; background: #eaf4f9; color: var(--blue-dark); font-size: 14px; font-weight: 800; }
+    label { display: block; margin: 0 0 7px; font-size: 15px; font-weight: 750; }
+    .hint { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; }
+    input, select {
+      display: block; width: 100%; min-height: 54px; padding: 12px 14px;
+      border: 1.5px solid #c7d2da; border-radius: 10px; background: #fff;
+      color: var(--ink); font: inherit; font-size: 18px;
+    }
+    input::placeholder { color: #8797a3; }
+    input:focus, select:focus, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-color: var(--blue); }
+    input[readonly] { background: #f1f5f7; color: var(--blue-dark); font-weight: 800; }
+    .material-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .add-material { min-width: 54px; border: 1.5px solid #b6cbd7; border-radius: 10px; background: var(--blue-soft); color: var(--blue-dark); font-size: 25px; font-weight: 700; cursor: pointer; }
+    .add-material:hover { background: #dceef6; }
+    .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    button { font: inherit; }
+    .reset { min-height: 48px; padding: 10px 16px; border: 1px solid #bdc9d1; border-radius: 10px; background: white; color: var(--ink); font-weight: 700; cursor: pointer; }
+    .reset:hover { background: #f3f6f8; }
+    .results { padding: 26px; border: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: none; background: #f7fafb; }
+    .results .section-title { margin-bottom: 6px; }
+    .result-caption { margin: 0 0 17px; color: var(--muted); font-size: 14px; }
+    .results .entry-label { margin-top: 12px; }
+    .result-group { padding: 14px; border: 1px solid #c8dce7; border-radius: 14px; background: var(--blue-soft); }
+    .result-group + .result-group { margin-top: 14px; }
+    .result-group.return-group { border-color: #cce3d6; background: var(--green-soft); }
+    .result-group-title { margin: 0 0 9px; color: var(--blue-dark); font-size: 15px; font-weight: 850; }
+    .return-group .result-group-title { color: var(--green); }
+    .result-box { padding: 8px 5px; }
+    .result-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .result-label { margin: 0; color: #35576c; font-size: 14px; font-weight: 800; }
+    .return-group .result-label { color: #35624e; }
+    .result-value { display: block; margin-top: 5px; color: var(--blue-dark); font-size: clamp(34px, 5vw, 48px); font-variant-numeric: tabular-nums; font-weight: 850; letter-spacing: -.035em; line-height: 1.1; overflow-wrap: anywhere; }
+    .return-group .result-value { color: var(--green); }
+    .result-unit { font-size: 19px; font-weight: 750; letter-spacing: 0; }
+    .result-status { min-height: 24px; margin: 13px 0 0; color: var(--muted); font-size: 14px; }
+    .save-material:disabled { opacity: .5; cursor: not-allowed; }
+    .formula { margin-top: 16px; padding: 13px 15px; border-radius: 11px; background: #eef2f4; color: #536572; font-size: 13px; }
+    .formula summary { color: var(--ink); font-weight: 750; cursor: pointer; }
+    .formula p { margin: 9px 0 0; }
+    .formula strong { color: var(--ink); }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 10; display: none; place-items: center; padding: 18px; background: rgba(16, 34, 47, .48); }
+    .modal-backdrop.open { display: grid; }
+    .modal { width: min(100%, 430px); padding: 22px; border-radius: 16px; background: white; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .modal h2 { margin: 0 0 16px; font-size: 21px; }
+    .modal .field + .field { margin-top: 13px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+    .save-material { min-height: 46px; padding: 9px 15px; border: 0; border-radius: 10px; background: var(--blue); color: #fff; font-weight: 750; cursor: pointer; }
+    .save-material:hover { background: var(--blue-dark); }
+    .error { min-height: 20px; margin: 9px 0 0; color: #a12d28; font-size: 14px; }
+    @media (max-width: 760px) {
+      .page { width: min(100% - 22px, 560px); padding-top: 22px; }
+      .layout { grid-template-columns: 1fr; }
+      .form-card, .results { padding: 19px; }
+      .results { order: 0; border-left: 0; border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 460px) {
+      body { font-size: 16px; }
+      .fields { grid-template-columns: 1fr; gap: 13px; }
+      .field.full { grid-column: auto; }
+      .result-value { font-size: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <p class="eyebrow">Área digital · control de material</p>
+      <h1>Consumo de bobina</h1>
+      <p class="intro">Completa los datos de la orden. Los resultados se calculan al instante y luego se pasan al formulario de registro.</p>
+    </header>
+
+    <div class="layout">
+      <section class="card form-card" aria-labelledby="datos-title">
+        <h2 class="section-title" id="datos-title">Datos de la orden</h2>
+        <form id="calculator" autocomplete="off">
+          <div class="fields">
+            <div class="field full"><p class="entry-label">DATOS QUE INGRESA EL MAQUINISTA</p></div>
+            <div class="field full">
+              <label for="op">Número de OP</label>
+              <input id="op" name="op" type="text" placeholder="Escribe el número de OP" inputmode="text">
+            </div>
+            <div class="field">
+              <label for="books">Cantidad de libros</label>
+              <input id="books" name="books" type="number" min="0" step="1" placeholder="Ej.: 600" inputmode="numeric" required>
+            </div>
+            <div class="field">
+              <label for="copies">Copias por libro</label>
+              <input id="copies" name="copies" type="number" min="0" step="1" placeholder="Ej.: 4" inputmode="numeric" required>
+              <span class="hint">Cada copia cuenta como el avance de una hoja.</span>
+            </div>
+            <div class="field full">
+              <label for="material">Tipo de material</label>
+              <div class="material-row">
+                <select id="material" name="material" required aria-describedby="material-hint"></select>
+                <button class="add-material" id="open-material" type="button" aria-label="Agregar material" title="Agregar material">+</button>
+              </div>
+              <span class="hint" id="material-hint">El gramaje se completa automáticamente.</span>
+            </div>
+            <div class="field">
+              <label for="gsm">Gramaje</label>
+              <input id="gsm" name="gsm" type="text" value="70 g/m²" readonly aria-live="polite">
+            </div>
+            <div class="field">
+              <label for="width">Ancho de bobina (mm)</label>
+              <input id="width" name="width" type="number" min="0" step="any" placeholder="Ej.: 700" inputmode="decimal" required>
+            </div>
+            <div class="field full">
+              <label for="advance">Avance por copia (mm)</label>
+              <input id="advance" name="advance" type="number" min="0" step="any" placeholder="Escribe el avance de una hoja" inputmode="decimal" required>
+              <span class="hint">Escribe cuánto avanza la bobina para imprimir una copia.</span>
+            </div>
+            <div class="field full">
+              <h3 class="section-title" style="margin: 5px 0 0">Datos de bobina y devolución</h3>
+            </div>
+            <div class="field">
+              <label for="roll-kg">Peso inicial del papel (kg)</label>
+              <input id="roll-kg" name="roll-kg" type="number" min="0" step="any" placeholder="Ej.: 120" inputmode="decimal">
+              <span class="hint">Usa el peso del papel, sin contar el tubo.</span>
+            </div>
+            <div class="field">
+              <label for="roll-meters">Metros iniciales de la bobina (m)</label>
+              <input id="roll-meters" name="roll-meters" type="number" min="0" step="any" placeholder="Ej.: 1.500" inputmode="decimal">
+            </div>
+            <div class="field full">
+              <label for="returned-kg">Peso devuelto real (kg)</label>
+              <input id="returned-kg" name="returned-kg" type="number" min="0" step="any" placeholder="Anota el peso que entrega almacén" inputmode="decimal">
+              <span class="hint">Déjalo vacío si todavía no se ha pesado la bobina.</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="reset" id="clear" type="button">Limpiar datos</button>
+            <button class="save-material" id="save-record" type="button">Continuar a Microsoft Forms</button>
+          </div>
+          <p class="result-status" id="save-status" role="status" aria-live="polite">Al continuar, Forms se abrirá con los datos preparados. Para registrar la respuesta, el maquinista debe revisar y pulsar “Enviar” en Forms. La fecha y hora las asigna Forms al recibirla.</p>
+        </form>
+      </section>
+
+      <aside class="card results" aria-labelledby="results-title" aria-live="polite">
+        <h2 class="section-title" id="results-title">Resultado de la orden</h2>
+        <p class="result-caption" id="result-op">Los resultados se actualizarán al completar los datos.</p>
+        <p class="entry-label">RESULTADOS EN TIEMPO REAL</p>
+        <section class="result-group">
+          <h3 class="result-group-title">CONSUMO ESTIMADO</h3>
+          <div class="result-pair">
+            <div class="result-box">
+              <p class="result-label">Metros recorridos</p>
+              <output class="result-value" id="meters">— <span class="result-unit">m</span></output>
+            </div>
+            <div class="result-box">
+              <p class="result-label">Kilos consumidos</p>
+              <output class="result-value" id="kilos">— <span class="result-unit">kg</span></output>
+            </div>
+          </div>
+        </section>
+        <section class="result-group return-group">
+          <h3 class="result-group-title">DEVOLUCIÓN ESTIMADA</h3>
+          <div class="result-pair">
+            <div class="result-box">
+              <p class="result-label">Metros estimados por devolver</p>
+              <output class="result-value" id="left-meters">— <span class="result-unit">m</span></output>
+            </div>
+            <div class="result-box">
+              <p class="result-label">Kilos estimados por devolver</p>
+              <output class="result-value" id="left-kilos">— <span class="result-unit">kg</span></output>
+            </div>
+          </div>
+        </section>
+        <p class="result-status" id="status">Los resultados se actualizan al ingresar los datos.</p>
+        <details class="formula"><summary>¿Cómo se calculan?</summary><p>Metros recorridos = libros × copias × avance ÷ 1,000. Kilos consumidos = metros recorridos × ancho de bobina × gramaje ÷ 1,000,000. La devolución es una estimación basada en los valores iniciales de la bobina. El peso devuelto real se confirma en almacén.</p></details>
+      </aside>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="material-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <form class="modal" id="material-form">
+      <h2 id="modal-title">Agregar material</h2>
+      <div class="field">
+        <label for="new-name">Nombre del material</label>
+        <input id="new-name" type="text" maxlength="40" placeholder="Ej.: Couche" required>
+      </div>
+      <div class="field">
+        <label for="new-gsm">Gramaje (g/m²)</label>
+        <input id="new-gsm" type="number" min="1" step="any" placeholder="Ej.: 115" required>
+      </div>
+      <p class="error" id="material-error" role="alert"></p>
+      <div class="modal-actions">
+        <button class="reset" id="cancel-material" type="button">Cancelar</button>
+        <button class="save-material" type="submit">Guardar material</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (() => {
+      const defaultMaterials = [
+        { name: 'Bookcrim', gsm: 70 },
+        { name: 'Bond', gsm: 90 }
+      ];
+      const materialsKey = 'consumo-bobina-materiales-v1';
+      const form = document.getElementById('calculator');
+      const materialSelect = document.getElementById('material');
+      const gsmInput = document.getElementById('gsm');
+      const modal = document.getElementById('material-modal');
+      const materialForm = document.getElementById('material-form');
+      const error = document.getElementById('material-error');
+      const saveButton = document.getElementById('save-record');
+      const saveStatus = document.getElementById('save-status');
+      const questionKeys = [
+        'r1a6fb6883bc444629eea97caf2ece32c',
+        'rcb234788c8fb4f61873e671259549e70',
+        'r0a6f4cb3a5fa4c618cf286bec7b0700c',
+        'r688e6186399f4801bad1b783fc160e4f',
+        'rbed99caa92ca4a6790d27dd48e8621a6',
+        'rffe26eb7550b48bbab1495966a832eb8',
+        'r32817bdd4c2248c4ba50f21a811d63b3',
+        'r43569aad1282478ea5071b89d9944eb8',
+        'r8d4d350ee4c249378969b5e3beeb3f3a',
+        'r3d306b90d39e435685c22a715f5f84f4',
+        'r9a82ae250c1d4aa19dbb0cddba934702',
+        'r5a522e43ebc24f0eb4108a86a9becd9f',
+        'ref508945f4b145538e31c8e11e7e0734',
+        'r59140cd09d8c4791b15f0bf2ac15c4c6',
+        'r65af0d8cdaab4b67ab5a5e7cc52dbe69',
+        'r0554d64d0943412385df493c6944fb56'
+      ];
+      const formsBaseUrl = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
+      let materials = loadMaterials();
+
+      function loadMaterials() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(materialsKey));
+          if (Array.isArray(saved) && saved.some(x => x.name === 'Bookcrim') && saved.some(x => x.name === 'Bond')) return saved;
+        } catch (_) {}
+        return defaultMaterials.slice();
+      }
+      function saveMaterials() { try { localStorage.setItem(materialsKey, JSON.stringify(materials)); } catch (_) {} }
+      function formatNumber(value, maxDigits = 2) { return new Intl.NumberFormat('es-PE', { maximumFractionDigits: maxDigits }).format(value); }
+      function numberText(value, maxDigits = 3) {
+        return Number.isFinite(value) ? String(Number(value.toFixed(maxDigits))) : '';
+      }
+      function readNumber(id) { const raw = document.getElementById(id).value.trim(); return raw === '' ? NaN : Number(raw); }
+      function renderMaterials(selectedName) {
+        materialSelect.replaceChildren();
+        materials.forEach(item => { const option = document.createElement('option'); option.value = item.name; option.textContent = item.name; option.dataset.gsm = String(item.gsm); materialSelect.append(option); });
+        if (selectedName && materials.some(item => item.name === selectedName)) materialSelect.value = selectedName;
+        updateGsm();
+      }
+      function updateGsm() {
+        const item = materials.find(x => x.name === materialSelect.value);
+        gsmInput.value = item ? formatNumber(item.gsm) + ' g/m²' : '';
+        calculate();
+      }
+      function calculate() {
+        const books = readNumber('books'), copies = readNumber('copies'), width = readNumber('width'), advance = readNumber('advance');
+        const initialKg = readNumber('roll-kg'), initialMeters = readNumber('roll-meters');
+        const returnedKg = readNumber('returned-kg');
+        const material = materials.find(x => x.name === materialSelect.value);
+        const inputs = [
+          ['books', books, 'cantidad de libros'],
+          ['copies', copies, 'copias por libro'],
+          ['width', width, 'ancho de bobina'],
+          ['advance', advance, 'avance por copia']
+        ];
+        const op = document.getElementById('op').value.trim();
+        document.getElementById('result-op').textContent = op ? 'OP: ' + op : 'Completa los datos para ver el resultado.';
+        const valid = inputs.every(([, value]) => Number.isFinite(value) && value > 0) && material;
+        if (!valid) {
+          for (const id of ['meters','kilos','left-meters','left-kilos']) document.getElementById(id).innerHTML = '— <span class="result-unit">' + (id.includes('kilos') ? 'kg' : 'm') + '</span>';
+          const missing = inputs.filter(([, value]) => !Number.isFinite(value) || value <= 0).map(([, , label]) => label);
+          document.getElementById('status').textContent = missing.length
+            ? 'Ingresa un valor mayor que cero en: ' + missing.join(', ') + '.'
+            : 'Selecciona un tipo de material para calcular.';
+          return null;
+        }
+        const meters = books * copies * advance / 1000;
+        const kilos = meters * width * material.gsm / 1000000;
+        const hasStock = Number.isFinite(initialKg) && initialKg > 0 && Number.isFinite(initialMeters) && initialMeters > 0;
+        const remainingMeters = hasStock ? initialMeters - meters : NaN;
+        const remainingKg = hasStock ? initialKg - kilos : NaN;
+        document.getElementById('meters').innerHTML = formatNumber(meters) + ' <span class="result-unit">m</span>';
+        document.getElementById('kilos').innerHTML = formatNumber(kilos, 3) + ' <span class="result-unit">kg</span>';
+        document.getElementById('left-meters').innerHTML = Number.isFinite(remainingMeters) && remainingMeters >= 0 ? formatNumber(remainingMeters) + ' <span class="result-unit">m</span>' : '— <span class="result-unit">m</span>';
+        document.getElementById('left-kilos').innerHTML = Number.isFinite(remainingKg) && remainingKg >= 0 ? formatNumber(remainingKg, 3) + ' <span class="result-unit">kg</span>' : '— <span class="result-unit">kg</span>';
+        const details = formatNumber(books, 0) + ' libros · ' + formatNumber(copies, 0) + ' copias por libro · ' + material.name + ' ' + formatNumber(material.gsm) + ' g/m²';
+        let status = details;
+        if (!hasStock) status += ' · Completa peso y metros iniciales para estimar la devolución.';
+        else if (remainingMeters < 0 || remainingKg < 0) status += ' · El consumo supera los valores iniciales; revisa los datos.';
+        document.getElementById('status').textContent = status;
+        return { books, copies, width, advance, initialKg, initialMeters, returnedKg, material, meters, kilos, remainingMeters, remainingKg, op };
+      }
+      form.addEventListener('input', calculate);
+      materialSelect.addEventListener('change', updateGsm);
+      document.getElementById('clear').addEventListener('click', () => {
+        form.reset();
+        renderMaterials('Bookcrim');
+        calculate();
+        saveStatus.textContent = 'Al continuar, se abrirá Microsoft Forms con los datos preparados. Para registrar la respuesta, revisa y pulsa “Enviar” en Forms.';
+        document.getElementById('op').focus();
+      });
+      saveButton.addEventListener('click', () => {
+        if (!form.reportValidity()) return;
+        const values = calculate();
+        if (!values || !values.op) {
+          saveStatus.textContent = 'Escribe el número de OP antes de continuar.';
+          document.getElementById('op').focus();
+          return;
+        }
+        if (!Number.isFinite(values.initialKg) || values.initialKg <= 0 || !Number.isFinite(values.initialMeters) || values.initialMeters <= 0) {
+          saveStatus.textContent = 'Completa el peso y los metros iniciales de la bobina.';
+          return;
+        }
+        if (values.remainingMeters < 0 || values.remainingKg < 0) {
+          saveStatus.textContent = 'El consumo calculado supera la bobina inicial. Revisa los datos antes de registrar.';
+          return;
+        }
+        const answers = [
+          values.op,
+          numberText(values.books, 0),
+          numberText(values.copies, 0),
+          values.material.name,
+          numberText(values.material.gsm),
+          numberText(values.width),
+          numberText(values.advance),
+          numberText(values.initialKg),
+          numberText(values.initialMeters),
+          numberText(values.meters),
+          numberText(values.kilos),
+          numberText(values.remainingMeters),
+          numberText(values.remainingKg),
+          Number.isFinite(values.returnedKg) ? numberText(values.returnedKg) : 'Pendiente de pesaje',
+          Number.isFinite(values.returnedKg) ? numberText(values.returnedKg - values.remainingKg) : 'Pendiente de pesaje',
+          Number.isFinite(values.returnedKg) ? 'Pesado' : 'Pendiente de pesaje'
+        ];
+        const url = new URL(formsBaseUrl);
+        questionKeys.forEach((key, index) => url.searchParams.set(key, answers[index]));
+        saveStatus.textContent = 'Abriendo Microsoft Forms con los datos. Revísalos y pulsa “Enviar” para registrar la respuesta.';
+        const responseUrl = url.toString().replace(/\+/g, '%20');
+        const opened = window.open(responseUrl, '_blank', 'noopener,noreferrer');
+        if (!opened) window.location.assign(responseUrl);
+      });
+      function closeModal() { modal.classList.remove('open'); error.textContent = ''; materialForm.reset(); document.getElementById('open-material').focus(); }
+      document.getElementById('open-material').addEventListener('click', () => { modal.classList.add('open'); document.getElementById('new-name').focus(); });
+      document.getElementById('cancel-material').addEventListener('click', closeModal);
+      modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
+      materialForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const name = document.getElementById('new-name').value.trim();
+        const gsm = Number(document.getElementById('new-gsm').value);
+        if (!name || !Number.isFinite(gsm) || gsm <= 0) { error.textContent = 'Escribe un nombre y un gramaje válido.'; return; }
+        if (materials.some(x => x.name.toLocaleLowerCase() === name.toLocaleLowerCase())) { error.textContent = 'Ese material ya existe. Elige otro nombre.'; return; }
+        materials.push({ name, gsm });
+        saveMaterials();
+        renderMaterials(name);
+        closeModal();
+      });
+      renderMaterials('Bookcrim');
+      calculate();
+    })();
+  </script>
+  
+</body>
+</html>
+
