@@ -302,8 +302,8 @@
               <p class="equation"><span>Kg consumidos</span><span>=</span><span class="fraction"><span class="numerator">Metros recorridos × ancho de bobina (mm) × gramaje (g/m²)</span><span class="denominator">1,000,000</span></span></p>
             </section>
             <section class="formula-step">
-              <h4>3. Kilos por devolver (con tuco)</h4>
-              <p class="equation"><span>Kg por entregar</span><span>=</span><span>Kg iniciales con tuco − kg de papel consumidos</span></p>
+              <h4>3. Kilos por devolver</h4>
+              <p class="equation"><span>Kg por entregar</span><span>=</span><span>Kg iniciales − kg de papel consumidos</span></p>
             </section>
             <section class="formula-step">
               <h4>4. Equivalencia teórica máxima de metros</h4>
@@ -478,7 +478,7 @@
           for (const id of ['meters','kilos']) document.getElementById(id).innerHTML = '— <span class="result-unit">' + (id === 'kilos' ? 'kg' : 'm') + '</span>';
           document.getElementById('left-kilos').innerHTML = '— <span class="delivery-unit">kg</span>';
           document.getElementById('left-meters').textContent = '— m';
-          document.getElementById('delivery-guidance').textContent = 'Completa los datos de la OP y el peso inicial (kg, con tuco) para saber cuánto entregar.';
+          document.getElementById('delivery-guidance').textContent = 'Completa los datos de la OP y los kg iniciales de bobina para saber cuánto entregar.';
           const missing = inputs.filter(([, value]) => !Number.isFinite(value) || value <= 0).map(([, , label]) => label);
           document.getElementById('status').textContent = missing.length
             ? 'Ingresa un valor mayor que cero en: ' + missing.join(', ') + '.'
@@ -508,7 +508,7 @@
             : 'Ingresa el peso inicial en kg, incluyendo el tuco, para calcular la devolución.';
         const details = formatNumber(books, 0) + ' libros · ' + formatNumber(copies, 0) + ' copias por libro · ' + material.name + ' ' + formatNumber(material.gsm) + ' g/m²';
         let status = details;
-        if (!hasStock) status += ' · Completa el peso inicial en kg (con tuco).';
+        if (!hasStock) status += ' · Completa los kg iniciales de bobina.';
         else if (remainingKg < 0) status += ' · El consumo supera el peso inicial; revisa los datos.';
         else status += ' · Metros equivalentes máximos: no descuentan el tuco.';
         document.getElementById('status').textContent = status;
