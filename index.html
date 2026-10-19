@@ -82,6 +82,26 @@
     .results .section-title { margin-bottom: 6px; }
     .result-caption { margin: 0 0 17px; color: var(--muted); font-size: 14px; }
     .results .entry-label { margin-top: 12px; }
+    /* Acción operativa principal: devolución de bobina, no consumo. */
+    .delivery-summary { margin: 17px 0 19px; padding: 20px; border: 2px solid #176b4b; border-radius: 16px; background: #f1faf5; }
+    .delivery-summary-label { margin: 0 0 10px; color: #176b4b; font-size: 13px; font-weight: 850; letter-spacing: .045em; text-transform: uppercase; }
+    .delivery-main { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+    .delivery-action { color: #123b2b; font-size: clamp(19px, 3vw, 25px); line-height: 1.2; font-weight: 850; }
+    .delivery-weight { display: block; max-width: 100%; color: #116341; font-size: clamp(46px, 5.2vw, 62px); font-variant-numeric: tabular-nums; font-weight: 900; letter-spacing: -.045em; line-height: 1.08; overflow-wrap: anywhere; }
+    .delivery-unit { font-size: .43em; font-weight: 850; letter-spacing: 0; }
+    .delivery-meters { margin: 11px 0 0; padding-top: 11px; border-top: 1px solid #c9e4d6; color: #174934; font-size: 16px; font-weight: 700; line-height: 1.35; }
+    .delivery-meters output { font-size: 22px; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .delivery-guidance { margin: 10px 0 0; font-size: 13px; color: #436453; line-height: 1.45; }
+    .result-group.consumption-group { background: #f0f4f7; border-color: #dae3e9; }
+    .consumption-group .result-group-title { color: #475e6d; }
+    .consumption-group .result-label { color: #526875; font-size: 13px; }
+    .consumption-group .result-value { font-size: clamp(24px, 3vw, 31px); color: #3f5b6d; }
+    .consumption-group .result-unit { font-size: 15px; }
+    @media (max-width: 460px) {
+      .delivery-summary { padding: 16px; }
+      .delivery-weight { font-size: clamp(44px, 12vw, 56px); }
+      .delivery-meters output { font-size: 20px; }
+    }
     .result-group { padding: 14px; border: 1px solid #c8dce7; border-radius: 14px; background: var(--blue-soft); }
     .result-group + .result-group { margin-top: 14px; }
     .result-group.return-group { border-color: #cce3d6; background: var(--green-soft); }
@@ -243,30 +263,25 @@
       <aside class="card results" aria-labelledby="results-title" aria-live="polite">
         <h2 class="section-title" id="results-title">Resultado de la orden</h2>
         <p class="result-caption" id="result-op">Los resultados se actualizarán al completar los datos.</p>
-        <p class="entry-label">RESULTADOS EN TIEMPO REAL</p>
-        <section class="result-group">
-          <h3 class="result-group-title">CONSUMO ESTIMADO</h3>
+        <section class="delivery-summary" aria-labelledby="delivery-title">
+          <h3 class="delivery-summary-label" id="delivery-title">Bobina sobrante · devolución a almacén</h3>
+          <div class="delivery-main">
+            <span class="delivery-action">ENTREGAR</span>
+            <output class="delivery-weight" id="left-kilos">— <span class="delivery-unit">kg</span></output>
+          </div>
+          <p class="delivery-meters">Equivalentes a <output id="left-meters">— m</output> de bobina</p>
+          <p class="delivery-guidance" id="delivery-guidance">Completa los datos y los metros iniciales de la bobina para calcular la entrega.</p>
+        </section>
+        <section class="result-group consumption-group">
+          <h3 class="result-group-title">CONSUMO DE LA OP (NO ES DEVOLUCIÓN)</h3>
           <div class="result-pair">
             <div class="result-box">
-              <p class="result-label">Metros recorridos</p>
+              <p class="result-label">Metros consumidos</p>
               <output class="result-value" id="meters">— <span class="result-unit">m</span></output>
             </div>
             <div class="result-box">
               <p class="result-label">Kilos consumidos</p>
               <output class="result-value" id="kilos">— <span class="result-unit">kg</span></output>
-            </div>
-          </div>
-        </section>
-        <section class="result-group return-group">
-          <h3 class="result-group-title">DEVOLUCIÓN ESTIMADA</h3>
-          <div class="result-pair">
-            <div class="result-box">
-              <p class="result-label">Metros estimados por devolver</p>
-              <output class="result-value" id="left-meters">— <span class="result-unit">m</span></output>
-            </div>
-            <div class="result-box">
-              <p class="result-label">Kilos estimados por devolver</p>
-              <output class="result-value" id="left-kilos">— <span class="result-unit">kg</span></output>
             </div>
           </div>
         </section>
@@ -432,7 +447,10 @@
         document.getElementById('result-op').textContent = op ? 'OP: ' + op : 'Completa los datos para ver el resultado.';
         const valid = inputs.every(([, value]) => Number.isFinite(value) && value > 0) && material;
         if (!valid) {
-          for (const id of ['meters','kilos','left-meters','left-kilos']) document.getElementById(id).innerHTML = '— <span class="result-unit">' + (id.includes('kilos') ? 'kg' : 'm') + '</span>';
+          for (const id of ['meters','kilos']) document.getElementById(id).innerHTML = '— <span class="result-unit">' + (id === 'kilos' ? 'kg' : 'm') + '</span>';
+          document.getElementById('left-kilos').innerHTML = '— <span class="delivery-unit">kg</span>';
+          document.getElementById('left-meters').textContent = '— m';
+          document.getElementById('delivery-guidance').textContent = 'Completa los datos de la OP y los metros iniciales de la bobina para saber qué entregar.';
           const missing = inputs.filter(([, value]) => !Number.isFinite(value) || value <= 0).map(([, , label]) => label);
           document.getElementById('status').textContent = missing.length
             ? 'Ingresa un valor mayor que cero en: ' + missing.join(', ') + '.'
@@ -447,8 +465,14 @@
         const remainingKg = hasStock ? remainingMeters * width * material.gsm / 1000000 : NaN;
         document.getElementById('meters').innerHTML = formatNumber(meters) + ' <span class="result-unit">m</span>';
         document.getElementById('kilos').innerHTML = formatNumber(kilos, 3) + ' <span class="result-unit">kg</span>';
-        document.getElementById('left-meters').innerHTML = Number.isFinite(remainingMeters) && remainingMeters >= 0 ? formatNumber(remainingMeters) + ' <span class="result-unit">m</span>' : '— <span class="result-unit">m</span>';
-        document.getElementById('left-kilos').innerHTML = Number.isFinite(remainingKg) && remainingKg >= 0 ? formatNumber(remainingKg, 3) + ' <span class="result-unit">kg</span>' : '— <span class="result-unit">kg</span>';
+        const validReturn = hasStock && Number.isFinite(remainingMeters) && remainingMeters >= 0 && Number.isFinite(remainingKg) && remainingKg >= 0;
+        document.getElementById('left-meters').textContent = validReturn ? formatNumber(remainingMeters) + ' m' : '— m';
+        document.getElementById('left-kilos').innerHTML = validReturn ? formatNumber(remainingKg, 3) + ' <span class="delivery-unit">kg</span>' : '— <span class="delivery-unit">kg</span>';
+        document.getElementById('delivery-guidance').textContent = validReturn
+          ? 'Devolución estimada a almacén. Los kg se calculan con el metraje restante, el ancho y el gramaje; no es un pesaje.'
+          : hasStock
+            ? 'Revisa los datos: el consumo supera los metros disponibles de la bobina. No se puede calcular una entrega válida.'
+            : 'Ingresa los metros iniciales de la bobina para calcular cuántos kg y metros se deben entregar.';
         const details = formatNumber(books, 0) + ' libros · ' + formatNumber(copies, 0) + ' copias por libro · ' + material.name + ' ' + formatNumber(material.gsm) + ' g/m²';
         let status = details;
         if (!hasStock) status += ' · Completa los metros iniciales para estimar la devolución.';
