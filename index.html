@@ -157,18 +157,9 @@
               <h3 class="section-title" style="margin: 5px 0 0">Datos de bobina y devolución</h3>
             </div>
             <div class="field">
-              <label for="roll-kg">Peso inicial del papel (kg)</label>
-              <input id="roll-kg" name="roll-kg" type="number" min="0" step="any" placeholder="Ej.: 120" inputmode="decimal">
-              <span class="hint">Usa el peso del papel, sin contar el tubo.</span>
-            </div>
-            <div class="field">
               <label for="roll-meters">Metros iniciales de la bobina (m)</label>
               <input id="roll-meters" name="roll-meters" type="number" min="0" step="any" placeholder="Ej.: 1.500" inputmode="decimal">
-            </div>
-            <div class="field full">
-              <label for="returned-kg">Peso devuelto real (kg)</label>
-              <input id="returned-kg" name="returned-kg" type="number" min="0" step="any" placeholder="Anota el peso que entrega almacén" inputmode="decimal">
-              <span class="hint">Déjalo vacío si todavía no se ha pesado la bobina.</span>
+              <span class="hint">No hace falta pesar la devolución: los kilos se estiman con los metros restantes, el ancho y el gramaje.</span>
             </div>
           </div>
           <div class="actions">
@@ -210,7 +201,7 @@
           </div>
         </section>
         <p class="result-status" id="status">Los resultados se actualizan al ingresar los datos.</p>
-        <details class="formula"><summary>¿Cómo se calculan?</summary><p>Metros recorridos = libros × copias × avance ÷ 1,000. Kilos consumidos = metros recorridos × ancho de bobina × gramaje ÷ 1,000,000. La devolución es una estimación basada en los valores iniciales de la bobina. El peso devuelto real se confirma en almacén.</p></details>
+        <details class="formula"><summary>¿Cómo se calculan?</summary><p>Metros recorridos = libros × copias × avance ÷ 1,000. Metros por devolver = metros iniciales − metros recorridos. Kilos estimados por devolver = metros restantes × ancho de bobina × gramaje ÷ 1,000,000. La devolución se estima automáticamente; no requiere pesar la bobina.</p></details>
       </aside>
     </div>
   </main>
@@ -296,8 +287,7 @@
       }
       function calculate() {
         const books = readNumber('books'), copies = readNumber('copies'), width = readNumber('width'), advance = readNumber('advance');
-        const initialKg = readNumber('roll-kg'), initialMeters = readNumber('roll-meters');
-        const returnedKg = readNumber('returned-kg');
+        const initialMeters = readNumber('roll-meters');
         const material = materials.find(x => x.name === materialSelect.value);
         const inputs = [
           ['books', books, 'cantidad de libros'],
@@ -318,19 +308,20 @@
         }
         const meters = books * copies * advance / 1000;
         const kilos = meters * width * material.gsm / 1000000;
-        const hasStock = Number.isFinite(initialKg) && initialKg > 0 && Number.isFinite(initialMeters) && initialMeters > 0;
+        const hasStock = Number.isFinite(initialMeters) && initialMeters > 0;
         const remainingMeters = hasStock ? initialMeters - meters : NaN;
-        const remainingKg = hasStock ? initialKg - kilos : NaN;
+        const initialKg = hasStock ? initialMeters * width * material.gsm / 1000000 : NaN;
+        const remainingKg = hasStock ? remainingMeters * width * material.gsm / 1000000 : NaN;
         document.getElementById('meters').innerHTML = formatNumber(meters) + ' <span class="result-unit">m</span>';
         document.getElementById('kilos').innerHTML = formatNumber(kilos, 3) + ' <span class="result-unit">kg</span>';
         document.getElementById('left-meters').innerHTML = Number.isFinite(remainingMeters) && remainingMeters >= 0 ? formatNumber(remainingMeters) + ' <span class="result-unit">m</span>' : '— <span class="result-unit">m</span>';
         document.getElementById('left-kilos').innerHTML = Number.isFinite(remainingKg) && remainingKg >= 0 ? formatNumber(remainingKg, 3) + ' <span class="result-unit">kg</span>' : '— <span class="result-unit">kg</span>';
         const details = formatNumber(books, 0) + ' libros · ' + formatNumber(copies, 0) + ' copias por libro · ' + material.name + ' ' + formatNumber(material.gsm) + ' g/m²';
         let status = details;
-        if (!hasStock) status += ' · Completa peso y metros iniciales para estimar la devolución.';
+        if (!hasStock) status += ' · Completa los metros iniciales para estimar la devolución.';
         else if (remainingMeters < 0 || remainingKg < 0) status += ' · El consumo supera los valores iniciales; revisa los datos.';
         document.getElementById('status').textContent = status;
-        return { books, copies, width, advance, initialKg, initialMeters, returnedKg, material, meters, kilos, remainingMeters, remainingKg, op };
+        return { books, copies, width, advance, initialKg, initialMeters, material, meters, kilos, remainingMeters, remainingKg, op };
       }
       form.addEventListener('input', calculate);
       materialSelect.addEventListener('change', updateGsm);
@@ -349,8 +340,8 @@
           document.getElementById('op').focus();
           return;
         }
-        if (!Number.isFinite(values.initialKg) || values.initialKg <= 0 || !Number.isFinite(values.initialMeters) || values.initialMeters <= 0) {
-          saveStatus.textContent = 'Completa el peso y los metros iniciales de la bobina.';
+        if (!Number.isFinite(values.initialMeters) || values.initialMeters <= 0) {
+          saveStatus.textContent = 'Completa los metros iniciales de la bobina.';
           return;
         }
         if (values.remainingMeters < 0 || values.remainingKg < 0) {
@@ -371,9 +362,9 @@
           numberText(values.kilos),
           numberText(values.remainingMeters),
           numberText(values.remainingKg),
-          Number.isFinite(values.returnedKg) ? numberText(values.returnedKg) : 'Pendiente de pesaje',
-          Number.isFinite(values.returnedKg) ? numberText(values.returnedKg - values.remainingKg) : 'Pendiente de pesaje',
-          Number.isFinite(values.returnedKg) ? 'Pesado' : 'Pendiente de pesaje'
+          'Devolución calculada automáticamente; no se pesa la bobina',
+          'No aplica: no se compara con un peso real',
+          'Estimado automáticamente a partir de los metros restantes'
         ];
         const url = new URL(formsBaseUrl);
         questionKeys.forEach((key, index) => url.searchParams.set(key, answers[index]));
