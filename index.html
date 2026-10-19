@@ -244,12 +244,12 @@
 
           <section class="input-section" aria-labelledby="step-bobina-title">
             <h3 class="input-section-heading" id="step-bobina-title"><span class="step-number" aria-hidden="true">4</span> Bobina y devolución</h3>
-            <p class="input-section-note">El consumo y la devolución se calculan automáticamente en el panel de resultados.</p>
+            <p class="input-section-note">Ingresa los kg de la bobina completa. Calcularemos el peso por devolver y una equivalencia teórica en metros.</p>
             <div class="fields">
               <div class="field full">
-                <label for="roll-meters">Metros iniciales de la bobina (m)</label>
-                <input id="roll-meters" name="roll-meters" type="number" min="0" step="any" placeholder="Ej.: 1500" inputmode="decimal">
-                <span class="hint">Los kilogramos por devolver se estiman con los metros restantes, el ancho y el gramaje. No es necesario pesar la bobina.</span>
+                <label for="roll-kg">Peso inicial de la bobina (kg, incluido el tuco)</label>
+                <input id="roll-kg" name="roll-kg" type="number" min="0" step="any" placeholder="Ej.: 50" inputmode="decimal" required>
+                <span class="hint">Ingresa los kg totales recibidos de almacén, incluyendo el tuco. No necesitas conocer el peso del tuco.</span>
               </div>
             </div>
           </section>
@@ -270,8 +270,8 @@
             <span class="delivery-action">ENTREGAR</span>
             <output class="delivery-weight" id="left-kilos">— <span class="delivery-unit">kg</span></output>
           </div>
-          <p class="delivery-meters">Equivalentes a <output id="left-meters">— m</output> de bobina</p>
-          <p class="delivery-guidance" id="delivery-guidance">Completa los datos y los metros iniciales de la bobina para calcular la entrega.</p>
+          <p class="delivery-meters">Equivalencia teórica máxima: <output id="left-meters">— m</output></p>
+          <p class="delivery-guidance" id="delivery-guidance">Los kg por devolver incluirán el tuco. Los metros no serán exactos mientras desconozcamos su peso.</p>
         </section>
         <section class="result-group consumption-group">
           <h3 class="result-group-title">CONSUMO DE LA OP (NO ES DEVOLUCIÓN)</h3>
@@ -296,15 +296,19 @@
               <p class="equation"><span>Metros recorridos</span><span>=</span><span class="fraction"><span class="numerator">Libros × copias por libro × avance por copia (mm)</span><span class="denominator">1,000</span></span></p>
             </section>
             <section class="formula-step">
-              <h4>2. Metros que quedan en la bobina</h4>
-              <p class="equation"><span>Metros por devolver</span><span>=</span><span>Metros iniciales − metros recorridos</span></p>
+              <h4>2. Kilos de papel consumidos</h4>
+              <p class="equation"><span>Kg consumidos</span><span>=</span><span class="fraction"><span class="numerator">Metros recorridos × ancho de bobina (mm) × gramaje (g/m²)</span><span class="denominator">1,000,000</span></span></p>
             </section>
             <section class="formula-step">
-              <h4>3. Kilos estimados por devolver</h4>
-              <p class="equation"><span>Kilos por devolver</span><span>=</span><span class="fraction"><span class="numerator">Metros restantes × ancho de bobina (mm) × gramaje (g/m²)</span><span class="denominator">1,000,000</span></span></p>
+              <h4>3. Kilos por devolver (con tuco)</h4>
+              <p class="equation"><span>Kg por entregar</span><span>=</span><span>Kg iniciales con tuco − kg de papel consumidos</span></p>
+            </section>
+            <section class="formula-step">
+              <h4>4. Equivalencia teórica máxima de metros</h4>
+              <p class="equation"><span>Metros equivalentes</span><span>=</span><span class="fraction"><span class="numerator">Kg por entregar × 1,000,000</span><span class="denominator">Ancho de bobina (mm) × gramaje (g/m²)</span></span></p>
             </section>
           </div>
-          <p class="formula-note">La división convierte las unidades para obtener metros y kilos. Los kilos de devolución son una estimación; no hace falta pesar la bobina.</p>
+          <p class="formula-note">Los kg por devolver incluyen el tuco. Esta equivalencia en metros es un límite máximo teórico, porque el peso del tuco es desconocido. Los metros reales de papel son menores. Las cifras suponen que el consumo calculado representa todo el papel usado.</p>
         </details>
       </aside>
     </div>
@@ -342,7 +346,7 @@
         </div>
         <button class="reset" id="forms-back" type="button">Volver sin borrar</button>
       </div>
-      <p class="forms-instructions">Revisa los datos precargados y pulsa «Enviar» dentro de Microsoft Forms.</p>
+      <p class="forms-instructions">Los 10 datos se precargan automáticamente. Solo pulsa «Enviar» en Microsoft Forms. Los campos de metros representan una equivalencia teórica máxima por desconocerse el peso del tuco.</p>
       <iframe class="forms-frame" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
       <div class="forms-footer">
         <p>Espera la confirmación de Microsoft Forms antes de continuar. Esta calculadora no puede verificar por sí sola el envío.</p>
@@ -456,7 +460,7 @@
       }
       function calculate() {
         const books = readNumber('books'), copies = readNumber('copies'), width = readNumber('width'), advance = readNumber('advance');
-        const initialMeters = readNumber('roll-meters');
+        const initialKg = readNumber('roll-kg');
         const material = materials.find(x => sameMaterialName(x.name, materialSelect.value) && x.gsm === Number(gsmSelect.value));
         const inputs = [
           ['books', books, 'cantidad de libros'],
@@ -471,7 +475,7 @@
           for (const id of ['meters','kilos']) document.getElementById(id).innerHTML = '— <span class="result-unit">' + (id === 'kilos' ? 'kg' : 'm') + '</span>';
           document.getElementById('left-kilos').innerHTML = '— <span class="delivery-unit">kg</span>';
           document.getElementById('left-meters').textContent = '— m';
-          document.getElementById('delivery-guidance').textContent = 'Completa los datos de la OP y los metros iniciales de la bobina para saber qué entregar.';
+          document.getElementById('delivery-guidance').textContent = 'Completa los datos de la OP y el peso inicial (kg, con tuco) para saber cuánto entregar.';
           const missing = inputs.filter(([, value]) => !Number.isFinite(value) || value <= 0).map(([, , label]) => label);
           document.getElementById('status').textContent = missing.length
             ? 'Ingresa un valor mayor que cero en: ' + missing.join(', ') + '.'
@@ -480,24 +484,29 @@
         }
         const meters = books * copies * advance / 1000;
         const kilos = meters * width * material.gsm / 1000000;
-        const hasStock = Number.isFinite(initialMeters) && initialMeters > 0;
-        const remainingMeters = hasStock ? initialMeters - meters : NaN;
-        const initialKg = hasStock ? initialMeters * width * material.gsm / 1000000 : NaN;
-        const remainingKg = hasStock ? remainingMeters * width * material.gsm / 1000000 : NaN;
+        const hasStock = Number.isFinite(initialKg) && initialKg > 0;
+        // El peso inicial y el peso devuelto incluyen el mismo tuco: este no
+        // altera el balance en kg. Los metros calculados sin tara son solo
+        // equivalencias máximas, NO longitudes reales verificadas.
+        const remainingKg = hasStock ? initialKg - kilos : NaN;
+        const kgPerMeter = width * material.gsm / 1000000;
+        const initialMeters = hasStock ? initialKg / kgPerMeter : NaN;
+        const remainingMeters = hasStock ? remainingKg / kgPerMeter : NaN;
         document.getElementById('meters').innerHTML = formatNumber(meters) + ' <span class="result-unit">m</span>';
         document.getElementById('kilos').innerHTML = formatNumber(kilos, 3) + ' <span class="result-unit">kg</span>';
         const validReturn = hasStock && Number.isFinite(remainingMeters) && remainingMeters >= 0 && Number.isFinite(remainingKg) && remainingKg >= 0;
         document.getElementById('left-meters').textContent = validReturn ? formatNumber(remainingMeters) + ' m' : '— m';
         document.getElementById('left-kilos').innerHTML = validReturn ? formatNumber(remainingKg, 3) + ' <span class="delivery-unit">kg</span>' : '— <span class="delivery-unit">kg</span>';
         document.getElementById('delivery-guidance').textContent = validReturn
-          ? 'Devolución estimada a almacén. Los kg se calculan con el metraje restante, el ancho y el gramaje; no es un pesaje.'
+          ? 'Los kg a entregar incluyen el tuco. Los metros son un máximo teórico y pueden estar sobreestimados: no se conoce el peso del tuco.'
           : hasStock
-            ? 'Revisa los datos: el consumo supera los metros disponibles de la bobina. No se puede calcular una entrega válida.'
-            : 'Ingresa los metros iniciales de la bobina para calcular cuántos kg y metros se deben entregar.';
+            ? 'Revisa los datos: el consumo calculado supera los kg iniciales de la bobina.'
+            : 'Ingresa el peso inicial en kg, incluyendo el tuco, para calcular la devolución.';
         const details = formatNumber(books, 0) + ' libros · ' + formatNumber(copies, 0) + ' copias por libro · ' + material.name + ' ' + formatNumber(material.gsm) + ' g/m²';
         let status = details;
-        if (!hasStock) status += ' · Completa los metros iniciales para estimar la devolución.';
-        else if (remainingMeters < 0 || remainingKg < 0) status += ' · El consumo supera los valores iniciales; revisa los datos.';
+        if (!hasStock) status += ' · Completa el peso inicial en kg (con tuco).';
+        else if (remainingKg < 0) status += ' · El consumo supera el peso inicial; revisa los datos.';
+        else status += ' · Metros equivalentes máximos: no descuentan el tuco.';
         document.getElementById('status').textContent = status;
         return { books, copies, width, advance, initialKg, initialMeters, material, meters, kilos, remainingMeters, remainingKg, op };
       }
@@ -540,12 +549,12 @@
           document.getElementById('op').focus();
           return;
         }
-        if (!Number.isFinite(values.initialMeters) || values.initialMeters <= 0) {
-          saveStatus.textContent = 'Completa los metros iniciales de la bobina.';
+        if (!Number.isFinite(values.initialKg) || values.initialKg <= 0) {
+          saveStatus.textContent = 'Completa el peso inicial de la bobina (kg, con tuco).';
           return;
         }
         if (values.remainingMeters < 0 || values.remainingKg < 0) {
-          saveStatus.textContent = 'El consumo calculado supera la bobina inicial. Revisa los datos antes de registrar.';
+          saveStatus.textContent = 'El consumo calculado supera el peso inicial de la bobina. Revisa los datos antes de registrar.';
           return;
         }
         const answers = [
@@ -562,6 +571,8 @@
         ];
         const url = new URL(formsBaseUrl);
         questionKeys.forEach((key, index) => url.searchParams.set(key, answers[index]));
+        // Forms mantiene sus diez campos numéricos: los metros precargados son
+        // equivalencias máximas SIN descontar el tuco, no medidas exactas.
         // Microsoft Forms acepta la modalidad embed; no se abren ventanas automáticamente.
         const responseUrl = url.toString().replace(/\+/g, '%20');
         formsExternal.href = responseUrl;
