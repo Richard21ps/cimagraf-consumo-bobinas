@@ -78,10 +78,17 @@
     .result-unit { font-size: 19px; font-weight: 750; letter-spacing: 0; }
     .result-status { min-height: 24px; margin: 13px 0 0; color: var(--muted); font-size: 14px; }
     .save-material:disabled { opacity: .5; cursor: not-allowed; }
-    .formula { margin-top: 16px; padding: 13px 15px; border-radius: 11px; background: #eef2f4; color: #536572; font-size: 13px; }
+    .formula { margin-top: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: #eef2f4; color: #536572; font-size: 14px; }
     .formula summary { color: var(--ink); font-weight: 750; cursor: pointer; }
-    .formula p { margin: 9px 0 0; }
-    .formula strong { color: var(--ink); }
+    .formula-intro { margin: 10px 0 12px; }
+    .formula-steps { display: grid; gap: 10px; }
+    .formula-step { padding: 11px 12px; border: 1px solid #d8e0e6; border-radius: 9px; background: #fff; }
+    .formula-step h4 { margin: 0 0 8px; color: var(--ink); font-size: 14px; }
+    .equation { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; color: var(--blue-dark); font-size: 14px; font-weight: 700; }
+    .fraction { display: inline-grid; max-width: 100%; grid-template-rows: auto auto; text-align: center; vertical-align: middle; line-height: 1.3; }
+    .numerator { padding: 2px 6px 4px; border-bottom: 2px solid currentColor; }
+    .denominator { padding: 3px 6px 0; }
+    .formula-note { margin: 11px 0 0; color: var(--muted); font-size: 13px; }
     .modal-backdrop { position: fixed; inset: 0; z-index: 10; display: none; place-items: center; padding: 18px; background: rgba(16, 34, 47, .48); }
     .modal-backdrop.open { display: grid; }
     .modal { width: min(100%, 430px); padding: 22px; border-radius: 16px; background: white; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
@@ -201,7 +208,25 @@
           </div>
         </section>
         <p class="result-status" id="status">Los resultados se actualizan al ingresar los datos.</p>
-        <details class="formula"><summary>¿Cómo se calculan?</summary><p>Metros recorridos = libros × copias × avance ÷ 1,000. Metros por devolver = metros iniciales − metros recorridos. Kilos estimados por devolver = metros restantes × ancho de bobina × gramaje ÷ 1,000,000. La devolución se estima automáticamente; no requiere pesar la bobina.</p></details>
+        <details class="formula">
+          <summary>¿Cómo se calculan?</summary>
+          <p class="formula-intro">La calculadora hace estas operaciones en orden:</p>
+          <div class="formula-steps">
+            <section class="formula-step">
+              <h4>1. Metros recorridos</h4>
+              <p class="equation"><span>Metros recorridos</span><span>=</span><span class="fraction"><span class="numerator">Libros × copias por libro × avance por copia (mm)</span><span class="denominator">1,000</span></span></p>
+            </section>
+            <section class="formula-step">
+              <h4>2. Metros que quedan en la bobina</h4>
+              <p class="equation"><span>Metros por devolver</span><span>=</span><span>Metros iniciales − metros recorridos</span></p>
+            </section>
+            <section class="formula-step">
+              <h4>3. Kilos estimados por devolver</h4>
+              <p class="equation"><span>Kilos por devolver</span><span>=</span><span class="fraction"><span class="numerator">Metros restantes × ancho de bobina (mm) × gramaje (g/m²)</span><span class="denominator">1,000,000</span></span></p>
+            </section>
+          </div>
+          <p class="formula-note">La división convierte las unidades para obtener metros y kilos. Los kilos de devolución son una estimación; no hace falta pesar la bobina.</p>
+        </details>
       </aside>
     </div>
   </main>
