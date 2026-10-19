@@ -98,6 +98,31 @@
     .save-material { min-height: 46px; padding: 9px 15px; border: 0; border-radius: 10px; background: var(--blue); color: #fff; font-weight: 750; cursor: pointer; }
     .save-material:hover { background: var(--blue-dark); }
     .error { min-height: 20px; margin: 9px 0 0; color: #a12d28; font-size: 14px; }
+    /* Registro integrado: la calculadora no se pierde al abrir Microsoft Forms. */
+    body.forms-open { overflow: hidden; }
+    .forms-backdrop { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; padding: 12px; background: rgba(16, 34, 47, .64); }
+    .forms-backdrop.open { display: flex; }
+    .forms-panel { display: flex; flex-direction: column; width: min(100%, 980px); height: min(94vh, 920px); height: min(94dvh, 920px); min-height: 300px; overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.28); }
+    .forms-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px; border-bottom: 1px solid var(--line); }
+    .forms-heading h2 { margin: 0 0 3px; font-size: 20px; }
+    .forms-heading p { margin: 0; color: var(--muted); font-size: 14px; }
+    .forms-instructions { margin: 0; padding: 9px 18px; color: var(--ink); background: var(--blue-soft); font-size: 14px; }
+    .forms-frame { display: block; flex: 1 1 auto; width: 100%; min-height: 120px; border: 0; background: #fff; }
+    .forms-footer { padding: 10px 18px 14px; border-top: 1px solid var(--line); }
+    .forms-footer p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+    .forms-footer-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+    .forms-external { color: var(--blue-dark); font-size: 14px; font-weight: 750; text-decoration: underline; text-underline-offset: 3px; margin-right: auto; }
+    .forms-external:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+    @media (max-width: 600px) {
+      .forms-backdrop { padding: 4px; }
+      .forms-panel { height: 98vh; height: 98dvh; border-radius: 10px; }
+      .forms-heading { padding: 10px 12px; align-items: flex-start; }
+      .forms-heading h2 { font-size: 17px; }
+      .forms-heading .reset { min-height: 40px; padding: 6px 9px; font-size: 12px; }
+      .forms-instructions { padding: 8px 12px; font-size: 12px; }
+      .forms-footer { padding: 9px 12px 12px; }
+      .forms-footer-actions .save-material { flex: 1 0 auto; }
+    }
     @media (max-width: 760px) {
       .page { width: min(100% - 22px, 560px); padding-top: 22px; }
       .layout { grid-template-columns: 1fr; }
@@ -117,7 +142,7 @@
     <header>
       <p class="eyebrow">Área digital · control de material</p>
       <h1>Consumo de bobina</h1>
-      <p class="intro">Completa los datos de la orden. Los resultados se calculan al instante y luego se pasan al formulario de registro.</p>
+      <p class="intro">Completa los datos de la orden. Los resultados se calculan al instante. Después, puedes completar el registro en Microsoft Forms sin salir de esta calculadora.</p>
     </header>
 
     <div class="layout">
@@ -171,9 +196,9 @@
           </div>
           <div class="actions">
             <button class="reset" id="clear" type="button">Limpiar datos</button>
-            <button class="save-material" id="save-record" type="button">Continuar a Microsoft Forms</button>
+            <button class="save-material" id="save-record" type="button">Registrar en Microsoft Forms</button>
           </div>
-          <p class="result-status" id="save-status" role="status" aria-live="polite">Al continuar, Forms se abrirá con los datos preparados. Para registrar la respuesta, el maquinista debe revisar y pulsar “Enviar” en Forms. La fecha y hora las asigna Forms al recibirla.</p>
+          <p class="result-status" id="save-status" role="status" aria-live="polite">Forms aparecerá dentro de esta página con los datos preparados. Después de pulsar «Enviar» y ver la confirmación de Microsoft Forms, elige «Ya envié · Siguiente OP» para regresar a la calculadora.</p>
         </form>
       </section>
 
@@ -250,6 +275,29 @@
     </form>
   </div>
 
+
+  <!-- Un solo formulario incrustado; cerrar no supone ni certifica que se haya enviado. -->
+  <div class="forms-backdrop" id="forms-modal" role="dialog" aria-modal="true" aria-labelledby="forms-title">
+    <div class="forms-panel">
+      <div class="forms-heading">
+        <div>
+          <h2 id="forms-title">Registro en Microsoft Forms</h2>
+          <p id="forms-op-label">Orden de producción</p>
+        </div>
+        <button class="reset" id="forms-back" type="button">Volver sin borrar</button>
+      </div>
+      <p class="forms-instructions">Revisa los datos precargados y pulsa «Enviar» dentro de Microsoft Forms.</p>
+      <iframe class="forms-frame" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
+      <div class="forms-footer">
+        <p>Espera la confirmación de Microsoft Forms antes de continuar. Esta calculadora no puede verificar por sí sola el envío.</p>
+        <div class="forms-footer-actions">
+          <a id="forms-external" class="forms-external" target="_blank" rel="noopener noreferrer" href="#">Si no carga, abrir Forms en otra pestaña</a>
+          <button class="save-material" id="forms-next" type="button">Ya envié · Siguiente OP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     (() => {
       const defaultMaterials = [
@@ -265,6 +313,10 @@
       const error = document.getElementById('material-error');
       const saveButton = document.getElementById('save-record');
       const saveStatus = document.getElementById('save-status');
+      const formsModal = document.getElementById('forms-modal');
+      const formsFrame = document.getElementById('forms-frame');
+      const formsOpLabel = document.getElementById('forms-op-label');
+      const formsExternal = document.getElementById('forms-external');
       const questionKeys = [
         'r1a6fb6883bc444629eea97caf2ece32c',
         'rcb234788c8fb4f61873e671259549e70',
@@ -350,14 +402,20 @@
       }
       form.addEventListener('input', calculate);
       materialSelect.addEventListener('change', updateGsm);
-      document.getElementById('clear').addEventListener('click', () => {
+      // Al pasar a la siguiente OP, conservar únicamente el catálogo de materiales.
+      function clearOrder() {
         form.reset();
         renderMaterials('Bookcrim');
         calculate();
-        saveStatus.textContent = 'Al continuar, se abrirá Microsoft Forms con los datos preparados. Para registrar la respuesta, revisa y pulsa “Enviar” en Forms.';
         document.getElementById('op').focus();
+      }
+      form.addEventListener('submit', event => event.preventDefault());
+      document.getElementById('clear').addEventListener('click', () => {
+        clearOrder();
+        saveStatus.textContent = 'Datos de la orden limpiados. Introduce la siguiente OP para calcular y registrar.';
       });
       saveButton.addEventListener('click', () => {
+        if (formsModal.classList.contains('open')) return;
         if (!form.reportValidity()) return;
         const values = calculate();
         if (!values || !values.op) {
@@ -393,10 +451,36 @@
         ];
         const url = new URL(formsBaseUrl);
         questionKeys.forEach((key, index) => url.searchParams.set(key, answers[index]));
-        saveStatus.textContent = 'Abriendo Microsoft Forms con los datos. Revísalos y pulsa “Enviar” para registrar la respuesta.';
+        // Microsoft Forms acepta la modalidad embed; no se abren ventanas automáticamente.
         const responseUrl = url.toString().replace(/\+/g, '%20');
-        const opened = window.open(responseUrl, '_blank', 'noopener,noreferrer');
-        if (!opened) window.location.assign(responseUrl);
+        formsExternal.href = responseUrl;
+        url.searchParams.set('embed', 'true');
+        formsFrame.src = url.toString().replace(/\+/g, '%20');
+        formsOpLabel.textContent = 'OP: ' + values.op;
+        formsModal.classList.add('open');
+        document.body.classList.add('forms-open');
+        saveStatus.textContent = 'Formulario abierto. Pulsa «Enviar» en Microsoft Forms y, después de su confirmación, «Ya envié · Siguiente OP».';
+        document.getElementById('forms-back').focus();
+      });
+      function closeForms() {
+        formsModal.classList.remove('open');
+        document.body.classList.remove('forms-open');
+        // Evita mantener una respuesta anterior cuando se prepare otro registro.
+        formsFrame.src = 'about:blank';
+        formsExternal.removeAttribute('href');
+      }
+      document.getElementById('forms-back').addEventListener('click', () => {
+        closeForms();
+        saveStatus.textContent = 'Los datos de esta OP se conservaron. Si aún no enviaste el formulario, puedes volver a abrirlo.';
+        saveButton.focus();
+      });
+      document.getElementById('forms-next').addEventListener('click', () => {
+        // Este botón no confirma ni envía una respuesta; el maquinista debe haber
+        // comprobado previamente la pantalla de confirmación en Microsoft Forms.
+        closeForms();
+        clearOrder();
+        saveStatus.textContent = 'Calculadora lista para una nueva OP. El envío debe haberse confirmado en Microsoft Forms.';
+        window.scrollTo({ top: 0, behavior: 'instant' });
       });
       function closeModal() { modal.classList.remove('open'); error.textContent = ''; materialForm.reset(); document.getElementById('open-material').focus(); }
       document.getElementById('open-material').addEventListener('click', () => { modal.classList.add('open'); document.getElementById('new-name').focus(); });
