@@ -48,6 +48,16 @@
     .form-card { padding: 26px; border: 0; border-radius: 0; box-shadow: none; }
     .section-title { margin: 0 0 17px; font-size: 19px; }
     .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .input-section { padding: 17px; border: 1px solid #d7e3ea; border-radius: 13px; background: #fff; }
+    .input-section + .input-section { margin-top: 15px; }
+    .input-section:first-of-type { background: #f7fbfd; }
+    .input-section-heading { display: flex; align-items: center; gap: 10px; margin: 0 0 15px; color: var(--blue-dark); font-size: 17px; font-weight: 800; line-height: 1.25; }
+    .step-number { display: inline-grid; flex: 0 0 31px; width: 31px; height: 31px; place-items: center; border-radius: 9px; background: var(--blue); color: #fff; font-size: 15px; }
+    .input-section-note { margin: -6px 0 14px; color: var(--muted); font-size: 13px; }
+    /* Las cantidades se ingresan escribiendo, sin flechas de incremento en los campos. */
+    input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .field { min-width: 0; }
     .field.full { grid-column: 1 / -1; }
     .entry-label { margin: 0 0 16px; padding: 9px 12px; border-radius: 9px; background: #eaf4f9; color: var(--blue-dark); font-size: 14px; font-weight: 800; }
@@ -140,6 +150,8 @@
     @media (max-width: 460px) {
       body { font-size: 16px; }
       .fields { grid-template-columns: 1fr; gap: 13px; }
+      .input-section { padding: 14px; }
+      .input-section-heading { font-size: 16px; }
       .field.full { grid-column: auto; }
       .result-value { font-size: 38px; }
     }
@@ -157,51 +169,69 @@
       <section class="card form-card" aria-labelledby="datos-title">
         <h2 class="section-title" id="datos-title">Datos de la orden</h2>
         <form id="calculator" autocomplete="off">
-          <div class="fields">
-            <div class="field full"><p class="entry-label">DATOS QUE INGRESA EL MAQUINISTA</p></div>
-            <div class="field full">
-              <label for="op">Número de OP</label>
-              <input id="op" name="op" type="text" placeholder="Escribe el número de OP" inputmode="text">
-            </div>
-            <div class="field">
-              <label for="books">Cantidad de libros</label>
-              <input id="books" name="books" type="number" min="0" step="1" placeholder="Ej.: 600" inputmode="numeric" required>
-            </div>
-            <div class="field">
-              <label for="copies">Copias por libro</label>
-              <input id="copies" name="copies" type="number" min="0" step="1" placeholder="Ej.: 4" inputmode="numeric" required>
-              <span class="hint">Cada copia cuenta como el avance de una hoja.</span>
-            </div>
-            <div class="field full">
-              <label for="material">Tipo de material</label>
-              <div class="material-row">
-                <select id="material" name="material" required aria-describedby="material-hint"></select>
-                <button class="add-material" id="open-material" type="button" aria-label="Agregar material" title="Agregar material">+</button>
+          <section class="input-section" aria-labelledby="step-op-title">
+            <h3 class="input-section-heading" id="step-op-title"><span class="step-number" aria-hidden="true">1</span> Orden de producción</h3>
+            <div class="fields">
+              <div class="field full">
+                <label for="op">Número de OP</label>
+                <input id="op" name="op" type="text" placeholder="Escribe el número de OP" inputmode="text">
               </div>
-              <span class="hint" id="material-hint">El gramaje se completa automáticamente.</span>
             </div>
-            <div class="field">
-              <label for="gsm">Gramaje</label>
-              <input id="gsm" name="gsm" type="text" value="70 g/m²" readonly aria-live="polite">
+          </section>
+
+          <section class="input-section" aria-labelledby="step-produccion-title">
+            <h3 class="input-section-heading" id="step-produccion-title"><span class="step-number" aria-hidden="true">2</span> Datos de producción</h3>
+            <div class="fields">
+              <div class="field">
+                <label for="books">Cantidad de libros</label>
+                <input id="books" name="books" type="number" min="0" step="1" placeholder="Ej.: 600" inputmode="numeric" required>
+              </div>
+              <div class="field">
+                <label for="copies">Copias por libro</label>
+                <input id="copies" name="copies" type="number" min="0" step="1" placeholder="Ej.: 4" inputmode="numeric" required>
+                <span class="hint">Cada copia cuenta como el avance de una hoja.</span>
+              </div>
+              <div class="field full">
+                <label for="advance">Avance por copia (mm)</label>
+                <input id="advance" name="advance" type="number" min="0" step="any" placeholder="Escribe el avance de una hoja" inputmode="decimal" required>
+                <span class="hint">Indica cuánto avanza la bobina para imprimir una copia.</span>
+              </div>
             </div>
-            <div class="field">
-              <label for="width">Ancho de bobina (mm)</label>
-              <input id="width" name="width" type="number" min="0" step="any" placeholder="Ej.: 700" inputmode="decimal" required>
+          </section>
+
+          <section class="input-section" aria-labelledby="step-material-title">
+            <h3 class="input-section-heading" id="step-material-title"><span class="step-number" aria-hidden="true">3</span> Material de impresión</h3>
+            <div class="fields">
+              <div class="field full">
+                <label for="material">Tipo de material</label>
+                <div class="material-row">
+                  <select id="material" name="material" required aria-describedby="material-hint"></select>
+                  <button class="add-material" id="open-material" type="button" aria-label="Agregar material" title="Agregar material">+</button>
+                </div>
+                <span class="hint" id="material-hint">El gramaje se completa automáticamente.</span>
+              </div>
+              <div class="field">
+                <label for="gsm">Gramaje</label>
+                <input id="gsm" name="gsm" type="text" value="70 g/m²" readonly aria-live="polite">
+              </div>
+              <div class="field">
+                <label for="width">Ancho de bobina (mm)</label>
+                <input id="width" name="width" type="number" min="0" step="any" placeholder="Ej.: 700" inputmode="decimal" required>
+              </div>
             </div>
-            <div class="field full">
-              <label for="advance">Avance por copia (mm)</label>
-              <input id="advance" name="advance" type="number" min="0" step="any" placeholder="Escribe el avance de una hoja" inputmode="decimal" required>
-              <span class="hint">Escribe cuánto avanza la bobina para imprimir una copia.</span>
+          </section>
+
+          <section class="input-section" aria-labelledby="step-bobina-title">
+            <h3 class="input-section-heading" id="step-bobina-title"><span class="step-number" aria-hidden="true">4</span> Bobina y devolución</h3>
+            <p class="input-section-note">El consumo y la devolución se calculan automáticamente en el panel de resultados.</p>
+            <div class="fields">
+              <div class="field full">
+                <label for="roll-meters">Metros iniciales de la bobina (m)</label>
+                <input id="roll-meters" name="roll-meters" type="number" min="0" step="any" placeholder="Ej.: 1500" inputmode="decimal">
+                <span class="hint">Los kilogramos por devolver se estiman con los metros restantes, el ancho y el gramaje. No es necesario pesar la bobina.</span>
+              </div>
             </div>
-            <div class="field full">
-              <h3 class="section-title" style="margin: 5px 0 0">Datos de bobina y devolución</h3>
-            </div>
-            <div class="field">
-              <label for="roll-meters">Metros iniciales de la bobina (m)</label>
-              <input id="roll-meters" name="roll-meters" type="number" min="0" step="any" placeholder="Ej.: 1.500" inputmode="decimal">
-              <span class="hint">No hace falta pesar la devolución: los kilos se estiman con los metros restantes, el ancho y el gramaje.</span>
-            </div>
-          </div>
+          </section>
           <div class="actions">
             <button class="reset" id="clear" type="button">Limpiar datos</button>
             <button class="save-material" id="save-record" type="button">Registrar en Microsoft Forms</button>
@@ -426,6 +456,21 @@
         document.getElementById('status').textContent = status;
         return { books, copies, width, advance, initialKg, initialMeters, material, meters, kilos, remainingMeters, remainingKg, op };
       }
+      // Impide alterar accidentalmente valores numéricos con la rueda o las teclas de incremento.
+      // Los operarios pueden seguir escribiendo y pegando los valores normalmente.
+      document.addEventListener('wheel', event => {
+        const field = event.target;
+        if (field instanceof HTMLInputElement && field.type === 'number' && document.activeElement === field) {
+          event.preventDefault();
+        }
+      }, { passive: false });
+      document.addEventListener('keydown', event => {
+        const field = event.target;
+        if (field instanceof HTMLInputElement && field.type === 'number'
+          && ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(event.key)) {
+          event.preventDefault();
+        }
+      });
       form.addEventListener('input', calculate);
       materialSelect.addEventListener('change', updateGsm);
       // Al pasar a la siguiente OP, conservar únicamente el catálogo de materiales.
