@@ -115,6 +115,8 @@
     .return-group .result-value { color: var(--green); }
     .result-unit { font-size: 19px; font-weight: 750; letter-spacing: 0; }
     .result-status { min-height: 24px; margin: 13px 0 0; color: var(--muted); font-size: 14px; }
+    .result-status.save-error { padding: 12px 14px; border: 1px solid #e4aaa8; border-radius: 10px; background: #fff0ef; color: #9b2c2c; font-weight: 750; }
+    .field input[data-invalid="true"], .field select[data-invalid="true"] { border-color: #b72e2e; background: #fff4f3; }
     .save-material:disabled { opacity: .5; cursor: not-allowed; }
     .formula { margin-top: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: #eef2f4; color: #536572; font-size: 14px; }
     .formula summary { color: var(--ink); font-weight: 750; cursor: pointer; }
@@ -470,7 +472,8 @@
         ];
         const op = document.getElementById('op').value.trim();
         document.getElementById('result-op').textContent = op ? 'OP: ' + op : 'Completa los datos para ver el resultado.';
-        const valid = inputs.every(([, value]) => Number.isFinite(value) && value > 0) && material;
+        const valid = inputs.every(([id, value]) => Number.isFinite(value) && value > 0
+          && (!['books', 'copies'].includes(id) || Number.isInteger(value))) && material;
         if (!valid) {
           for (const id of ['meters','kilos']) document.getElementById(id).innerHTML = '— <span class="result-unit">' + (id === 'kilos' ? 'kg' : 'm') + '</span>';
           document.getElementById('left-kilos').innerHTML = '— <span class="delivery-unit">kg</span>';
@@ -494,7 +497,8 @@
         const remainingMeters = hasStock ? remainingKg / kgPerMeter : NaN;
         document.getElementById('meters').innerHTML = formatNumber(meters) + ' <span class="result-unit">m</span>';
         document.getElementById('kilos').innerHTML = formatNumber(kilos, 3) + ' <span class="result-unit">kg</span>';
-        const validReturn = hasStock && Number.isFinite(remainingMeters) && remainingMeters >= 0 && Number.isFinite(remainingKg) && remainingKg >= 0;
+        const validReturn = hasStock && Number.isFinite(kilos) && Number.isFinite(remainingMeters) && remainingMeters > 0 && Number.isFinite(remainingKg) && remainingKg > 0
+          && Number(remainingKg.toFixed(3)) > 0;
         document.getElementById('left-meters').textContent = validReturn ? formatNumber(remainingMeters) + ' m' : '— m';
         document.getElementById('left-kilos').innerHTML = validReturn ? formatNumber(remainingKg, 3) + ' <span class="delivery-unit">kg</span>' : '— <span class="delivery-unit">kg</span>';
         document.getElementById('delivery-guidance').textContent = validReturn
@@ -536,27 +540,67 @@
         document.getElementById('op').focus();
       }
       form.addEventListener('submit', event => event.preventDefault());
+      function clearRegistrationWarning() {
+        saveStatus.classList.remove('save-error');
+        for (const field of form.querySelectorAll('[data-invalid="true"]')) delete field.dataset.invalid;
+      }
+      function registrationWarning(message, fieldId) {
+        clearRegistrationWarning();
+        saveStatus.textContent = 'REGISTRO BLOQUEADO: ' + message;
+        saveStatus.classList.add('save-error');
+        if (fieldId) {
+          const field = document.getElementById(fieldId);
+          if (field) field.dataset.invalid = 'true';
+        }
+        window.alert('NO SE PUEDE REGISTRAR LA OP\n\n' + message + '\n\nCorrige el dato y vuelve a calcular antes de enviar.');
+        if (fieldId) document.getElementById(fieldId)?.focus();
+      }
+      form.addEventListener('input', clearRegistrationWarning);
+      form.addEventListener('change', clearRegistrationWarning);
       document.getElementById('clear').addEventListener('click', () => {
         clearOrder();
+        clearRegistrationWarning();
         saveStatus.textContent = 'Datos de la orden limpiados. Introduce la siguiente OP para calcular y registrar.';
       });
       saveButton.addEventListener('click', () => {
         if (formsModal.classList.contains('open')) return;
-        if (!form.reportValidity()) return;
+        if (!document.getElementById('op').value.trim()) {
+          registrationWarning('Falta ingresar el número de OP.', 'op');
+          return;
+        }
+        const requiredInputs = [
+          ['books', 'cantidad de libros', true],
+          ['copies', 'copias por libro', true],
+          ['advance', 'avance por copia (mm)', false],
+          ['width', 'ancho de bobina (mm)', false],
+          ['roll-kg', 'peso inicial de bobina (kg)', false]
+        ];
+        for (const [id, label, integer] of requiredInputs) {
+          const value = readNumber(id);
+          if (!Number.isFinite(value) || value <= 0 || (integer && !Number.isInteger(value))) {
+            registrationWarning('Revisa ' + label + ': debe ser ' + (integer ? 'un número entero' : 'un número') + ' mayor que cero.', id);
+            return;
+          }
+        }
+        if (!materialSelect.value || !gsmSelect.value) {
+          registrationWarning('Selecciona un material y un gramaje válidos.', 'material');
+          return;
+        }
         const values = calculate();
-        if (!values || !values.op) {
-          saveStatus.textContent = 'Escribe el número de OP antes de continuar.';
-          document.getElementById('op').focus();
+        if (!values || !Number.isFinite(values.kilos) || !Number.isFinite(values.meters)) {
+          registrationWarning('Los datos ingresados no permiten calcular el consumo. Revisa los valores de producción.');
           return;
         }
-        if (!Number.isFinite(values.initialKg) || values.initialKg <= 0) {
-          saveStatus.textContent = 'Completa el peso inicial de la bobina (kg, con tuco).';
+        if (!Number.isFinite(values.remainingKg) || !Number.isFinite(values.remainingMeters)
+            || values.remainingKg <= 0 || values.remainingMeters <= 0
+            || Number(values.remainingKg.toFixed(3)) <= 0) {
+          const reason = values.initialKg <= values.kilos
+            ? 'El consumo estimado (' + formatNumber(values.kilos, 3) + ' kg) es igual o mayor que el peso inicial (' + formatNumber(values.initialKg, 3) + ' kg). Revisa las cantidades, el avance, el ancho, el gramaje y el peso inicial.'
+            : 'Los kg por entregar están vacíos o no se pueden calcular. Revisa los datos ingresados.';
+          registrationWarning(reason, 'roll-kg');
           return;
         }
-        if (values.remainingMeters < 0 || values.remainingKg < 0) {
-          saveStatus.textContent = 'El consumo calculado supera el peso inicial de la bobina. Revisa los datos antes de registrar.';
-          return;
-        }
+        clearRegistrationWarning();
         const answers = [
           values.op,
           numberText(values.books, 0),
