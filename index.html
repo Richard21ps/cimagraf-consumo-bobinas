@@ -370,6 +370,9 @@
       const formsFrame = document.getElementById('forms-frame');
       const formsOpLabel = document.getElementById('forms-op-label');
       const formsExternal = document.getElementById('forms-external');
+      // Claves del formulario simplificado (10 preguntas). Orden:
+      // OP, libros, copias, material, gramaje, ancho, avance, metros iniciales,
+      // metros por devolver y kg por devolver.
       const questionKeys = [
         'r1a6fb6883bc444629eea97caf2ece32c',
         'rcb234788c8fb4f61873e671259549e70',
@@ -378,15 +381,9 @@
         'rbed99caa92ca4a6790d27dd48e8621a6',
         'rffe26eb7550b48bbab1495966a832eb8',
         'r32817bdd4c2248c4ba50f21a811d63b3',
-        'r43569aad1282478ea5071b89d9944eb8',
-        'r8d4d350ee4c249378969b5e3beeb3f3a',
-        'r3d306b90d39e435685c22a715f5f84f4',
-        'r9a82ae250c1d4aa19dbb0cddba934702',
-        'r5a522e43ebc24f0eb4108a86a9becd9f',
-        'ref508945f4b145538e31c8e11e7e0734',
-        'r59140cd09d8c4791b15f0bf2ac15c4c6',
-        'r65af0d8cdaab4b67ab5a5e7cc52dbe69',
-        'r0554d64d0943412385df493c6944fb56'
+        'r6cb50d010ecf46b5be3bffd21deb067f',
+        'rd7b45c9fe9dd4af3bc87e845dab0a391',
+        'rcb7ad7d17f23469ebaf7b83ae2ceb42a'
       ];
       const formsBaseUrl = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
       let materials = loadMaterials();
@@ -534,15 +531,9 @@
           numberText(values.material.gsm),
           numberText(values.width),
           numberText(values.advance),
-          numberText(values.initialKg),
           numberText(values.initialMeters),
-          numberText(values.meters),
-          numberText(values.kilos),
           numberText(values.remainingMeters),
-          numberText(values.remainingKg),
-          'Devolución calculada automáticamente; no se pesa la bobina',
-          'No aplica: no se compara con un peso real',
-          'Estimado automáticamente a partir de los metros restantes'
+          numberText(values.remainingKg)
         ];
         const url = new URL(formsBaseUrl);
         questionKeys.forEach((key, index) => url.searchParams.set(key, answers[index]));
