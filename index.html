@@ -321,7 +321,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.0</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.1</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -336,7 +336,7 @@
       </div>
       <div class="multi-block">
         <h3>2 · Órdenes de producción</h3>
-        <p class="multi-muted">Las nuevas OP heredan como sugerencia las copias por libro de la anterior; revisa el valor antes de enviar.</p>
+        <p class="multi-muted">Ingresa las copias por libro y el avance de cada OP; pueden ser diferentes entre órdenes.</p>
         <div id="multi-op-list"></div>
         <button class="multi-button" id="multi-add-op" type="button">+ Agregar OP</button>
       </div>
@@ -795,7 +795,7 @@ root.addEventListener('click',e=>{
  const remove=b.dataset.remove;
  if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
 });
-$('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:ops.at(-1)?.copies||'',advance:''});markDirty();redraw();scheduleAuto();});
+$('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:'',advance:''});markDirty();redraw();scheduleAuto();});
 $('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:''});markDirty();redraw();scheduleAuto();});
 function mode(useMulti){layout.hidden=useMulti;root.hidden=!useMulti;simple.setAttribute('aria-pressed',String(!useMulti));complex.setAttribute('aria-pressed',String(useMulti));}
 simple.addEventListener('click',()=>mode(false));complex.addEventListener('click',()=>mode(true));
@@ -950,12 +950,15 @@ $('multi-register').addEventListener('click',()=>{
  const first=result.sourceOps[0],rate=result.width*result.gsm/1e6;
  const initialKg=result.usedRolls.reduce((sum,r)=>sum+r.initial,0);
  const url=new URL(GROUP_FORM_URL);
- const same=k=>result.sourceOps.every(o=>o[k]===first[k]);
+ const perOpValue=key=>{
+  if(result.sourceOps.every(o=>o[key]===first[key]))return String(first[key]);
+  return result.sourceOps.map(o=>o.id+':'+o[key]).join(' ; ');
+ };
  const opPacket=result.sourceOps.map(o=>o.id).join(', ')+' || '+groupText(result);
  if(opPacket.length>3200){$('multi-error').textContent='Grupo demasiado largo para la precarga de Forms. Divide el grupo.';$('multi-error').hidden=false;return;}
  const legacy=[opPacket,String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
- same('copies')?String(first.copies):'',result.paper,fmt(result.gsm),fmt(result.width),
- same('advance')?fmt(first.advance):'',fmt(initialKg/rate),fmt(result.saldo/rate),fmt(result.saldo)];
+ perOpValue('copies'),result.paper,fmt(result.gsm),fmt(result.width),
+ perOpValue('advance'),fmt(initialKg/rate),fmt(result.saldo/rate),fmt(result.saldo)];
  legacyKeys.forEach((key,i)=>{if(legacy[i]!=='')url.searchParams.set(key,legacy[i]);});
  // El campo detalle conserva todas las OP. ~ separa columnas y nueva línea separa OP.
  const answers=[result.group,result.type,fmt(result.total),fmt(result.saldo)];
@@ -965,7 +968,7 @@ $('multi-register').addEventListener('click',()=>{
  $('forms-external').href=external;url.searchParams.set('embed','true');
  $('forms-frame').src=url.toString().replace(/\+/g,'%20');
  $('forms-op-label').textContent='Grupo: '+result.group+' · '+result.sourceOps.length+' OP';
- $('forms-instructions').textContent='Un solo envío por grupo. Verifica el detalle de cada OP y pulsa Enviar una vez. Después, confirma manualmente con «Ya envié».';
+ $('forms-instructions').textContent='Revisa los 14 campos precargados. Copias por libro y Avance por pliego muestran cada OP por separado si difieren. Pulsa Enviar una sola vez y espera la confirmación.';
  $('forms-next').textContent='Ya envié · Siguiente grupo';
  pendingOpIndex=0;
  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
