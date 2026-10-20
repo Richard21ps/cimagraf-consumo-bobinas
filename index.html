@@ -924,13 +924,25 @@ function groupText(r){
 const originalFormsInstructions=$('forms-instructions').textContent;
 $('save-record').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
 $('forms-back').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
+function resetMultiAfterConfirmation(){
+ ops=[{id:'',books:'',copies:'',advance:''}];
+ rolls=[{id:'Bobina 1',kg:''}];
+ $('multi-group').value='';
+ $('multi-width').value='';
+ $('multi-paper').selectedIndex=0;
+ updateGrams('');
+ redraw();
+ markDirty();
+ $('multi-op-registration-table').replaceChildren();
+ $('multi-summary-status').textContent='Calculadora lista para el siguiente grupo.';
+ $('multi-delivery-status').textContent='Ingresa los datos del nuevo grupo.';
+ $('multi-register').textContent='Enviar a Forms';
+ $('multi-group').focus();
+}
 $('forms-next').addEventListener('click',()=>{
  if(pendingOpIndex<0)return;
- pendingOpIndex=-1;
+ resetMultiAfterConfirmation();
  $('forms-instructions').textContent=originalFormsInstructions;
- $('multi-register').disabled=true;
- $('multi-register').textContent='Grupo enviado';
- $('multi-summary-status').textContent='Marcado manualmente como enviado. Verifica la respuesta en el Excel de Forms.';
 });
 $('multi-register').addEventListener('click',()=>{
  if(!result){show();if(!result)return;}
