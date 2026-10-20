@@ -1,0 +1,40 @@
+/* CIMAGRAF v2.7 · Un único modo de operación con resultados destacados a la derecha */
+body .page {width:min(100% - 28px,1180px)}
+body .intro {max-width:850px}
+body .mode-picker {display:none!important}
+body .layout {display:none!important}
+body #multi-root {display:block!important;max-width:100%;padding:24px}
+.multi-layout {display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.8fr);gap:20px;align-items:start}
+.multi-editor {min-width:0}
+.multi-editor .multi-block:first-child {margin-top:0}
+.multi-editor .multi-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.multi-editor .multi-row-fields {grid-template-columns:repeat(2,minmax(0,1fr))}
+.multi-editor .multi-row-fields label,.multi-editor .multi-grid label {min-width:0}
+.multi-editor .multi-row-fields input,.multi-editor .multi-row-fields select,
+.multi-editor .multi-grid input,.multi-editor .multi-grid select {width:100%}
+.multi-editor .multi-row {padding:12px}
+.multi-paper-picker {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.multi-paper-picker .add-material {min-height:46px}
+.multi-aside {position:sticky;top:14px;min-width:0;padding:18px;border:1px solid #d8e0e6;border-radius:16px;background:#f8fbfd}
+.multi-aside h3 {margin:0 0 9px;font-size:20px;color:#0d4669;text-align:center}
+.multi-aside .delivery-summary {margin:10px 0 18px;text-align:center;padding:18px 12px}
+.multi-aside .delivery-main {align-items:center}
+.multi-aside .delivery-weight {font-size:clamp(38px,3.9vw,54px)}
+.multi-aside .delivery-meters {text-align:center;font-size:14px}
+.multi-aside .delivery-guidance {text-align:center}
+.multi-aside .result-group {margin-top:10px}
+.multi-aside .result-value {font-size:27px}
+.multi-aside .result-box{text-align:center}
+.multi-aside .result-pair {grid-template-columns:1fr}
+.multi-aside .result-group {text-align:center}
+.multi-aside .result-status {font-size:13px;text-align:center}
+.multi-results {max-width:100%;margin-top:24px}
+.multi-results > h3 {text-align:left}
+.multi-metrics {justify-content:center}
+.multi-metric {text-align:center}
+.multi-table-wrap {max-width:100%;margin-left:auto;margin-right:auto}
+.multi-table {margin:0 auto}
+.multi-table th,.multi-table td,.multi-table .num {text-align:center}
+.multi-results .multi-footer-actions {justify-content:center}
+@media(max-width:900px){.multi-layout{grid-template-columns:1fr}.multi-aside{position:static;order:-1}.multi-aside .result-pair{grid-template-columns:1fr 1fr}}
+@media(max-width:580px){body #multi-root{padding:14px}.multi-editor .multi-grid,.multi-editor .multi-row-fields{grid-template-columns:1fr}.multi-paper-picker{grid-template-columns:1fr auto}.multi-aside .delivery-weight{font-size:44px}.multi-aside .result-pair{grid-template-columns:1fr 1fr}}
