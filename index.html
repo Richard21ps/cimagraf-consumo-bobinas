@@ -359,8 +359,19 @@
         <h3>Resumen por OP</h3><div id="multi-ops-table"></div>
         <h3>Resumen por bobina</h3><div id="multi-rolls-table"></div>
         <h3>Historial de asignación OP–bobina</h3><div id="multi-trace-table"></div>
-        <p class="multi-note">El registro de Forms actual solo cubre una OP y una bobina. Para no perder la trazabilidad, el cálculo múltiple NO genera respuestas en Forms. Exporta este detalle y consérvalo hasta ampliar el formulario o habilitar una integración de almacenamiento central. Este cálculo no se guarda automáticamente en Excel.</p>
-        <div class="multi-footer-actions"><button class="multi-primary" id="multi-export" type="button">Exportar historial CSV para Excel</button></div>
+        <div class="multi-block" aria-labelledby="multi-consolidated-title">
+          <h3 id="multi-consolidated-title">4 · Registro consolidado para Microsoft Forms</h3>
+          <p class="multi-muted">Un solo registro por grupo de producción. Incluye las OP, las bobinas, los consumos asignados y los saldos después de cada movimiento, todo en una columna de detalle.</p>
+          <label for="multi-consolidated">Detalle consolidado del grupo</label>
+          <textarea id="multi-consolidated" rows="7" readonly style="width:100%;font:14px/1.5 Consolas,monospace;min-height:145px;padding:12px;border:1px solid #b9cad3;border-radius:10px" placeholder="Calcula el grupo para preparar los datos que se enviarán a Forms."></textarea>
+          <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa el identificador del grupo y pulsa «Calcular consumo y saldos».</p>
+          <div class="multi-footer-actions">
+            <button class="multi-button" id="multi-copy" type="button">Copiar registro consolidado</button>
+            <button class="multi-primary" id="multi-register" type="button" disabled>Registrar grupo en Forms</button>
+          </div>
+          <p class="multi-note" id="multi-registration-note">Para activar el envío automático faltan cinco preguntas en tu Forms actual y obtener sus identificadores. No se enviarán datos a columnas equivocadas. El modo sencillo conserva sus 10 preguntas y su conexión existente.</p>
+        </div>
+        <div class="multi-footer-actions"><button class="multi-button" id="multi-export" type="button">Exportar detalle CSV como respaldo</button></div>
       </section>
     </section>
   </main>
@@ -745,13 +756,22 @@
 const $=id=>document.getElementById(id);
 const root=$('multi-root'), simple=$('simple-mode'), complex=$('multi-mode'), layout=document.querySelector('.layout');
 if(!root||!simple||!complex||!layout)return;
-const KEY='cimagraf-multi-sesiones-v1', EPS=1e-8;
+// Los identificadores se completarán tras añadir estas preguntas al MISMO Forms.
+ // No activar la función de envío sin los ID reales de las preguntas.
+ const GROUP_FORM_KEYS = {group:'',type:'',total:'',balance:'',detail:''};
+ const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
+ const EPS=1e-8;
 let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'',kg:''}], result=null;
 const nf=(x,d=3)=>new Intl.NumberFormat('es-PE',{maximumFractionDigits:d}).format(x);
 const numeric=x=>x===''?NaN:Number(x);
 const field=(title,value,attr)=>'<label>'+title+'<input '+attr+' value="'+escapeHtml(value)+'"></label>';
 function escapeHtml(v){return String(v??'').replace(/[&"'<>]/g,c=>({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'}[c]));}
-function markDirty(){result=null;$('multi-results').hidden=true;$('multi-error').hidden=true;$('multi-success').hidden=true;}
+function markDirty(){
+ result=null;
+ $('multi-results').hidden=true;$('multi-error').hidden=true;$('multi-success').hidden=true;
+ $('multi-consolidated').value='';
+ $('multi-register').disabled=true;
+}
 function redraw(){
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por copia (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
  $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+field('Identificador de bobina',o.id,'data-roll="'+i+'" data-field="id" placeholder="Ej.: B-001" maxlength="45"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+'</div></div>').join('');
@@ -803,21 +823,66 @@ function validate(){
  }
  const usedRolls=loads.filter(r=>r.used>tol);
  const saldo=usedRolls.reduce((a,r)=>a+r.left,0);
- return {paper,gsm,width,details,sums,loads,usedRolls,total:consumedTotal,saldo};
+ return {paper,gsm,width,details,sums,loads,usedRolls,total:consumedTotal,saldo,
+     sourceOps:ops.map(o=>({id:o.id,books:Number(o.books),copies:Number(o.copies),advance:Number(o.advance)}))};
 }
 function table(headers,rows){return '<div class="multi-table-wrap"><table class="multi-table"><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map((cell,i)=>'<td'+(i?' class="num"':'')+'>'+escapeHtml(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 function show(){
  try{
-  const r=validate();result=r;$('multi-error').hidden=true;$('multi-success').hidden=false;
+  const r=validate();
+  const group=$('multi-group').value.trim();
+  if(!group)throw Error('Ingresa un identificador único del grupo para preparar un solo registro en Excel.');
+  const type=ops.length>1?(rolls.length>1?'Varias OP / varias bobinas':'Varias OP / una bobina'):(rolls.length>1?'Una OP / varias bobinas':'Una OP / una bobina');
+  const detail=makeGroupSummary(r,group,type);
+  // Un enlace prellenado excesivamente largo podría fallar en el navegador.
+  if(detail.length>3000)throw Error('El detalle del grupo es demasiado extenso para garantizar la precarga mediante URL de Microsoft Forms. Divide el registro en grupos más pequeños o usa el CSV.');
+  result={...r,group,type,detail};$('multi-error').hidden=true;$('multi-success').hidden=false;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
   $('multi-rolls-table').innerHTML=table(['Bobina','Kg iniciales','Kg consumidos','Kg restantes','Estado'],r.loads.map(x=>[x.id,nf(x.initial),nf(x.used),nf(x.left),x.used<=EPS?'Sin utilizar':x.left<=EPS?'Agotada':'Con saldo']));
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
+  $('multi-consolidated').value=result.detail;
+  $('multi-summary-status').textContent='Registro consolidado preparado para el grupo '+group+'. Consumo: '+nf(r.total)+' kg; saldo: '+nf(r.saldo)+' kg.';
+  $('multi-register').disabled=!Object.values(GROUP_FORM_KEYS).every(v=>typeof v==='string' && v.startsWith('r') && v.length>15);
  }catch(err){result=null;$('multi-results').hidden=true;$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;}
 }
+function makeGroupSummary(r,group,type) {
+ const num=n=>Number(n).toFixed(3).replace(/\\.000$/,'');
+ // Texto compacto con trazabilidad suficiente para reconstruir movimientos.
+ const opStats=r.sourceOps.map(o=>{
+  const s=r.sums.find(x=>x.op===o.id);
+  return o.id+'(libros='+o.books+',copias='+o.copies+',avance_mm='+o.advance+',consumo_kg='+num(s.kg)+')';
+ }).join(' ; ');
+ const rollStats=r.loads.map(b=>b.id+'(inicial_kg='+num(b.initial)+',consumido_kg='+num(b.used)+',saldo_kg='+num(b.left)+')').join(' ; ');
+ const movements=r.details.map(d=>d.seq+':'+d.op+'>'+d.bobina+'='+num(d.kg)+'kg(saldo='+num(d.saldo)+'kg)').join(' ; ');
+ return 'Grupo='+group+' | Tipo='+type+' | Papel='+r.paper+' | Gramaje_gm2='+r.gsm+' | Ancho_mm='+r.width
+  +' | Total_consumido_kg='+num(r.total)+' | Saldo_final_kg='+num(r.saldo)
+  +' | OP=['+opStats+'] | Bobinas=['+rollStats+'] | Movimientos=['+movements+']';
+}
 $('multi-calculate').addEventListener('click',show);
+$('multi-copy').addEventListener('click',async()=>{
+ if(!result){$('multi-error').textContent='Calcula primero el grupo.';$('multi-error').hidden=false;return;}
+ const text=result.detail;
+ try {await navigator.clipboard.writeText(text);$('multi-summary-status').textContent='Registro consolidado copiado.';}
+ catch (_) {const area=$('multi-consolidated');area.focus();area.select();$('multi-summary-status').textContent='Selecciona y copia el texto del registro consolidado.';}
+});
+$('multi-register').addEventListener('click',()=>{
+ if(!result)return;
+ if(!Object.values(GROUP_FORM_KEYS).every(v=>v.startsWith('r')))return;
+ const answers=[result.group,result.type,result.total.toFixed(3),result.saldo.toFixed(3),result.detail];
+ const url=new URL(GROUP_FORM_URL);
+ Object.values(GROUP_FORM_KEYS).forEach((key,index)=>url.searchParams.set(key,answers[index]));
+ const responseUrl=url.toString().replace(/\\+/g,'%20');
+ // Reutiliza la ventana actual de Forms; el operador debe enviar y verificar.
+ $('forms-external').href=responseUrl;
+ url.searchParams.set('embed','true');
+ $('forms-frame').src=url.toString().replace(/\\+/g,'%20');
+ $('forms-op-label').textContent='Grupo: '+result.group;
+ $('forms-modal').classList.add('open');
+ document.body.classList.add('forms-open');
+});
 function csvField(v){const s=String(v??'');return /[;"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 function exportCsv(rows){const data='\ufeff'+rows.map(r=>r.map(csvField).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='Cimagraf_trazabilidad_OP_bobinas.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);}
 $('multi-export').addEventListener('click',()=>{
