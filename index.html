@@ -849,7 +849,7 @@ function show(){
  }catch(err){result=null;$('multi-results').hidden=true;$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;}
 }
 function makeGroupSummary(r,group,type) {
- const num=n=>Number(n).toFixed(3).replace(/\\.000$/,'');
+ const num=n=>Number(n).toFixed(3).replace(/\.000$/,'');
  // Texto compacto con trazabilidad suficiente para reconstruir movimientos.
  const opStats=r.sourceOps.map(o=>{
   const s=r.sums.find(x=>x.op===o.id);
@@ -874,11 +874,11 @@ $('multi-register').addEventListener('click',()=>{
  const answers=[result.group,result.type,result.total.toFixed(3),result.saldo.toFixed(3),result.detail];
  const url=new URL(GROUP_FORM_URL);
  Object.values(GROUP_FORM_KEYS).forEach((key,index)=>url.searchParams.set(key,answers[index]));
- const responseUrl=url.toString().replace(/\\+/g,'%20');
+ const responseUrl=url.toString().replace(/\+/g,'%20');
  // Reutiliza la ventana actual de Forms; el operador debe enviar y verificar.
  $('forms-external').href=responseUrl;
  url.searchParams.set('embed','true');
- $('forms-frame').src=url.toString().replace(/\\+/g,'%20');
+ $('forms-frame').src=url.toString().replace(/\+/g,'%20');
  $('forms-op-label').textContent='Grupo: '+result.group;
  $('forms-modal').classList.add('open');
  document.body.classList.add('forms-open');
