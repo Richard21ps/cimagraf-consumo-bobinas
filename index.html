@@ -321,7 +321,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 2.8</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 2.9</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <p class="multi-muted">Agrega tus OP y bobinas: los consumos se actualizan al escribir. El sistema utiliza una bobina tras agotar matemáticamente la anterior.</p>
       <p class="multi-note">Los kg iniciales se registran según el peso recibido (incluido el tuco, si corresponde). Por desconocerse su tara, los saldos y el agotamiento son teóricos, no una confirmación física. No cambies de bobina sin comprobar el material real.</p>
@@ -365,13 +365,11 @@
           <h3 id="multi-consolidated-title">4 · Registro de producción</h3>
           <p class="multi-muted">Un solo envío para el grupo. En Excel, las OP se desglosan automáticamente en filas independientes.</p>
           <div id="multi-op-registration-table" class="multi-table-wrap" aria-live="polite"></div>
-          <label for="multi-consolidated">Detalle de las OP que se enviarán</label>
-          <textarea id="multi-consolidated" rows="6" readonly style="width:100%;font:14px/1.5 Consolas,monospace;min-height:135px;padding:12px;border:1px solid #b9cad3;border-radius:10px" placeholder="Calcula el grupo para ver el detalle de la primera OP."></textarea>
           <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
           <div class="multi-footer-actions">
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">La calculadora prepara una respuesta por grupo; Forms requiere pulsar Enviar y comprobar su confirmación. Después, «Ya envié · Siguiente grupo» dejará la calculadora lista para otro grupo. Las OP se separan en Excel sin duplicar los saldos.</p>
+          <p class="multi-note" id="multi-registration-note">Formulario de 14 preguntas: un envío por grupo. Número de OP llevará un bloque compacto para que Excel separe automáticamente las órdenes. Comprueba la precarga antes de enviar.</p>
         </div>
       </section>
     </section>
@@ -763,8 +761,7 @@ if(!root||!simple||!complex||!layout)return;
   group:'r790012348e2543d18936c9ae9ddb82e7',
   type:'r0472c507ec744afa8ddac85a4293ca4a',
   total:'rf67ad5d129824657b4de24dee465a751',
-  balance:'r6461e1c1fa7f44ccbf714af864bf7fe5',
-  detail:'r0743db65992844e3a31a6d229fc5f9c7'
+  balance:'r6461e1c1fa7f44ccbf714af864bf7fe5'
  };
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
@@ -782,7 +779,6 @@ function markDirty(){
  $('multi-total-consumption').textContent='— kg';
  $('multi-delivery-status').textContent='Recalcula después de modificar los datos.';nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
  $('multi-results').hidden=true;$('multi-error').hidden=true;$('multi-success').hidden=true;
- $('multi-consolidated').value='';
  $('multi-register').disabled=true;
 }
 function redraw(){
@@ -847,10 +843,7 @@ function show(){
   const group=$('multi-group').value.trim();
   if(!group)throw Error('Ingresa un identificador único del grupo para preparar un solo registro en Excel.');
   const type=ops.length>1?(rolls.length>1?'Varias OP / varias bobinas':'Varias OP / una bobina'):(rolls.length>1?'Una OP / varias bobinas':'Una OP / una bobina');
-  const detail=makeGroupSummary(r,group,type);
-  // Un enlace prellenado excesivamente largo podría fallar en el navegador.
-  if(detail.length>3000)throw Error('El detalle del grupo es demasiado extenso para garantizar la precarga mediante URL de Microsoft Forms. Divide el registro en grupos más pequeños o usa el CSV.');
-  result={...r,group,type,detail};$('multi-error').hidden=true;$('multi-success').hidden=false;
+  result={...r,group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
   $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
@@ -918,7 +911,6 @@ function perOpData(index){
 function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
- $('multi-consolidated').value=groupText(result);
  $('multi-summary-status').textContent='Un solo envío para '+result.sourceOps.length+' OP. En Excel cada OP se desglosará mediante fórmula.';
  $('multi-register').disabled=false;
  $('multi-register').textContent='Enviar a Forms';
@@ -929,7 +921,7 @@ function groupText(r){
   const tail=moves[moves.length-1];
   return [o.id,o.books,o.copies,o.advance,fmt(r.sums[i].metros),fmt(r.sums[i].kg),fmt(tail.saldo),moves.map(d=>d.bobina+':'+fmt(d.kg)+'kg').join(',')].join('~');
  });
- return 'CIMAGRAF_OPS_V1\n'+rows.join('\n');
+ return 'CIMAGRAF_OPS_V2||'+rows.join('^');
 }
 const originalFormsInstructions=$('forms-instructions').textContent;
 $('save-record').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
@@ -949,13 +941,14 @@ $('multi-register').addEventListener('click',()=>{
  const initialKg=result.usedRolls.reduce((sum,r)=>sum+r.initial,0);
  const url=new URL(GROUP_FORM_URL);
  const same=k=>result.sourceOps.every(o=>o[k]===first[k]);
- const legacy=[result.sourceOps.map(o=>o.id).join(' / '),String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
+ const opPacket=result.sourceOps.map(o=>o.id).join(', ')+' || '+groupText(result);
+ if(opPacket.length>3200){$('multi-error').textContent='Grupo demasiado largo para la precarga de Forms. Divide el grupo.';$('multi-error').hidden=false;return;}
+ const legacy=[opPacket,String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
  same('copies')?String(first.copies):'',result.paper,fmt(result.gsm),fmt(result.width),
  same('advance')?fmt(first.advance):'',fmt(initialKg/rate),fmt(result.saldo/rate),fmt(result.saldo)];
  legacyKeys.forEach((key,i)=>{if(legacy[i]!=='')url.searchParams.set(key,legacy[i]);});
  // El campo detalle conserva todas las OP. ~ separa columnas y nueva línea separa OP.
- const allDetail=result.detail+'\n\n'+groupText(result);
- const answers=[result.group,result.type,fmt(result.total),fmt(result.saldo),allDetail];
+ const answers=[result.group,result.type,fmt(result.total),fmt(result.saldo)];
  Object.values(GROUP_FORM_KEYS).forEach((key,i)=>url.searchParams.set(key,answers[i]));
  const external=url.toString().replace(/\+/g,'%20');
  if(external.length>6500){$('multi-error').textContent='El detalle excede el límite recomendado de URL. Divide el grupo.';$('multi-error').hidden=false;return;}
