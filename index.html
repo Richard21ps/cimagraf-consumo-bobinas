@@ -318,7 +318,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Motor de cálculo actualizado · versión 2.3 · registro Forms consolidado</p>
+      <p class="multi-muted" id="motor-version">Motor de cálculo actualizado · versión 2.5 · registro individual por OP</p>
       <h2>Varias OP y varias bobinas</h2>
       <p class="multi-muted">También sirve para varias OP con una bobina o una OP con varias bobinas. El sistema distribuye automáticamente el consumo en orden y solo habilita la siguiente bobina cuando se agota la anterior.</p>
       <p class="multi-note">Los kg iniciales se registran según el peso recibido (incluido el tuco, si corresponde). Por desconocerse su tara, los saldos y el agotamiento son teóricos, no una confirmación física. No cambies de bobina sin comprobar el material real.</p>
@@ -360,16 +360,18 @@
         <h3>Resumen por bobina</h3><div id="multi-rolls-table"></div>
         <h3>Historial de asignación OP–bobina</h3><div id="multi-trace-table"></div>
         <div class="multi-block" aria-labelledby="multi-consolidated-title">
-          <h3 id="multi-consolidated-title">4 · Registro consolidado para Microsoft Forms</h3>
-          <p class="multi-muted">Un solo registro por grupo de producción. Incluye las OP, las bobinas, los consumos asignados y los saldos después de cada movimiento, todo en una columna de detalle.</p>
-          <label for="multi-consolidated">Detalle consolidado del grupo</label>
-          <textarea id="multi-consolidated" rows="7" readonly style="width:100%;font:14px/1.5 Consolas,monospace;min-height:145px;padding:12px;border:1px solid #b9cad3;border-radius:10px" placeholder="Calcula el grupo para preparar los datos que se enviarán a Forms."></textarea>
-          <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa el identificador del grupo y pulsa «Calcular consumo y saldos».</p>
+          <h3 id="multi-consolidated-title">4 · Registrar cada OP por separado en Microsoft Forms</h3>
+          <p class="multi-muted">Cada OP tendrá su propia respuesta y fila en el Excel de Forms, con sus libros, copias, avance y consumo. El ID del grupo une las OP que comparten bobinas.</p>
+          <div id="multi-op-registration-table" class="multi-table-wrap" aria-live="polite"></div>
+          <label for="multi-consolidated">Detalle de la próxima OP que se registrará</label>
+          <textarea id="multi-consolidated" rows="6" readonly style="width:100%;font:14px/1.5 Consolas,monospace;min-height:135px;padding:12px;border:1px solid #b9cad3;border-radius:10px" placeholder="Calcula el grupo para ver el detalle de la primera OP."></textarea>
+          <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos y pulsa «Calcular consumo y saldos».</p>
           <div class="multi-footer-actions">
-            <button class="multi-button" id="multi-copy" type="button">Copiar registro consolidado</button>
-            <button class="multi-primary" id="multi-register" type="button" disabled>Registrar grupo en Forms</button>
+            <button class="multi-button" id="multi-copy" type="button">Copiar detalle de esta OP</button>
+            <button class="multi-primary" id="multi-register" type="button" disabled>Registrar siguiente OP en Forms</button>
+            <button class="multi-button" id="multi-new-group" type="button">Nuevo grupo</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">Las cinco preguntas nuevas ya están vinculadas. Al pulsar «Registrar grupo en Forms», revisa los valores prellenados, pulsa «Enviar» dentro de Microsoft Forms y espera su confirmación. Las 10 preguntas originales deben ser opcionales para registrar grupos múltiples sin datos ficticios. Forms no evita por sí solo que se repita un grupo.</p>
+          <p class="multi-note" id="multi-registration-note">Forms guarda una fila por cada envío. Debes pulsar «Enviar» y verificar la confirmación para cada OP. Después selecciona «Ya envié · Siguiente OP». Los kg y saldos corresponden a la OP registrada y no deben sumarse los saldos de distintas filas. No hay deduplicación automática en Forms.</p>
         </div>
         <div class="multi-footer-actions"><button class="multi-button" id="multi-export" type="button">Exportar detalle CSV como respaldo</button></div>
       </section>
