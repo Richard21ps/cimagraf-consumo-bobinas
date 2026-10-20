@@ -905,6 +905,26 @@ $('multi-register').addEventListener('click',()=>{
  if(!Object.values(GROUP_FORM_KEYS).every(v=>v.startsWith('r')))return;
  const answers=[result.group,result.type,result.total.toFixed(3),result.saldo.toFixed(3),result.detail];
  const url=new URL(GROUP_FORM_URL);
+ // Precarga también las preguntas originales para el resumen del grupo.
+ const legacyKeys=[
+ 'r1a6fb6883bc444629eea97caf2ece32c','rcb234788c8fb4f61873e671259549e70',
+ 'r0a6f4cb3a5fa4c618cf286bec7b0700c','r688e6186399f4801bad1b783fc160e4f',
+ 'rbed99caa92ca4a6790d27dd48e8621a6','rffe26eb7550b48bbab1495966a832eb8',
+ 'r32817bdd4c2248c4ba50f21a811d63b3','r6cb50d010ecf46b5be3bffd21deb067f',
+ 'rd7b45c9fe9dd4af3bc87e845dab0a391','rcb7ad7d17f23469ebaf7b83ae2ceb42a'];
+ const same=key=>result.sourceOps.every(op=>op[key]===result.sourceOps[0][key]);
+ const usedKg=result.usedRolls.reduce((total,b)=>total+b.initial,0);
+ const kgPerMeter=result.width*result.gsm/1000000;
+ const legacy=[
+ result.sourceOps.map(op=>op.id).join(' / '),
+ String(result.sourceOps.reduce((total,op)=>total+op.books,0)),
+ same('copies')?String(result.sourceOps[0].copies):'',
+ result.paper,String(result.gsm),String(result.width),
+ same('advance')?String(result.sourceOps[0].advance):'',
+ String(Number((usedKg/kgPerMeter).toFixed(3))),
+ String(Number((result.saldo/kgPerMeter).toFixed(3))),
+ String(Number(result.saldo.toFixed(3)))];
+ legacyKeys.forEach((key,i)=>{if(legacy[i]!=='')url.searchParams.set(key,legacy[i]);});
  Object.values(GROUP_FORM_KEYS).forEach((key,index)=>url.searchParams.set(key,answers[index]));
  const responseUrl=url.toString().replace(/\+/g,'%20');
  if(responseUrl.length>6500){
