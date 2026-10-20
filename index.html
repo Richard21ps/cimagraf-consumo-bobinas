@@ -13,6 +13,7 @@
   <meta property="og:url" content="https://richard21ps.github.io/cimagraf-consumo-bobinas/">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="CIMAGRAF | Calculadora de consumo de bobinas">
+  <link rel="stylesheet" href="multi-bobinas.css">
   <style>
     :root {
       color-scheme: light;
@@ -187,6 +188,7 @@
       <p class="intro">Completa los datos de la orden. Los resultados se calculan al instante. Después, puedes completar el registro en Microsoft Forms sin salir de esta calculadora.</p>
     </header>
 
+    <nav class="mode-picker" aria-label="Modo de cálculo"><button id="simple-mode" type="button" aria-pressed="true">Una OP / una bobina</button><button id="multi-mode" type="button" aria-pressed="false">Varias OP / varias bobinas</button></nav>
     <div class="layout">
       <section class="card form-card" aria-labelledby="datos-title">
         <h2 class="section-title" id="datos-title">Datos de la orden</h2>
@@ -314,6 +316,52 @@
         </details>
       </aside>
     </div>
+
+    <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
+      <h2>Varias OP y varias bobinas</h2>
+      <p class="multi-muted">También sirve para varias OP con una bobina o una OP con varias bobinas. El sistema distribuye automáticamente el consumo en orden y solo habilita la siguiente bobina cuando se agota la anterior.</p>
+      <p class="multi-note">Los kg iniciales se registran según el peso recibido (incluido el tuco, si corresponde). Por desconocerse su tara, los saldos y el agotamiento son teóricos, no una confirmación física. No cambies de bobina sin comprobar el material real.</p>
+      <div class="multi-block">
+        <h3>1 · Datos del material y grupo</h3>
+        <div class="multi-grid">
+          <label>Identificador del grupo<input id="multi-group" placeholder="Ej.: TURNO-001" maxlength="50"></label>
+          <label>Tipo de papel<input id="multi-paper" placeholder="Ej.: Book Cream" value="Book Cream" maxlength="50"></label>
+          <label>Gramaje (g/m²)<input type="number" id="multi-gsm" min="0" step="any" value="70"></label>
+          <label>Ancho de bobina (mm)<input type="number" id="multi-width" min="0" step="any" placeholder="Ej.: 700"></label>
+        </div>
+        <p class="multi-muted">Para una distribución conjunta, todas las bobinas deben corresponder al mismo material, gramaje y ancho. Cada OP conserva su propio avance y cantidad.</p>
+      </div>
+      <div class="multi-block">
+        <h3>2 · Órdenes de producción</h3>
+        <p class="multi-muted">Coloca las OP en el orden en que se producen. Cada una utiliza la fórmula de consumo existente.</p>
+        <div id="multi-op-list"></div>
+        <button class="multi-button" id="multi-add-op" type="button">+ Agregar OP</button>
+      </div>
+      <div class="multi-block multi-bobbins">
+        <h3>3 · Bobinas en orden de utilización</h3>
+        <p class="multi-muted">Registra cada bobina una sola vez; el sistema no duplicará su peso por OP.</p>
+        <div id="multi-roll-list"></div>
+        <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
+      </div>
+      <div class="multi-actions">
+        <button class="multi-primary" type="button" id="multi-calculate">Calcular consumo y saldos</button>
+      </div>
+      <p class="multi-alert" id="multi-error" role="alert" hidden></p>
+      <p class="multi-success" id="multi-success" role="status" hidden></p>
+      <section id="multi-results" class="multi-results" hidden>
+        <h3>Resultados del grupo</h3>
+        <div class="multi-metrics">
+          <div class="multi-metric"><span>Consumo total</span><strong id="multi-total">—</strong></div>
+          <div class="multi-metric"><span>Saldo de bobinas utilizadas</span><strong id="multi-saldo">—</strong></div>
+          <div class="multi-metric"><span>Última bobina utilizada</span><strong id="multi-active">—</strong></div>
+        </div>
+        <h3>Resumen por OP</h3><div id="multi-ops-table"></div>
+        <h3>Resumen por bobina</h3><div id="multi-rolls-table"></div>
+        <h3>Historial de asignación OP–bobina</h3><div id="multi-trace-table"></div>
+        <p class="multi-note">El registro de Forms actual solo cubre una OP y una bobina. Para no perder la trazabilidad, el cálculo múltiple NO genera respuestas en Forms. Exporta este detalle y consérvalo hasta ampliar el formulario o habilitar una integración de almacenamiento central. Este cálculo no se guarda automáticamente en Excel.</p>
+        <div class="multi-footer-actions"><button class="multi-primary" id="multi-export" type="button">Exportar historial CSV para Excel</button></div>
+      </section>
+    </section>
   </main>
 
   <div class="modal-backdrop" id="material-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -689,6 +737,7 @@
       calculate();
     })();
   </script>
+  <script src="multi-bobinas.js" defer></script>
   
 </body>
 </html>
