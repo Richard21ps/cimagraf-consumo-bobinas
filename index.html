@@ -15,6 +15,7 @@
   <meta name="twitter:title" content="CIMAGRAF | Calculadora de consumo de bobinas">
   <link rel="stylesheet" href="multi-bobinas.css?v=20261020-8333c40">
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
+<link rel="stylesheet" href="unico-v27.css?v=e9da0329">
   <style>
     :root {
       color-scheme: light;
@@ -320,15 +321,16 @@
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
       <p class="multi-muted" id="motor-version">Motor de cálculo actualizado · versión 2.5 · registro individual por OP</p>
-      <h2>Varias OP y varias bobinas</h2>
+      <h2>Consumo y devolución de bobinas por OP</h2>
       <p class="multi-muted">También sirve para varias OP con una bobina o una OP con varias bobinas. El sistema distribuye automáticamente el consumo en orden y solo habilita la siguiente bobina cuando se agota la anterior.</p>
       <p class="multi-note">Los kg iniciales se registran según el peso recibido (incluido el tuco, si corresponde). Por desconocerse su tara, los saldos y el agotamiento son teóricos, no una confirmación física. No cambies de bobina sin comprobar el material real.</p>
+      <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
         <h3>1 · Datos del material y grupo</h3>
         <div class="multi-grid">
           <label>Identificador del grupo<input id="multi-group" placeholder="Ej.: TURNO-001" maxlength="50"></label>
-          <label>Tipo de papel<input id="multi-paper" placeholder="Ej.: Book Cream" value="Book Cream" maxlength="50"></label>
-          <label>Gramaje (g/m²)<input type="number" id="multi-gsm" min="0" step="any" value="70"></label>
+          <div><label for="multi-paper">Tipo de papel</label><div class="multi-paper-picker"><select id="multi-paper"></select><button class="add-material" id="multi-add-material" type="button">+ Agregar</button></div></div>
+          <label>Gramaje (g/m²)<select id="multi-gsm"></select></label>
           <label>Ancho de bobina (mm)<input type="number" id="multi-width" min="0" step="any" placeholder="Ej.: 700"></label>
         </div>
         <p class="multi-muted">Para una distribución conjunta, todas las bobinas deben corresponder al mismo material, gramaje y ancho. Cada OP conserva su propio avance y cantidad.</p>
@@ -345,9 +347,7 @@
         <div id="multi-roll-list"></div>
         <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
       </div>
-      <div class="multi-actions">
-        <button class="multi-primary" type="button" id="multi-calculate">Calcular consumo y saldos</button>
-      </div>
+      <div class="multi-actions"><button class="multi-primary" type="button" id="multi-calculate">Calcular consumo y saldos</button></div></div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Los kg incluyen el tuco; los metros son una equivalencia teórica.</p></section><section class="result-group consumption-group"><h4 class="result-group-title">CONSUMO TOTAL DE OP</h4><div class="result-pair"><div class="result-box"><p class="result-label">Metros consumidos</p><output class="result-value" id="multi-total-meters">— m</output></div><div class="result-box"><p class="result-label">Kg consumidos</p><output class="result-value" id="multi-total-consumption">— kg</output></div></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
       <section id="multi-results" class="multi-results" hidden>
@@ -770,21 +770,27 @@ if(!root||!simple||!complex||!layout)return;
  };
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
-let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'',kg:''}], result=null;
+let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:''}], result=null;
 let nextOpIndex=0, confirmedOps=new Set(), pendingOpIndex=-1;
 const nf=(x,d=3)=>new Intl.NumberFormat('es-PE',{maximumFractionDigits:d}).format(x);
 const numeric=x=>x===''?NaN:Number(x);
 const field=(title,value,attr)=>'<label>'+title+'<input '+attr+' value="'+escapeHtml(value)+'"></label>';
 function escapeHtml(v){return String(v??'').replace(/[&"'<>]/g,c=>({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'}[c]));}
 function markDirty(){
- result=null;nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
+ result=null;
+ $('multi-delivery').innerHTML='— <span class="delivery-unit">kg</span>';
+ $('multi-delivery-meters').textContent='— m';
+ $('multi-total-meters').textContent='— m';
+ $('multi-total-consumption').textContent='— kg';
+ $('multi-delivery-status').textContent='Recalcula después de modificar los datos.';nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
  $('multi-results').hidden=true;$('multi-error').hidden=true;$('multi-success').hidden=true;
  $('multi-consolidated').value='';
  $('multi-register').disabled=true;
 }
 function redraw(){
- $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por copia (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+field('Identificador de bobina',o.id,'data-roll="'+i+'" data-field="id" placeholder="Ej.: B-001" maxlength="45"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+'</div></div>').join('');
+ rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
+ $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por pliego (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+'</div></div>').join('');
 }
 root.addEventListener('input',e=>{
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
@@ -798,7 +804,7 @@ root.addEventListener('click',e=>{
  if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();}}
 });
 $('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:'',advance:''});markDirty();redraw();});
-$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'',kg:''});markDirty();redraw();});
+$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:''});markDirty();redraw();});
 function mode(useMulti){layout.hidden=useMulti;root.hidden=!useMulti;simple.setAttribute('aria-pressed',String(!useMulti));complex.setAttribute('aria-pressed',String(useMulti));}
 simple.addEventListener('click',()=>mode(false));complex.addEventListener('click',()=>mode(true));
 function validate(){
@@ -849,6 +855,11 @@ function show(){
   result={...r,group,type,detail};$('multi-error').hidden=true;$('multi-success').hidden=false;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
+  $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
+  $('multi-delivery-meters').textContent=nf(r.saldo/(r.width*r.gsm/1e6),2)+' m';
+  $('multi-total-meters').textContent=nf(r.sums.reduce((t,x)=>t+x.metros,0),2)+' m';
+  $('multi-total-consumption').textContent=nf(r.total)+' kg';
+  $('multi-delivery-status').textContent='Devolver únicamente el saldo de la última bobina utilizada.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
   $('multi-rolls-table').innerHTML=table(['Bobina','Kg iniciales','Kg consumidos','Kg restantes','Estado'],r.loads.map(x=>[x.id,nf(x.initial),nf(x.used),nf(x.left),x.used<=EPS?'Sin utilizar':x.left<=EPS?'Agotada':'Con saldo']));
@@ -930,7 +941,7 @@ $('forms-next').addEventListener('click',()=>{
 });
 $('multi-new-group').addEventListener('click',()=>{
  if(result && !$('multi-register').disabled && !confirm('¿Deseas iniciar un grupo nuevo sin confirmar el envío actual?'))return;
- ops=[{id:'',books:'',copies:'',advance:''}];rolls=[{id:'',kg:''}];
+ ops=[{id:'',books:'',copies:'',advance:''}];rolls=[{id:'Bobina 1',kg:''}];
  $('multi-group').value='';redraw();markDirty();$('multi-op-registration-table').innerHTML='';
 });
 $('multi-register').addEventListener('click',()=>{
@@ -967,7 +978,21 @@ $('multi-export').addEventListener('click',()=>{
  r.details.forEach(d=>rows.push([group,d.seq,d.op,d.bobina,r.paper,r.gsm,r.width,d.kg.toFixed(6),d.metros.toFixed(6),d.saldo.toFixed(6)]));
  exportCsv(rows);
 });
-redraw();mode(false);
+
+// Catálogo de materiales compartido por ambos modos mediante almacenamiento local.
+const materialCatalogKey='consumo-bobina-materiales-v1';
+const materialDefaults=[{name:'Book Cream',gsm:70},{name:'Bond',gsm:90}];
+function readCatalog(){try{const p=JSON.parse(localStorage.getItem(materialCatalogKey));return Array.isArray(p)?[...p,...materialDefaults]:materialDefaults;}catch(_){return materialDefaults;}}
+function updateCatalog(){const entries=readCatalog();const paper=$('multi-paper'),gram=$('multi-gsm');const lastPaper=paper.value||'Book Cream',lastGsm=gram.value||'70';paper.replaceChildren();for(const e of entries){if(![...paper.options].some(o=>o.value.toLowerCase()===e.name.toLowerCase()))paper.add(new Option(e.name,e.name));}paper.value=[...paper.options].some(o=>o.value===lastPaper)?lastPaper:paper.options[0]?.value;updateGrams(lastGsm);}
+function updateGrams(preferred){const gram=$('multi-gsm');gram.replaceChildren();for(const e of readCatalog().filter(e=>e.name.toLowerCase()===$('multi-paper').value.toLowerCase())){if(![...gram.options].some(o=>o.value===String(e.gsm)))gram.add(new Option(e.gsm+' g/m²',String(e.gsm)));}if([...gram.options].some(o=>o.value===preferred))gram.value=preferred;markDirty();}
+$('multi-paper').addEventListener('change',()=>updateGrams());
+$('multi-gsm').addEventListener('change',markDirty);
+$('multi-add-material').addEventListener('click',()=>{$('open-material').click();});
+const sharedMaterialModal=$('material-modal');
+const materialModalObserver=new MutationObserver(()=>{if(!sharedMaterialModal.classList.contains('open'))updateCatalog();});
+materialModalObserver.observe(sharedMaterialModal,{attributes:true,attributeFilter:['class']});
+updateCatalog();
+redraw();mode(true);
 })();
 </script>
   
