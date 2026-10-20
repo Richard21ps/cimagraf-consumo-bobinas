@@ -770,12 +770,13 @@ if(!root||!simple||!complex||!layout)return;
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
 let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'',kg:''}], result=null;
+let nextOpIndex=0, confirmedOps=new Set(), pendingOpIndex=-1;
 const nf=(x,d=3)=>new Intl.NumberFormat('es-PE',{maximumFractionDigits:d}).format(x);
 const numeric=x=>x===''?NaN:Number(x);
 const field=(title,value,attr)=>'<label>'+title+'<input '+attr+' value="'+escapeHtml(value)+'"></label>';
 function escapeHtml(v){return String(v??'').replace(/[&"'<>]/g,c=>({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'}[c]));}
 function markDirty(){
- result=null;
+ result=null;nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
  $('multi-results').hidden=true;$('multi-error').hidden=true;$('multi-success').hidden=true;
  $('multi-consolidated').value='';
  $('multi-register').disabled=true;
@@ -851,9 +852,8 @@ function show(){
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
   $('multi-rolls-table').innerHTML=table(['Bobina','Kg iniciales','Kg consumidos','Kg restantes','Estado'],r.loads.map(x=>[x.id,nf(x.initial),nf(x.used),nf(x.left),x.used<=EPS?'Sin utilizar':x.left<=EPS?'Agotada':'Con saldo']));
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
-  $('multi-consolidated').value=result.detail;
-  $('multi-summary-status').textContent='Registro consolidado preparado para el grupo '+group+'. Consumo: '+nf(r.total)+' kg; saldo: '+nf(r.saldo)+' kg.';
-  $('multi-register').disabled=false;
+  nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
+  refreshOpQueue();
  }catch(err){result=null;$('multi-results').hidden=true;$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;}
 }
 function makeGroupSummary(r,group,type) {
@@ -870,80 +870,104 @@ function makeGroupSummary(r,group,type) {
   +' | OP=['+opStats+'] | Bobinas=['+rollStats+'] | Movimientos=['+movements+']';
 }
 $('multi-calculate').addEventListener('click',show);
-$('multi-copy').addEventListener('click',async()=>{
- if(!result){$('multi-error').textContent='Calcula primero el grupo.';$('multi-error').hidden=false;return;}
- const text=result.detail;
- try {await navigator.clipboard.writeText(text);$('multi-summary-status').textContent='Registro consolidado copiado.';}
- catch (_) {const area=$('multi-consolidated');area.focus();area.select();$('multi-summary-status').textContent='Selecciona y copia el texto del registro consolidado.';}
-});
-let groupFormOpen=false;
-const originalFormsInstructions=$('forms-instructions')?.textContent||'';
-$('save-record').addEventListener('click',()=>{
- groupFormOpen=false;
- $('forms-next').textContent='Ya envié · Siguiente OP';
- $('forms-instructions').textContent=originalFormsInstructions;
-});
-$('forms-back').addEventListener('click',()=>{
- groupFormOpen=false;
- $('forms-next').textContent='Ya envié · Siguiente OP';
- $('forms-instructions').textContent=originalFormsInstructions;
-});
-$('forms-next').addEventListener('click',()=>{
- if(!groupFormOpen)return;
- // Este botón es una confirmación MANUAL del operario, no una comprobación
- // del envío. No se envía ni se confirma nada automáticamente desde aquí.
- groupFormOpen=false;
- ops=[{id:'',books:'',copies:'',advance:''}];
- rolls=[{id:'',kg:''}];
- $('multi-group').value='';
- redraw();markDirty();
- $('multi-summary-status').textContent='Grupo anterior cerrado por el operario. Prepara el siguiente grupo y confirma su envío en Forms.';
- $('forms-next').textContent='Ya envié · Siguiente OP';
- $('forms-instructions').textContent=originalFormsInstructions;
-});
-$('multi-register').addEventListener('click',()=>{
- if(!result)return;
- if($('forms-modal').classList.contains('open'))return;
- if(!Object.values(GROUP_FORM_KEYS).every(v=>v.startsWith('r')))return;
- const answers=[result.group,result.type,result.total.toFixed(3),result.saldo.toFixed(3),result.detail];
- const url=new URL(GROUP_FORM_URL);
- // Precarga también las preguntas originales para el resumen del grupo.
- const legacyKeys=[
+
+function fmt(n){return String(Number(Number(n).toFixed(6)));}
+const legacyKeys=[
  'r1a6fb6883bc444629eea97caf2ece32c','rcb234788c8fb4f61873e671259549e70',
  'r0a6f4cb3a5fa4c618cf286bec7b0700c','r688e6186399f4801bad1b783fc160e4f',
  'rbed99caa92ca4a6790d27dd48e8621a6','rffe26eb7550b48bbab1495966a832eb8',
  'r32817bdd4c2248c4ba50f21a811d63b3','r6cb50d010ecf46b5be3bffd21deb067f',
  'rd7b45c9fe9dd4af3bc87e845dab0a391','rcb7ad7d17f23469ebaf7b83ae2ceb42a'];
- const same=key=>result.sourceOps.every(op=>op[key]===result.sourceOps[0][key]);
- const usedKg=result.usedRolls.reduce((total,b)=>total+b.initial,0);
- const kgPerMeter=result.width*result.gsm/1000000;
- const legacy=[
- result.sourceOps.map(op=>op.id).join(' / '),
- String(result.sourceOps.reduce((total,op)=>total+op.books,0)),
- same('copies')?String(result.sourceOps[0].copies):'',
- result.paper,String(result.gsm),String(result.width),
- same('advance')?String(result.sourceOps[0].advance):'',
- String(Number((usedKg/kgPerMeter).toFixed(3))),
- String(Number((result.saldo/kgPerMeter).toFixed(3))),
- String(Number(result.saldo.toFixed(3)))];
- legacyKeys.forEach((key,i)=>{if(legacy[i]!=='')url.searchParams.set(key,legacy[i]);});
- Object.values(GROUP_FORM_KEYS).forEach((key,index)=>url.searchParams.set(key,answers[index]));
- const responseUrl=url.toString().replace(/\+/g,'%20');
- if(responseUrl.length>6500){
-  $('multi-error').textContent='El enlace de Forms es demasiado largo para una precarga segura. Reduce el tamaño del grupo.';
-  $('multi-error').hidden=false;
-  return;
- }
- // Reutiliza la ventana actual de Forms; el operador debe enviar y verificar.
- $('forms-external').href=responseUrl;
+function perOpData(index){
+ const op=result.sourceOps[index],sum=result.sums[index];
+ const moves=result.details.filter(d=>d.op===op.id);
+ const byId=new Map(result.loads.map(r=>[r.id,r]));
+ const rollNames=moves.map(d=>d.bobina);
+ const first=byId.get(rollNames[0]);
+ const rate=result.width*result.gsm/1e6;
+ const opBalance=moves[moves.length-1].saldo;
+ const initialKg=first.initial;
+ const detail='Grupo='+result.group+' | OP='+op.id+' | Posicion='+(index+1)+'/'+result.sourceOps.length
+ +' | Libros='+op.books+' | Copias='+op.copies+' | Avance_mm='+op.advance
+ +' | Consumo_OP_kg='+fmt(sum.kg)+' | Metros_OP='+fmt(sum.metros)
+ +' | Bobinas='+moves.map(d=>d.bobina+':'+fmt(d.kg)+'kg(saldo_despues='+fmt(d.saldo)+'kg)').join('; ')
+ +' | Inicial_primera_bobina_kg='+fmt(initialKg)
+ +' | Saldo_tras_OP_kg='+fmt(opBalance)
+ +' | Papel='+result.paper+' | Gramaje='+result.gsm+' | Ancho_mm='+result.width;
+ return {op,sum,moves,first,opBalance,detail,rate,rollNames};
+}
+function refreshOpQueue(){
+ if(!result)return;
+ const rows=result.sourceOps.map((o,i)=>{
+  const d=perOpData(i),status=confirmedOps.has(i)?'Marcada enviada':i===nextOpIndex?'Pendiente de enviar':'En espera';
+  return [o.id,d.rollNames.join(', '),nf(d.sum.kg)+' kg',nf(d.opBalance)+' kg',status];
+ });
+ $('multi-op-registration-table').innerHTML=table(['OP','Bobinas utilizadas','Consumo OP','Saldo última bobina','Registro'],rows);
+ const done=nextOpIndex>=result.sourceOps.length;
+ $('multi-register').disabled=done;
+ $('multi-register').textContent=done?'Todas las OP marcadas como enviadas':'Registrar OP '+result.sourceOps[nextOpIndex].id+' en Forms';
+ $('multi-consolidated').value=done?'Todas las OP marcadas como enviadas. Puedes iniciar un grupo nuevo.':perOpData(nextOpIndex).detail;
+ $('multi-summary-status').textContent=done?
+ 'Fin del grupo: '+confirmedOps.size+' registros marcados por el operario. Verifica en Excel que existan todas las filas.':
+ 'OP '+(nextOpIndex+1)+' de '+result.sourceOps.length+': '+result.sourceOps[nextOpIndex].id+'. Revisa y envía esta OP antes de pasar a la siguiente.';
+}
+$('multi-copy').addEventListener('click',async()=>{
+ if(!result||nextOpIndex>=result.sourceOps.length)return;
+ const value=perOpData(nextOpIndex).detail;
+ try{await navigator.clipboard.writeText(value);$('multi-summary-status').textContent='Detalle de la OP copiado.';}
+ catch(_){$('multi-consolidated').focus();$('multi-consolidated').select();}
+});
+const originalFormsInstructions=$('forms-instructions').textContent;
+$('save-record').addEventListener('click',()=>{
+ pendingOpIndex=-1;
+ $('forms-next').textContent='Ya envié · Siguiente OP';
+ $('forms-instructions').textContent=originalFormsInstructions;
+});
+$('forms-back').addEventListener('click',()=>{
+ pendingOpIndex=-1;
+ $('forms-next').textContent='Ya envié · Siguiente OP';
+ $('forms-instructions').textContent=originalFormsInstructions;
+});
+$('forms-next').addEventListener('click',()=>{
+ if(pendingOpIndex<0)return;
+ // El operario confirma manualmente: el sitio no puede leer la respuesta enviada dentro del iframe de Forms.
+ confirmedOps.add(pendingOpIndex);
+ nextOpIndex=pendingOpIndex+1;
+ pendingOpIndex=-1;
+ $('forms-next').textContent='Ya envié · Siguiente OP';
+ $('forms-instructions').textContent=originalFormsInstructions;
+ refreshOpQueue();
+});
+$('multi-new-group').addEventListener('click',()=>{
+ if(result && confirmedOps.size<result.sourceOps.length && !confirm('Hay OP sin marcar como enviadas. ¿Deseas borrar el grupo de la pantalla?'))return;
+ ops=[{id:'',books:'',copies:'',advance:''}];rolls=[{id:'',kg:''}];
+ $('multi-group').value='';redraw();markDirty();
+ $('multi-summary-status').textContent='Ingresa un nuevo grupo y sus OP.';
+ $('multi-op-registration-table').innerHTML='';
+});
+$('multi-register').addEventListener('click',()=>{
+ if(!result||nextOpIndex>=result.sourceOps.length||$('forms-modal').classList.contains('open'))return;
+ const d=perOpData(nextOpIndex),op=d.op;
+ const url=new URL(GROUP_FORM_URL);
+ const answers=[
+ op.id,String(op.books),String(op.copies),result.paper,fmt(result.gsm),fmt(result.width),fmt(op.advance),
+ fmt(d.first.initial/d.rate),fmt(d.opBalance/d.rate),fmt(d.opBalance)
+ ];
+ legacyKeys.forEach((key,i)=>url.searchParams.set(key,answers[i]));
+ const grouped=[
+ result.group,result.type,fmt(d.sum.kg),fmt(d.opBalance),d.detail
+ ];
+ Object.values(GROUP_FORM_KEYS).forEach((key,i)=>url.searchParams.set(key,grouped[i]));
+ const external=url.toString().replace(/\+/g,'%20');
+ if(external.length>6500){$('multi-error').textContent='Detalle demasiado extenso para precargar en Forms.';$('multi-error').hidden=false;return;}
+ $('forms-external').href=external;
  url.searchParams.set('embed','true');
  $('forms-frame').src=url.toString().replace(/\+/g,'%20');
- $('forms-op-label').textContent='Grupo: '+result.group;
- $('forms-instructions').textContent='Registro consolidado: comprueba los 5 campos nuevos precargados y pulsa Enviar una sola vez. No rellenes las 10 preguntas originales con valores inventados. Si Forms exige esas preguntas, configúralas como opcionales desde edición.';
- $('forms-next').textContent='Ya envié · Siguiente grupo';
- groupFormOpen=true;
- $('forms-modal').classList.add('open');
- document.body.classList.add('forms-open');
+ $('forms-op-label').textContent='OP: '+op.id+' · Grupo: '+result.group+' · '+(nextOpIndex+1)+'/'+result.sourceOps.length;
+ $('forms-instructions').textContent='Esta respuesta corresponde únicamente a '+op.id+'. Verifica los 15 campos, pulsa Enviar, espera la confirmación y elige «Ya envié · Siguiente OP». Los saldos son de la bobina al terminar esta OP; el detalle indica si utilizó varias bobinas.';
+ $('forms-next').textContent='Ya envié · Siguiente OP';
+ pendingOpIndex=nextOpIndex;
+ $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
 });
 function csvField(v){const s=String(v??'');return /[;"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 function exportCsv(rows){const data='\ufeff'+rows.map(r=>r.map(csvField).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='Cimagraf_trazabilidad_OP_bobinas.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);}
