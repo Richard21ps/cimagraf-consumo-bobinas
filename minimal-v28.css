@@ -1,0 +1,12 @@
+/* Cimagraf: jerarquia discreta por seccion y OP */
+.multi-editor .multi-block:nth-child(1){background:#f4f8fc;border-color:#d7e3ec}
+.multi-editor .multi-block:nth-child(2){background:#f7f7fb;border-color:#e1deeb}
+.multi-editor .multi-block:nth-child(3){background:#f4f9f6;border-color:#d8e7de}
+.multi-editor .multi-block:nth-child(2) .multi-row:nth-child(odd){background:#f2f3f9;border-color:#dedff0}
+.multi-editor .multi-block:nth-child(2) .multi-row:nth-child(even){background:#f9f8fc;border-color:#e6e1f0}
+.multi-editor .multi-block:nth-child(3) .multi-row:nth-child(odd){background:#eff6f3;border-color:#d5e7dd}
+.multi-editor .multi-block:nth-child(3) .multi-row:nth-child(even){background:#f7faf8;border-color:#dce8e2}
+.multi-results .multi-block{background:#f5f7fa;border-color:#dce4eb}
+.multi-row{transition:background-color .15s ease}
+.multi-row-head strong{letter-spacing:.01em}
+.multi-results .multi-footer-actions .multi-primary{min-width:210px}
