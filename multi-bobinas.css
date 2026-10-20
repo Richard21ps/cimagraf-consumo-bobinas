@@ -1,0 +1,42 @@
+/* Ampliación CIMAGRAF. Estilos independientes: no alteran el modo simple. */
+.mode-picker {display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 16px}
+.mode-picker button {background:#fff;border:1px solid #bed0dc;border-radius:10px;color:#0d4669;padding:11px 17px;font-size:15px;font-weight:800;cursor:pointer}
+.mode-picker button[aria-pressed="true"] {background:#145b83;color:#fff;border-color:#145b83}
+.multi-workspace {background:#fff;border:1px solid #d8e0e6;border-radius:18px;padding:24px;box-shadow:0 12px 32px rgba(24,49,67,.08)}
+.multi-workspace[hidden],.layout[hidden] {display:none!important}
+.multi-workspace h2 {margin:0 0 8px;font-size:23px}
+.multi-workspace h3 {margin:0 0 12px;color:#0d4669;font-size:18px}
+.multi-workspace .multi-muted {color:#627381;font-size:14px;margin:3px 0 12px}
+.multi-strip {padding:12px 15px;border-radius:11px;background:#eaf4f9;margin-bottom:16px;font-size:14px}
+.multi-block {border:1px solid #d7e3ea;border-radius:13px;padding:18px;margin:16px 0;background:#fff}
+.multi-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.multi-grid label,.multi-row-fields label {font-size:13px;font-weight:750}
+.multi-grid input,.multi-grid select,.multi-row-fields input {min-height:46px;padding:9px 11px;font-size:16px}
+.multi-row {border:1px solid #d7e3ea;border-radius:11px;background:#f7fafc;padding:13px;margin:10px 0}
+.multi-row-head {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.multi-row-head strong {color:#0d4669}
+.multi-row-fields {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.multi-bobbins .multi-row-fields {grid-template-columns:1fr 1fr}
+.multi-button {border:1px solid #a8c6d7;background:#eaf4f9;color:#0d4669;border-radius:9px;min-height:42px;padding:8px 13px;font-weight:800;cursor:pointer}
+.multi-remove {background:#fff;color:#a02727;border:1px solid #e5c4c4;min-height:32px;padding:4px 10px;border-radius:8px;cursor:pointer}
+.multi-actions {display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.multi-primary {background:#145b83;border:0;color:#fff;border-radius:10px;padding:11px 17px;font-weight:800;min-height:46px;cursor:pointer}
+.multi-primary:disabled,.multi-button:disabled,.multi-remove:disabled {opacity:.45;cursor:not-allowed}
+.multi-alert {border:1px solid #e4aaa8;background:#fff0ef;color:#942d2d;padding:12px 15px;border-radius:10px;font-weight:700;white-space:pre-line}
+.multi-success {border:1px solid #b4d9c0;background:#eef8f1;color:#176b4b;padding:12px 15px;border-radius:10px}
+.multi-alert[hidden],.multi-success[hidden],.multi-results[hidden] {display:none}
+.multi-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.multi-metric {padding:14px;background:#eef6f9;border:1px solid #d4e5ed;border-radius:12px}
+.multi-metric span {display:block;font-size:13px;color:#536b7c}
+.multi-metric strong {display:block;font-size:26px;color:#0d4669;font-variant-numeric:tabular-nums}
+.multi-table-wrap {overflow-x:auto;margin:12px 0 22px}
+.multi-table {border-collapse:collapse;width:100%;min-width:690px;font-size:14px}
+.multi-table th,.multi-table td {border-bottom:1px solid #dce5e9;text-align:left;padding:9px 10px;vertical-align:top}
+.multi-table th {background:#eaf4f9;color:#0d4669;white-space:nowrap}
+.multi-table .num {text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.multi-note {padding:11px 13px;border-left:3px solid #cc8b27;background:#fff9ef;font-size:13px;color:#644d2d;margin:12px 0}
+.multi-record {border:1px solid #d7e3ea;border-radius:10px;padding:12px 14px;margin:8px 0;font-size:14px}
+.multi-record button {margin-left:10px}
+.multi-footer-actions {display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+@media(max-width:760px){.multi-workspace{padding:15px}.multi-grid{grid-template-columns:1fr 1fr}.multi-row-fields{grid-template-columns:1fr 1fr}.multi-metrics{grid-template-columns:1fr}}
+@media(max-width:460px){.mode-picker button{flex:1}.multi-grid,.multi-row-fields,.multi-bobbins .multi-row-fields{grid-template-columns:1fr}.multi-row-head{flex-wrap:wrap}}
