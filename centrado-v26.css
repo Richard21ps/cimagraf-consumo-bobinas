@@ -1,0 +1,12 @@
+.multi-workspace{margin-left:auto;margin-right:auto;max-width:1020px}
+.multi-results{max-width:990px;margin:20px auto 0}
+.multi-metrics{justify-content:center}
+.multi-metric{text-align:center}
+.multi-table{margin-left:auto;margin-right:auto}
+.multi-table th,.multi-table td,.multi-table td.num{text-align:center}
+.multi-footer-actions{justify-content:center}
+.delivery-summary{text-align:center}
+.delivery-main{align-items:center}
+.result-group{text-align:center}
+.result-box{text-align:center}
+@media(max-width:760px){.multi-table{margin-left:0}}
