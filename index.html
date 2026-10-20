@@ -320,9 +320,9 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Motor de cálculo actualizado · versión 2.5 · registro individual por OP</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 2.8</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
-      <p class="multi-muted">También sirve para varias OP con una bobina o una OP con varias bobinas. El sistema distribuye automáticamente el consumo en orden y solo habilita la siguiente bobina cuando se agota la anterior.</p>
+      <p class="multi-muted">Agrega tus OP y bobinas: los consumos se actualizan al escribir. El sistema utiliza una bobina tras agotar matemáticamente la anterior.</p>
       <p class="multi-note">Los kg iniciales se registran según el peso recibido (incluido el tuco, si corresponde). Por desconocerse su tara, los saldos y el agotamiento son teóricos, no una confirmación física. No cambies de bobina sin comprobar el material real.</p>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -337,7 +337,7 @@
       </div>
       <div class="multi-block">
         <h3>2 · Órdenes de producción</h3>
-        <p class="multi-muted">Coloca las OP en el orden en que se producen. Cada una utiliza la fórmula de consumo existente.</p>
+        <p class="multi-muted">Las nuevas OP heredan como sugerencia las copias por libro de la anterior; revisa el valor antes de enviar.</p>
         <div id="multi-op-list"></div>
         <button class="multi-button" id="multi-add-op" type="button">+ Agregar OP</button>
       </div>
@@ -347,7 +347,7 @@
         <div id="multi-roll-list"></div>
         <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
       </div>
-      <div class="multi-actions"><button class="multi-primary" type="button" id="multi-calculate">Calcular consumo y saldos</button></div></div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Los kg incluyen el tuco; los metros son una equivalencia teórica.</p></section><section class="result-group consumption-group"><h4 class="result-group-title">CONSUMO TOTAL DE OP</h4><div class="result-pair"><div class="result-box"><p class="result-label">Metros consumidos</p><output class="result-value" id="multi-total-meters">— m</output></div><div class="result-box"><p class="result-label">Kg consumidos</p><output class="result-value" id="multi-total-consumption">— kg</output></div></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
+      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Los kg incluyen el tuco; los metros son una equivalencia teórica.</p></section><section class="result-group consumption-group"><h4 class="result-group-title">CONSUMO TOTAL DE OP</h4><div class="result-pair"><div class="result-box"><p class="result-label">Metros consumidos</p><output class="result-value" id="multi-total-meters">— m</output></div><div class="result-box"><p class="result-label">Kg consumidos</p><output class="result-value" id="multi-total-consumption">— kg</output></div></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
       <section id="multi-results" class="multi-results" hidden>
@@ -361,20 +361,17 @@
         <h3>Resumen por bobina</h3><div id="multi-rolls-table"></div>
         <h3>Historial de asignación OP–bobina</h3><div id="multi-trace-table"></div>
         <div class="multi-block" aria-labelledby="multi-consolidated-title">
-          <h3 id="multi-consolidated-title">4 · Registrar cada OP por separado en Microsoft Forms</h3>
-          <p class="multi-muted">Cada OP tendrá su propia respuesta y fila en el Excel de Forms, con sus libros, copias, avance y consumo. El ID del grupo une las OP que comparten bobinas.</p>
+          <h3 id="multi-consolidated-title">4 · Registro de producción</h3>
+          <p class="multi-muted">Un solo envío para el grupo. En Excel, las OP se desglosan automáticamente en filas independientes.</p>
           <div id="multi-op-registration-table" class="multi-table-wrap" aria-live="polite"></div>
-          <label for="multi-consolidated">Detalle de la próxima OP que se registrará</label>
+          <label for="multi-consolidated">Detalle de las OP que se enviarán</label>
           <textarea id="multi-consolidated" rows="6" readonly style="width:100%;font:14px/1.5 Consolas,monospace;min-height:135px;padding:12px;border:1px solid #b9cad3;border-radius:10px" placeholder="Calcula el grupo para ver el detalle de la primera OP."></textarea>
-          <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos y pulsa «Calcular consumo y saldos».</p>
+          <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
           <div class="multi-footer-actions">
-            <button class="multi-button" id="multi-copy" type="button">Copiar detalle de esta OP</button>
-            <button class="multi-primary" id="multi-register" type="button" disabled>Registrar siguiente OP en Forms</button>
-            <button class="multi-button" id="multi-new-group" type="button">Nuevo grupo</button>
+            <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">Forms guarda una fila por cada envío. Debes pulsar «Enviar» y verificar la confirmación para cada OP. Después selecciona «Ya envié · Siguiente OP». Los kg y saldos corresponden a la OP registrada y no deben sumarse los saldos de distintas filas. No hay deduplicación automática en Forms.</p>
+          <p class="multi-note" id="multi-registration-note">La calculadora prepara una respuesta por grupo; Forms requiere pulsar Enviar y comprobar su confirmación. Después, «Ya envié · Siguiente grupo» dejará la calculadora lista para otro grupo. Las OP se separan en Excel sin duplicar los saldos.</p>
         </div>
-        <div class="multi-footer-actions"><button class="multi-button" id="multi-export" type="button">Exportar detalle CSV como respaldo</button></div>
       </section>
     </section>
   </main>
