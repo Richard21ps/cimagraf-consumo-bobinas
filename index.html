@@ -321,7 +321,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.2</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.4</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -367,7 +367,7 @@
           <div class="multi-footer-actions">
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">Número de OP contiene únicamente los números de las órdenes. El desglose automático anterior de Excel, basado en CIMAGRAF_OPS_V2, requiere una nueva fuente de datos para continuar funcionando con varias OP.</p>
+          <p class="multi-note" id="multi-registration-note">El número de OP seguirá limpio. La nueva pregunta 15 guardará automáticamente las OP y los consumos individuales para el Excel; falta vincular su identificador de Forms.</p>
         </div>
       </section>
     </section>
@@ -761,6 +761,8 @@ if(!root||!simple||!complex||!layout)return;
   total:'rf67ad5d129824657b4de24dee465a751',
   balance:'r6461e1c1fa7f44ccbf714af864bf7fe5'
  };
+ // Pregunta 15 'Datos automáticos de OP': sustituir con el ID del vínculo predefinido.
+ const GROUP_DETAIL_QUESTION_KEY = '';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
 let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:''}], result=null;
@@ -955,6 +957,19 @@ $('multi-register').addEventListener('click',()=>{
   return result.sourceOps.map(o=>o.id+':'+o[key]).join(' ; ');
  };
  const opPacket=result.sourceOps.map(o=>o.id).join(', ');
+ const opDetail=groupText(result);
+ if(result.sourceOps.some(o=>/[~^|\r\n]/.test(o.id))){
+  $('multi-error').textContent='Los números de OP no pueden contener los caracteres ~, ^ o |.';
+  $('multi-error').hidden=false;return;
+ }
+ if(opDetail.length>3500){
+  $('multi-error').textContent='Son demasiadas OP para un único envío. Divide el grupo.';
+  $('multi-error').hidden=false;return;
+ }
+ if(!/^r[a-z0-9]{32}$/.test(GROUP_DETAIL_QUESTION_KEY)){
+  $('multi-error').textContent='Antes de registrar, agrega al mismo Microsoft Forms la pregunta 15: Datos automáticos de OP (texto largo). Comparte el enlace con respuestas predefinidas para conectarla sin perder el desglose de Excel.';
+  $('multi-error').hidden=false;return;
+ }
  if(opPacket.length>3200){$('multi-error').textContent='Grupo demasiado largo para la precarga de Forms. Divide el grupo.';$('multi-error').hidden=false;return;}
  const legacy=[opPacket,String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
  perOpValue('copies'),result.paper,fmt(result.gsm),fmt(result.width),
@@ -963,6 +978,7 @@ $('multi-register').addEventListener('click',()=>{
  // El campo detalle conserva todas las OP. ~ separa columnas y nueva línea separa OP.
  const answers=[result.group,result.type,fmt(result.total),fmt(result.saldo)];
  Object.values(GROUP_FORM_KEYS).forEach((key,i)=>url.searchParams.set(key,answers[i]));
+ url.searchParams.set(GROUP_DETAIL_QUESTION_KEY,opDetail);
  const external=url.toString().replace(/\+/g,'%20');
  if(external.length>6500){$('multi-error').textContent='El detalle excede el límite recomendado de URL. Divide el grupo.';$('multi-error').hidden=false;return;}
  $('forms-external').href=external;url.searchParams.set('embed','true');
