@@ -898,75 +898,62 @@ function perOpData(index){
 }
 function refreshOpQueue(){
  if(!result)return;
- const rows=result.sourceOps.map((o,i)=>{
-  const d=perOpData(i),status=confirmedOps.has(i)?'Marcada enviada':i===nextOpIndex?'Pendiente de enviar':'En espera';
-  return [o.id,d.rollNames.join(', '),nf(d.sum.kg)+' kg',nf(d.opBalance)+' kg',status];
+ $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
+ $('multi-consolidated').value=groupText(result);
+ $('multi-summary-status').textContent='Un solo envío para '+result.sourceOps.length+' OP. En Excel cada OP se desglosará mediante fórmula.';
+ $('multi-register').disabled=false;
+ $('multi-register').textContent='Registrar grupo en Forms (un envío)';
+}
+function groupText(r){
+ const rows=r.sourceOps.map((o,i)=>{
+  const moves=r.details.filter(d=>d.op===o.id);
+  const tail=moves[moves.length-1];
+  return [o.id,o.books,o.copies,o.advance,fmt(r.sums[i].metros),fmt(r.sums[i].kg),fmt(tail.saldo),moves.map(d=>d.bobina+':'+fmt(d.kg)+'kg').join(',')].join('~');
  });
- $('multi-op-registration-table').innerHTML=table(['OP','Bobinas utilizadas','Consumo OP','Saldo última bobina','Registro'],rows);
- const done=nextOpIndex>=result.sourceOps.length;
- $('multi-register').disabled=done;
- $('multi-register').textContent=done?'Todas las OP marcadas como enviadas':'Registrar OP '+result.sourceOps[nextOpIndex].id+' en Forms';
- $('multi-consolidated').value=done?'Todas las OP marcadas como enviadas. Puedes iniciar un grupo nuevo.':perOpData(nextOpIndex).detail;
- $('multi-summary-status').textContent=done?
- 'Fin del grupo: '+confirmedOps.size+' registros marcados por el operario. Verifica en Excel que existan todas las filas.':
- 'OP '+(nextOpIndex+1)+' de '+result.sourceOps.length+': '+result.sourceOps[nextOpIndex].id+'. Revisa y envía esta OP antes de pasar a la siguiente.';
+ return 'CIMAGRAF_OPS_V1\n'+rows.join('\n');
 }
 $('multi-copy').addEventListener('click',async()=>{
- if(!result||nextOpIndex>=result.sourceOps.length)return;
- const value=perOpData(nextOpIndex).detail;
- try{await navigator.clipboard.writeText(value);$('multi-summary-status').textContent='Detalle de la OP copiado.';}
- catch(_){$('multi-consolidated').focus();$('multi-consolidated').select();}
+ if(!result)return;
+ try{await navigator.clipboard.writeText(result.detail+'\n'+groupText(result));$('multi-summary-status').textContent='Detalle copiado.';}catch(_){$('multi-consolidated').select();}
 });
 const originalFormsInstructions=$('forms-instructions').textContent;
-$('save-record').addEventListener('click',()=>{
- pendingOpIndex=-1;
- $('forms-next').textContent='Ya envié · Siguiente OP';
- $('forms-instructions').textContent=originalFormsInstructions;
-});
-$('forms-back').addEventListener('click',()=>{
- pendingOpIndex=-1;
- $('forms-next').textContent='Ya envié · Siguiente OP';
- $('forms-instructions').textContent=originalFormsInstructions;
-});
+$('save-record').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
+$('forms-back').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
 $('forms-next').addEventListener('click',()=>{
  if(pendingOpIndex<0)return;
- // El operario confirma manualmente: el sitio no puede leer la respuesta enviada dentro del iframe de Forms.
- confirmedOps.add(pendingOpIndex);
- nextOpIndex=pendingOpIndex+1;
  pendingOpIndex=-1;
- $('forms-next').textContent='Ya envié · Siguiente OP';
  $('forms-instructions').textContent=originalFormsInstructions;
- refreshOpQueue();
+ $('multi-register').disabled=true;
+ $('multi-register').textContent='Grupo marcado como enviado';
+ $('multi-summary-status').textContent='Marcado manualmente como enviado. Verifica la respuesta en el Excel de Forms.';
 });
 $('multi-new-group').addEventListener('click',()=>{
- if(result && confirmedOps.size<result.sourceOps.length && !confirm('Hay OP sin marcar como enviadas. ¿Deseas borrar el grupo de la pantalla?'))return;
+ if(result && !$('multi-register').disabled && !confirm('¿Deseas iniciar un grupo nuevo sin confirmar el envío actual?'))return;
  ops=[{id:'',books:'',copies:'',advance:''}];rolls=[{id:'',kg:''}];
- $('multi-group').value='';redraw();markDirty();
- $('multi-summary-status').textContent='Ingresa un nuevo grupo y sus OP.';
- $('multi-op-registration-table').innerHTML='';
+ $('multi-group').value='';redraw();markDirty();$('multi-op-registration-table').innerHTML='';
 });
 $('multi-register').addEventListener('click',()=>{
- if(!result||nextOpIndex>=result.sourceOps.length||$('forms-modal').classList.contains('open'))return;
- const d=perOpData(nextOpIndex),op=d.op;
+ if(!result||$('forms-modal').classList.contains('open'))return;
+ const first=result.sourceOps[0],rate=result.width*result.gsm/1e6;
+ const initialKg=result.usedRolls.reduce((sum,r)=>sum+r.initial,0);
  const url=new URL(GROUP_FORM_URL);
- const answers=[
- op.id,String(op.books),String(op.copies),result.paper,fmt(result.gsm),fmt(result.width),fmt(op.advance),
- fmt(d.first.initial/d.rate),fmt(d.opBalance/d.rate),fmt(d.opBalance)
- ];
- legacyKeys.forEach((key,i)=>url.searchParams.set(key,answers[i]));
- const grouped=[
- result.group,result.type,fmt(d.sum.kg),fmt(d.opBalance),d.detail
- ];
- Object.values(GROUP_FORM_KEYS).forEach((key,i)=>url.searchParams.set(key,grouped[i]));
+ const same=k=>result.sourceOps.every(o=>o[k]===first[k]);
+ const legacy=[result.sourceOps.map(o=>o.id).join(' / '),String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
+ same('copies')?String(first.copies):'',result.paper,fmt(result.gsm),fmt(result.width),
+ same('advance')?fmt(first.advance):'',fmt(initialKg/rate),fmt(result.saldo/rate),fmt(result.saldo)];
+ legacyKeys.forEach((key,i)=>{if(legacy[i]!=='')url.searchParams.set(key,legacy[i]);});
+ // El campo detalle conserva todas las OP. ~ separa columnas y nueva línea separa OP.
+ const allDetail=result.detail+'\n\n'+groupText(result);
+ const answers=[result.group,result.type,fmt(result.total),fmt(result.saldo),allDetail];
+ Object.values(GROUP_FORM_KEYS).forEach((key,i)=>url.searchParams.set(key,answers[i]));
  const external=url.toString().replace(/\+/g,'%20');
- if(external.length>6500){$('multi-error').textContent='Detalle demasiado extenso para precargar en Forms.';$('multi-error').hidden=false;return;}
- $('forms-external').href=external;
- url.searchParams.set('embed','true');
+ if(external.length>6500){$('multi-error').textContent='El detalle excede el límite recomendado de URL. Divide el grupo.';$('multi-error').hidden=false;return;}
+ $('forms-external').href=external;url.searchParams.set('embed','true');
  $('forms-frame').src=url.toString().replace(/\+/g,'%20');
- $('forms-op-label').textContent='OP: '+op.id+' · Grupo: '+result.group+' · '+(nextOpIndex+1)+'/'+result.sourceOps.length;
- $('forms-instructions').textContent='Esta respuesta corresponde únicamente a '+op.id+'. Verifica los 15 campos, pulsa Enviar, espera la confirmación y elige «Ya envié · Siguiente OP». Los saldos son de la bobina al terminar esta OP; el detalle indica si utilizó varias bobinas.';
- $('forms-next').textContent='Ya envié · Siguiente OP';
- pendingOpIndex=nextOpIndex;
+ $('forms-op-label').textContent='Grupo: '+result.group+' · '+result.sourceOps.length+' OP';
+ $('forms-instructions').textContent='Un solo envío por grupo. Verifica el detalle de cada OP y pulsa Enviar una vez. Después, confirma manualmente con «Ya envié».';
+ $('forms-next').textContent='Ya envié · Siguiente grupo';
+ pendingOpIndex=0;
  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
 });
 function csvField(v){const s=String(v??'');return /[;"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
