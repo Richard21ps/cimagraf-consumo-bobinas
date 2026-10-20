@@ -792,16 +792,16 @@ function redraw(){
 root.addEventListener('input',e=>{
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
  if(type){const idx=Number(t.dataset[type]); (type==='op'?ops:rolls)[idx][t.dataset.field]=t.value;}
- markDirty();
+ markDirty();scheduleAuto();
 });
-root.addEventListener('change',markDirty);
+root.addEventListener('change',()=>{markDirty();scheduleAuto();});
 root.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const remove=b.dataset.remove;
- if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();}}
+ if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
 });
-$('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:'',advance:''});markDirty();redraw();});
-$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:''});markDirty();redraw();});
+$('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:ops.at(-1)?.copies||'',advance:''});markDirty();redraw();scheduleAuto();});
+$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:''});markDirty();redraw();scheduleAuto();});
 function mode(useMulti){layout.hidden=useMulti;root.hidden=!useMulti;simple.setAttribute('aria-pressed',String(!useMulti));complex.setAttribute('aria-pressed',String(useMulti));}
 simple.addEventListener('click',()=>mode(false));complex.addEventListener('click',()=>mode(true));
 function validate(){
@@ -856,7 +856,7 @@ function show(){
   $('multi-delivery-meters').textContent=nf(r.saldo/(r.width*r.gsm/1e6),2)+' m';
   $('multi-total-meters').textContent=nf(r.sums.reduce((t,x)=>t+x.metros,0),2)+' m';
   $('multi-total-consumption').textContent=nf(r.total)+' kg';
-  $('multi-delivery-status').textContent='Devolver únicamente el saldo de la última bobina utilizada.';
+  $('multi-delivery-status').textContent='Saldo estimado de la última bobina utilizada.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
   $('multi-rolls-table').innerHTML=table(['Bobina','Kg iniciales','Kg consumidos','Kg restantes','Estado'],r.loads.map(x=>[x.id,nf(x.initial),nf(x.used),nf(x.left),x.used<=EPS?'Sin utilizar':x.left<=EPS?'Agotada':'Con saldo']));
@@ -878,7 +878,16 @@ function makeGroupSummary(r,group,type) {
   +' | Total_consumido_kg='+num(r.total)+' | Saldo_final_kg='+num(r.saldo)
   +' | OP=['+opStats+'] | Bobinas=['+rollStats+'] | Movimientos=['+movements+']';
 }
-$('multi-calculate').addEventListener('click',show);
+let autoQueued=false;
+function scheduleAuto(){
+ if(autoQueued)return;autoQueued=true;
+ queueMicrotask(()=>{autoQueued=false;
+  const ready=$('multi-group').value.trim() && $('multi-width').value &&
+   $('multi-gsm').value && ops.every(o=>o.id.trim()&&o.books&&o.copies&&o.advance) &&
+   rolls.every(r=>r.kg);
+  if(ready)show();
+ });
+}
 
 function fmt(n){return String(Number(Number(n).toFixed(6)));}
 const legacyKeys=[
@@ -911,7 +920,7 @@ function refreshOpQueue(){
  $('multi-consolidated').value=groupText(result);
  $('multi-summary-status').textContent='Un solo envío para '+result.sourceOps.length+' OP. En Excel cada OP se desglosará mediante fórmula.';
  $('multi-register').disabled=false;
- $('multi-register').textContent='Registrar grupo en Forms (un envío)';
+ $('multi-register').textContent='Enviar a Forms';
 }
 function groupText(r){
  const rows=r.sourceOps.map((o,i)=>{
@@ -921,10 +930,6 @@ function groupText(r){
  });
  return 'CIMAGRAF_OPS_V1\n'+rows.join('\n');
 }
-$('multi-copy').addEventListener('click',async()=>{
- if(!result)return;
- try{await navigator.clipboard.writeText(result.detail+'\n'+groupText(result));$('multi-summary-status').textContent='Detalle copiado.';}catch(_){$('multi-consolidated').select();}
-});
 const originalFormsInstructions=$('forms-instructions').textContent;
 $('save-record').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
 $('forms-back').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
@@ -933,16 +938,12 @@ $('forms-next').addEventListener('click',()=>{
  pendingOpIndex=-1;
  $('forms-instructions').textContent=originalFormsInstructions;
  $('multi-register').disabled=true;
- $('multi-register').textContent='Grupo marcado como enviado';
+ $('multi-register').textContent='Grupo enviado';
  $('multi-summary-status').textContent='Marcado manualmente como enviado. Verifica la respuesta en el Excel de Forms.';
 });
-$('multi-new-group').addEventListener('click',()=>{
- if(result && !$('multi-register').disabled && !confirm('¿Deseas iniciar un grupo nuevo sin confirmar el envío actual?'))return;
- ops=[{id:'',books:'',copies:'',advance:''}];rolls=[{id:'Bobina 1',kg:''}];
- $('multi-group').value='';redraw();markDirty();$('multi-op-registration-table').innerHTML='';
-});
 $('multi-register').addEventListener('click',()=>{
- if(!result||$('forms-modal').classList.contains('open'))return;
+ if(!result){show();if(!result)return;}
+ if($('forms-modal').classList.contains('open'))return;
  const first=result.sourceOps[0],rate=result.width*result.gsm/1e6;
  const initialKg=result.usedRolls.reduce((sum,r)=>sum+r.initial,0);
  const url=new URL(GROUP_FORM_URL);
@@ -965,31 +966,20 @@ $('multi-register').addEventListener('click',()=>{
  pendingOpIndex=0;
  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
 });
-function csvField(v){const s=String(v??'');return /[;"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
-function exportCsv(rows){const data='\ufeff'+rows.map(r=>r.map(csvField).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='Cimagraf_trazabilidad_OP_bobinas.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);}
-$('multi-export').addEventListener('click',()=>{
- if(!result){$('multi-error').textContent='Primero calcula la distribución actual antes de exportar.';$('multi-error').hidden=false;return;}
- const r=result;
- const rows=[['Grupo','Secuencia','OP','Bobina','Papel','Gramaje g/m²','Ancho mm','Kg consumidos','Metros consumidos','Saldo bobina kg']];
- const group=$('multi-group').value.trim()||'GRUPO-SIN-ID';
- r.details.forEach(d=>rows.push([group,d.seq,d.op,d.bobina,r.paper,r.gsm,r.width,d.kg.toFixed(6),d.metros.toFixed(6),d.saldo.toFixed(6)]));
- exportCsv(rows);
-});
-
 // Catálogo de materiales compartido por ambos modos mediante almacenamiento local.
 const materialCatalogKey='consumo-bobina-materiales-v1';
 const materialDefaults=[{name:'Book Cream',gsm:70},{name:'Bond',gsm:90}];
 function readCatalog(){try{const p=JSON.parse(localStorage.getItem(materialCatalogKey));return Array.isArray(p)?[...p,...materialDefaults]:materialDefaults;}catch(_){return materialDefaults;}}
 function updateCatalog(){const entries=readCatalog();const paper=$('multi-paper'),gram=$('multi-gsm');const lastPaper=paper.value||'Book Cream',lastGsm=gram.value||'70';paper.replaceChildren();for(const e of entries){if(![...paper.options].some(o=>o.value.toLowerCase()===e.name.toLowerCase()))paper.add(new Option(e.name,e.name));}paper.value=[...paper.options].some(o=>o.value===lastPaper)?lastPaper:paper.options[0]?.value;updateGrams(lastGsm);}
-function updateGrams(preferred){const gram=$('multi-gsm');gram.replaceChildren();for(const e of readCatalog().filter(e=>e.name.toLowerCase()===$('multi-paper').value.toLowerCase())){if(![...gram.options].some(o=>o.value===String(e.gsm)))gram.add(new Option(e.gsm+' g/m²',String(e.gsm)));}if([...gram.options].some(o=>o.value===preferred))gram.value=preferred;markDirty();}
-$('multi-paper').addEventListener('change',()=>updateGrams());
-$('multi-gsm').addEventListener('change',markDirty);
+function updateGrams(preferred){const gram=$('multi-gsm');gram.replaceChildren();for(const e of readCatalog().filter(e=>e.name.toLowerCase()===$('multi-paper').value.toLowerCase())){if(![...gram.options].some(o=>o.value===String(e.gsm)))gram.add(new Option(e.gsm+' g/m²',String(e.gsm)));}if([...gram.options].some(o=>o.value===preferred))gram.value=preferred;markDirty();scheduleAuto();}
+$('multi-paper').addEventListener('change',()=>{updateGrams();scheduleAuto();});
+$('multi-gsm').addEventListener('change',()=>{markDirty();scheduleAuto();});
 $('multi-add-material').addEventListener('click',()=>{$('open-material').click();});
 const sharedMaterialModal=$('material-modal');
 const materialModalObserver=new MutationObserver(()=>{if(!sharedMaterialModal.classList.contains('open'))updateCatalog();});
 materialModalObserver.observe(sharedMaterialModal,{attributes:true,attributeFilter:['class']});
 updateCatalog();
-redraw();mode(true);
+redraw();mode(true);scheduleAuto();
 })();
 </script>
   
