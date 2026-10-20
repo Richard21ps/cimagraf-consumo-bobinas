@@ -56,7 +56,7 @@ function validate(){
    // Pasamos a otra bobina únicamente cuando el saldo es cero (tolerancia de cálculo).
    if(r.left<=tol){r.left=0;ri++;}
   }
-  sums.push({op:o.id,kg:demand,metros});
+  sums.push({op:o.id,kg:demand,metros:meters});
   consumedTotal+=demand;
  }
  const usedRolls=loads.filter(r=>r.used>tol);
