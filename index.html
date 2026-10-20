@@ -321,7 +321,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.1</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.2</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -367,7 +367,7 @@
           <div class="multi-footer-actions">
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">Formulario de 14 preguntas: un envío por grupo. Número de OP llevará un bloque compacto para que Excel separe automáticamente las órdenes. Comprueba la precarga antes de enviar.</p>
+          <p class="multi-note" id="multi-registration-note">Número de OP contiene únicamente los números de las órdenes. El desglose automático anterior de Excel, basado en CIMAGRAF_OPS_V2, requiere una nueva fuente de datos para continuar funcionando con varias OP.</p>
         </div>
       </section>
     </section>
@@ -954,7 +954,7 @@ $('multi-register').addEventListener('click',()=>{
   if(result.sourceOps.every(o=>o[key]===first[key]))return String(first[key]);
   return result.sourceOps.map(o=>o.id+':'+o[key]).join(' ; ');
  };
- const opPacket=result.sourceOps.map(o=>o.id).join(', ')+' || '+groupText(result);
+ const opPacket=result.sourceOps.map(o=>o.id).join(', ');
  if(opPacket.length>3200){$('multi-error').textContent='Grupo demasiado largo para la precarga de Forms. Divide el grupo.';$('multi-error').hidden=false;return;}
  const legacy=[opPacket,String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
  perOpValue('copies'),result.paper,fmt(result.gsm),fmt(result.width),
