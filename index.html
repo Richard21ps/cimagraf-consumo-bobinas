@@ -1,3 +1,4 @@
+Warning: fs was declared with const; use let for reassignable variables.
 <!doctype html>
 <html lang="es">
 <head>
@@ -762,7 +763,7 @@ if(!root||!simple||!complex||!layout)return;
   balance:'r6461e1c1fa7f44ccbf714af864bf7fe5'
  };
  // Pregunta 15 'Datos automáticos de OP': sustituir con el ID del vínculo predefinido.
- const GROUP_DETAIL_QUESTION_KEY = '';
+ const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
 let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:''}], result=null;
@@ -805,8 +806,8 @@ function validate(){
  const width=numeric($('multi-width').value),gsm=numeric($('multi-gsm').value),paper=$('multi-paper').value.trim();
  if(!paper||!Number.isFinite(width)||width<=0||!Number.isFinite(gsm)||gsm<=0)throw Error('Revisa el material, el ancho y el gramaje. Todos deben ser válidos y mayores que cero.');
  const rollIds=new Set(),opIds=new Set();
- for(const r of rolls){r.id=r.id.trim();const kg=numeric(r.kg);if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa el identificador y los kg iniciales de todas las bobinas.');if(rollIds.has(r.id.toLocaleLowerCase()))throw Error('El identificador de cada bobina debe ser único.');rollIds.add(r.id.toLocaleLowerCase());}
- for(const o of ops){o.id=o.id.trim();const b=numeric(o.books),c=numeric(o.copies),a=numeric(o.advance);if(!o.id||!Number.isInteger(b)||b<=0||!Number.isInteger(c)||c<=0||!Number.isFinite(a)||a<=0)throw Error('Completa las OP con cantidades enteras y avance positivo.');if(opIds.has(o.id.toLocaleLowerCase()))throw Error('No dupliques una misma OP: registra su producción total en una fila.');opIds.add(o.id.toLocaleLowerCase());}
+ for(const r of rolls){r.id=r.id.trim();const kg=numeric(r.kg);if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa el identificador y los kg iniciales de todas las bobinas.');if(/[~^|,:\r\n]/.test(r.id))throw Error('Los identificadores de bobina no pueden contener coma, dos puntos, ~, ^, | ni saltos de línea.');if(rollIds.has(r.id.toLocaleLowerCase()))throw Error('El identificador de cada bobina debe ser único.');rollIds.add(r.id.toLocaleLowerCase());}
+ for(const o of ops){o.id=o.id.trim();const b=numeric(o.books),c=numeric(o.copies),a=numeric(o.advance);if(!o.id||!Number.isInteger(b)||b<=0||!Number.isInteger(c)||c<=0||!Number.isFinite(a)||a<=0)throw Error('Completa las OP con cantidades enteras y avance positivo.');if(/[~^|,\r\n]/.test(o.id))throw Error('Los números de OP no pueden contener coma, ~, ^, | ni saltos de línea.');if(opIds.has(o.id.toLocaleLowerCase()))throw Error('No dupliques una misma OP: registra su producción total en una fila.');opIds.add(o.id.toLocaleLowerCase());}
  const rate=width*gsm/1000000;
  const loads=rolls.map(r=>({id:r.id,initial:numeric(r.kg),left:numeric(r.kg),used:0}));
  const details=[],sums=[],tol=1e-9;
@@ -916,10 +917,11 @@ function refreshOpQueue(){
  $('multi-register').textContent='Enviar a Forms';
 }
 function groupText(r){
+ const inventory=r.usedRolls.map(b=>b.id+':'+fmt(b.initial)+':'+fmt(b.left)).join(',');
  const rows=r.sourceOps.map((o,i)=>{
   const moves=r.details.filter(d=>d.op===o.id);
   const tail=moves[moves.length-1];
-  return [o.id,o.books,o.copies,o.advance,fmt(r.sums[i].metros),fmt(r.sums[i].kg),fmt(tail.saldo),moves.map(d=>d.bobina+':'+fmt(d.kg)+'kg').join(',')].join('~');
+  return [o.id,o.books,o.copies,o.advance,fmt(r.sums[i].metros),fmt(r.sums[i].kg),fmt(tail.saldo),moves.map(d=>d.bobina+':'+fmt(d.kg)+'kg').join(','),inventory].join('~');
  });
  return 'CIMAGRAF_OPS_V2||'+rows.join('^');
 }
@@ -939,6 +941,11 @@ function resetMultiAfterConfirmation(){
  $('multi-summary-status').textContent='Calculadora lista para el siguiente grupo.';
  $('multi-delivery-status').textContent='Ingresa los datos del nuevo grupo.';
  $('multi-register').textContent='Enviar a Forms';
+ $('forms-modal').classList.remove('open');
+ document.body.classList.remove('forms-open');
+ $('forms-frame').src='about:blank';
+ $('forms-external').removeAttribute('href');
+ pendingOpIndex=-1;nextOpIndex=0;confirmedOps.clear();
  $('multi-group').focus();
 }
 $('forms-next').addEventListener('click',()=>{
@@ -984,7 +991,7 @@ $('multi-register').addEventListener('click',()=>{
  $('forms-external').href=external;url.searchParams.set('embed','true');
  $('forms-frame').src=url.toString().replace(/\+/g,'%20');
  $('forms-op-label').textContent='Grupo: '+result.group+' · '+result.sourceOps.length+' OP';
- $('forms-instructions').textContent='Revisa los 14 campos precargados. Copias por libro y Avance por pliego muestran cada OP por separado si difieren. Pulsa Enviar una sola vez y espera la confirmación.';
+ $('forms-instructions').textContent='Revisa los datos precargados. «Datos automáticos de OP» también debe aparecer completo; no lo edites. Pulsa Enviar una sola vez y espera la confirmación de Microsoft Forms.';
  $('forms-next').textContent='Ya envié · Siguiente grupo';
  pendingOpIndex=0;
  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
