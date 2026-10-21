@@ -322,7 +322,7 @@ Warning: fs was declared with const; use let for reassignable variables.
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.4</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.5</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -331,9 +331,8 @@ Warning: fs was declared with const; use let for reassignable variables.
           <label>Identificador del grupo<input id="multi-group" placeholder="Ej.: TURNO-001" maxlength="50"></label>
           <div><label for="multi-paper">Tipo de papel</label><div class="multi-paper-picker"><select id="multi-paper"></select><button class="add-material" id="multi-add-material" type="button">+ Agregar</button></div></div>
           <label>Gramaje (g/m²)<select id="multi-gsm"></select></label>
-          <label>Ancho de bobina (mm)<input type="number" id="multi-width" min="0" step="any" placeholder="Ej.: 700"></label>
         </div>
-        <p class="multi-muted">Para una distribución conjunta, todas las bobinas deben corresponder al mismo material, gramaje y ancho. Cada OP conserva su propio avance y cantidad.</p>
+        <p class="multi-muted">Cada bobina puede tener un ancho distinto. Regístralo junto al peso inicial de cada bobina; el papel y gramaje son comunes al grupo.</p>
       </div>
       <div class="multi-block">
         <h3>2 · Órdenes de producción</h3>
@@ -766,7 +765,7 @@ if(!root||!simple||!complex||!layout)return;
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
-let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:''}], result=null;
+let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:'',width:''}], result=null;
 let nextOpIndex=0, confirmedOps=new Set(), pendingOpIndex=-1;
 const nf=(x,d=3)=>new Intl.NumberFormat('es-PE',{maximumFractionDigits:d}).format(x);
 const numeric=x=>x===''?NaN:Number(x);
@@ -785,7 +784,7 @@ function markDirty(){
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por pliego (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+'</div></div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+'</div></div>').join('');
 }
 root.addEventListener('input',e=>{
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
@@ -799,43 +798,63 @@ root.addEventListener('click',e=>{
  if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
 });
 $('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:'',advance:''});markDirty();redraw();scheduleAuto();});
-$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:''});markDirty();redraw();scheduleAuto();});
+$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:'',width:''});markDirty();redraw();scheduleAuto();});
 function mode(useMulti){layout.hidden=useMulti;root.hidden=!useMulti;simple.setAttribute('aria-pressed',String(!useMulti));complex.setAttribute('aria-pressed',String(useMulti));}
 simple.addEventListener('click',()=>mode(false));complex.addEventListener('click',()=>mode(true));
 function validate(){
- const width=numeric($('multi-width').value),gsm=numeric($('multi-gsm').value),paper=$('multi-paper').value.trim();
- if(!paper||!Number.isFinite(width)||width<=0||!Number.isFinite(gsm)||gsm<=0)throw Error('Revisa el material, el ancho y el gramaje. Todos deben ser válidos y mayores que cero.');
+ const gsm=numeric($('multi-gsm').value),paper=$('multi-paper').value.trim();
+ if(!paper||!Number.isFinite(gsm)||gsm<=0)throw Error('Selecciona un papel y gramaje válidos.');
  const rollIds=new Set(),opIds=new Set();
- for(const r of rolls){r.id=r.id.trim();const kg=numeric(r.kg);if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa el identificador y los kg iniciales de todas las bobinas.');if(/[~^|,:\r\n]/.test(r.id))throw Error('Los identificadores de bobina no pueden contener coma, dos puntos, ~, ^, | ni saltos de línea.');if(rollIds.has(r.id.toLocaleLowerCase()))throw Error('El identificador de cada bobina debe ser único.');rollIds.add(r.id.toLocaleLowerCase());}
- for(const o of ops){o.id=o.id.trim();const b=numeric(o.books),c=numeric(o.copies),a=numeric(o.advance);if(!o.id||!Number.isInteger(b)||b<=0||!Number.isInteger(c)||c<=0||!Number.isFinite(a)||a<=0)throw Error('Completa las OP con cantidades enteras y avance positivo.');if(/[~^|,\r\n]/.test(o.id))throw Error('Los números de OP no pueden contener coma, ~, ^, | ni saltos de línea.');if(opIds.has(o.id.toLocaleLowerCase()))throw Error('No dupliques una misma OP: registra su producción total en una fila.');opIds.add(o.id.toLocaleLowerCase());}
- const rate=width*gsm/1000000;
- const loads=rolls.map(r=>({id:r.id,initial:numeric(r.kg),left:numeric(r.kg),used:0}));
+ for(const r of rolls){
+  r.id=r.id.trim();
+  const kg=numeric(r.kg),width=numeric(r.width);
+  if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa los kg iniciales de todas las bobinas.');
+  if(!Number.isFinite(width)||width<=0)throw Error('Indica un ancho en mm válido para '+r.id+'.');
+  if(/[~^|,:\r\n]/.test(r.id))throw Error('Los identificadores de bobina no pueden contener separadores especiales.');
+  if(rollIds.has(r.id.toLocaleLowerCase()))throw Error('Cada bobina debe tener un identificador único.');
+  rollIds.add(r.id.toLocaleLowerCase());
+ }
+ for(const o of ops){
+  o.id=o.id.trim();
+  const b=numeric(o.books),c=numeric(o.copies),a=numeric(o.advance);
+  if(!o.id||!Number.isInteger(b)||b<=0||!Number.isInteger(c)||c<=0||!Number.isFinite(a)||a<=0)throw Error('Completa las OP con libros, copias y avance válidos.');
+  if(/[~^|,\r\n]/.test(o.id))throw Error('El número de OP no puede contener separadores especiales.');
+  if(opIds.has(o.id.toLocaleLowerCase()))throw Error('No dupliques una misma OP.');
+  opIds.add(o.id.toLocaleLowerCase());
+ }
+ const loads=rolls.map(r=>{
+  const width=numeric(r.width),initial=numeric(r.kg);
+  return {id:r.id,width,rate:width*gsm/1000000,initial,left:initial,used:0,usedMeters:0};
+ });
  const details=[],sums=[],tol=1e-9;
  let ri=0,consumedTotal=0;
  for(const o of ops){
-  // Misma fórmula que el modo sencillo: metros=libros*copias*avance/1000; kg=metros*ancho*gramaje/1e6.
   const meters=numeric(o.books)*numeric(o.copies)*numeric(o.advance)/1000;
-  const demand=meters*rate;
-  if(!Number.isFinite(demand)||demand<=0)throw Error('Los datos de '+o.id+' producen un consumo no válido.');
-  let pending=demand;let guard=0;
-  while(pending>tol){
-   if(++guard>loads.length+2)throw Error('No se pudo distribuir el consumo de '+o.id+'.');
-   const r=loads[ri];if(!r)throw Error('Material insuficiente: la OP '+o.id+' necesita '+nf(pending)+' kg adicionales. Agrega una bobina.');
-   const used=Math.min(r.left,pending);
-   if(used<=tol){r.left=0;ri++;continue;}
-   r.used+=used;r.left=Math.max(0,r.initial-r.used);
-   pending=Math.max(0,pending-used);
-   details.push({op:o.id,bobina:r.id,kg:used,metros:used/rate,saldo:r.left,seq:details.length+1});
-   // Pasamos a otra bobina únicamente cuando el saldo es cero (tolerancia de cálculo).
+  if(!Number.isFinite(meters)||meters<=0)throw Error('Metraje no válido para '+o.id+'.');
+  let pendingMeters=meters,opKg=0,guard=0;
+  while(pendingMeters>tol){
+   if(++guard>loads.length+2)throw Error('No se pudo asignar el consumo de '+o.id+'.');
+   const r=loads[ri];
+   if(!r)throw Error('Material insuficiente: a la OP '+o.id+' le faltan '+nf(pendingMeters,2)+' metros. Agrega otra bobina.');
+   const availableMeters=r.left/r.rate;
+   const takenMeters=Math.min(availableMeters,pendingMeters);
+   if(takenMeters<=tol){r.left=0;ri++;continue;}
+   const takenKg=takenMeters*r.rate;
+   r.used+=takenKg;r.usedMeters+=takenMeters;
+   r.left=Math.max(0,r.initial-r.used);
+   pendingMeters=Math.max(0,pendingMeters-takenMeters);
+   opKg+=takenKg;
+   details.push({op:o.id,bobina:r.id,ancho:r.width,kg:takenKg,metros:takenMeters,saldo:r.left,seq:details.length+1});
    if(r.left<=tol){r.left=0;ri++;}
   }
-  sums.push({op:o.id,kg:demand,metros:meters});
-  consumedTotal+=demand;
+  sums.push({op:o.id,kg:opKg,metros:meters});
+  consumedTotal+=opKg;
  }
  const usedRolls=loads.filter(r=>r.used>tol);
  const saldo=usedRolls.reduce((a,r)=>a+r.left,0);
- return {paper,gsm,width,details,sums,loads,usedRolls,total:consumedTotal,saldo,
-     sourceOps:ops.map(o=>({id:o.id,books:Number(o.books),copies:Number(o.copies),advance:Number(o.advance)}))};
+ const saldoMetros=usedRolls.reduce((a,r)=>a+r.left/r.rate,0);
+ return {paper,gsm,details,sums,loads,usedRolls,total:consumedTotal,saldo,saldoMetros,
+   sourceOps:ops.map(o=>({id:o.id,books:Number(o.books),copies:Number(o.copies),advance:Number(o.advance)}))};
 }
 function table(headers,rows){return '<div class="multi-table-wrap"><table class="multi-table"><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map((cell,i)=>'<td'+(i?' class="num"':'')+'>'+escapeHtml(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 function show(){
@@ -848,14 +867,14 @@ function show(){
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
   $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
-  $('multi-delivery-meters').textContent=nf(r.saldo/(r.width*r.gsm/1e6),2)+' m';
+  $('multi-delivery-meters').textContent=nf(r.saldoMetros,2)+' m';
   $('multi-total-meters').textContent=nf(r.sums.reduce((t,x)=>t+x.metros,0),2)+' m';
   $('multi-total-consumption').textContent=nf(r.total)+' kg';
   $('multi-delivery-status').textContent='Saldo estimado de la última bobina utilizada.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
-  $('multi-rolls-table').innerHTML=table(['Bobina','Kg iniciales','Kg consumidos','Kg restantes','Estado'],r.loads.map(x=>[x.id,nf(x.initial),nf(x.used),nf(x.left),x.used<=EPS?'Sin utilizar':x.left<=EPS?'Agotada':'Con saldo']));
-  $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
+  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Kg consumidos','Kg restantes','Estado'],r.loads.map(x=>[x.id,nf(x.width,2),nf(x.initial),nf(x.used),nf(x.left),x.used<=EPS?'Sin utilizar':x.left<=EPS?'Agotada':'Con saldo']));
+  $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho,2),nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
  }catch(err){result=null;$('multi-results').hidden=true;$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;}
@@ -867,9 +886,9 @@ function makeGroupSummary(r,group,type) {
   const s=r.sums.find(x=>x.op===o.id);
   return o.id+'(libros='+o.books+',copias='+o.copies+',avance_mm='+o.advance+',consumo_kg='+num(s.kg)+')';
  }).join(' ; ');
- const rollStats=r.loads.map(b=>b.id+'(inicial_kg='+num(b.initial)+',consumido_kg='+num(b.used)+',saldo_kg='+num(b.left)+')').join(' ; ');
+ const rollStats=r.loads.map(b=>b.id+'(ancho_mm='+num(b.width)+',inicial_kg='+num(b.initial)+',consumido_kg='+num(b.used)+',saldo_kg='+num(b.left)+')').join(' ; ');
  const movements=r.details.map(d=>d.seq+':'+d.op+'>'+d.bobina+'='+num(d.kg)+'kg(saldo='+num(d.saldo)+'kg)').join(' ; ');
- return 'Grupo='+group+' | Tipo='+type+' | Papel='+r.paper+' | Gramaje_gm2='+r.gsm+' | Ancho_mm='+r.width
+ return 'Grupo='+group+' | Tipo='+type+' | Papel='+r.paper+' | Gramaje_gm2='+r.gsm+' | Anchos_mm='+r.loads.map(b=>b.id+':'+b.width).join('; ')
   +' | Total_consumido_kg='+num(r.total)+' | Saldo_final_kg='+num(r.saldo)
   +' | OP=['+opStats+'] | Bobinas=['+rollStats+'] | Movimientos=['+movements+']';
 }
@@ -877,9 +896,9 @@ let autoQueued=false;
 function scheduleAuto(){
  if(autoQueued)return;autoQueued=true;
  queueMicrotask(()=>{autoQueued=false;
-  const ready=$('multi-group').value.trim() && $('multi-width').value &&
+  const ready=$('multi-group').value.trim() &&
    $('multi-gsm').value && ops.every(o=>o.id.trim()&&o.books&&o.copies&&o.advance) &&
-   rolls.every(r=>r.kg);
+   rolls.every(r=>r.kg&&r.width);
   if(ready)show();
  });
 }
@@ -897,7 +916,7 @@ function perOpData(index){
  const byId=new Map(result.loads.map(r=>[r.id,r]));
  const rollNames=moves.map(d=>d.bobina);
  const first=byId.get(rollNames[0]);
- const rate=result.width*result.gsm/1e6;
+ const rate=first.rate;
  const opBalance=moves[moves.length-1].saldo;
  const initialKg=first.initial;
  const detail='Grupo='+result.group+' | OP='+op.id+' | Posicion='+(index+1)+'/'+result.sourceOps.length
@@ -906,7 +925,7 @@ function perOpData(index){
  +' | Bobinas='+moves.map(d=>d.bobina+':'+fmt(d.kg)+'kg(saldo_despues='+fmt(d.saldo)+'kg)').join('; ')
  +' | Inicial_primera_bobina_kg='+fmt(initialKg)
  +' | Saldo_tras_OP_kg='+fmt(opBalance)
- +' | Papel='+result.paper+' | Gramaje='+result.gsm+' | Ancho_mm='+result.width;
+ +' | Papel='+result.paper+' | Gramaje='+result.gsm+' | Ancho_mm='+first.width;
  return {op,sum,moves,first,opBalance,detail,rate,rollNames};
 }
 function refreshOpQueue(){
@@ -930,9 +949,8 @@ $('save-record').addEventListener('click',()=>{$('forms-instructions').textConte
 $('forms-back').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
 function resetMultiAfterConfirmation(){
  ops=[{id:'',books:'',copies:'',advance:''}];
- rolls=[{id:'Bobina 1',kg:''}];
+ rolls=[{id:'Bobina 1',kg:'',width:''}];
  $('multi-group').value='';
- $('multi-width').value='';
  $('multi-paper').selectedIndex=0;
  updateGrams('');
  redraw();
@@ -956,8 +974,11 @@ $('forms-next').addEventListener('click',()=>{
 $('multi-register').addEventListener('click',()=>{
  if(!result){show();if(!result)return;}
  if($('forms-modal').classList.contains('open'))return;
- const first=result.sourceOps[0],rate=result.width*result.gsm/1e6;
- const initialKg=result.usedRolls.reduce((sum,r)=>sum+r.initial,0);
+ const first=result.sourceOps[0];
+ const initialMeters=result.usedRolls.reduce((sum,r)=>sum+r.initial/r.rate,0);
+ const remainingMeters=result.saldoMetros;
+ const widths=new Set(result.loads.map(r=>r.width));
+ const widthAnswer=widths.size===1?fmt(result.loads[0].width):result.loads.map(r=>r.id+':'+fmt(r.width)).join(' ; ');
  const url=new URL(GROUP_FORM_URL);
  const perOpValue=key=>{
   if(result.sourceOps.every(o=>o[key]===first[key]))return String(first[key]);
@@ -979,8 +1000,8 @@ $('multi-register').addEventListener('click',()=>{
  }
  if(opPacket.length>3200){$('multi-error').textContent='Grupo demasiado largo para la precarga de Forms. Divide el grupo.';$('multi-error').hidden=false;return;}
  const legacy=[opPacket,String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
- perOpValue('copies'),result.paper,fmt(result.gsm),fmt(result.width),
- perOpValue('advance'),fmt(initialKg/rate),fmt(result.saldo/rate),fmt(result.saldo)];
+ perOpValue('copies'),result.paper,fmt(result.gsm),widthAnswer,
+ perOpValue('advance'),fmt(initialMeters),fmt(remainingMeters),fmt(result.saldo)];
  legacyKeys.forEach((key,i)=>{if(legacy[i]!=='')url.searchParams.set(key,legacy[i]);});
  // El campo detalle conserva todas las OP. ~ separa columnas y nueva línea separa OP.
  const answers=[result.group,result.type,fmt(result.total),fmt(result.saldo)];
