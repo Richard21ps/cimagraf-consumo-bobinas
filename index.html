@@ -182,6 +182,12 @@ Warning: fs was declared with const; use let for reassignable variables.
       .field.full { grid-column: auto; }
       .result-value { font-size: 38px; }
     }
+    .multi-calculation-details{border:1px solid #dbe5eb;border-radius:12px;margin-bottom:16px;background:#fff;overflow:hidden}
+    .multi-calculation-details>summary{cursor:pointer;list-style:none;padding:15px 18px;font-weight:750;color:#154e72;background:#f0f6fa;display:flex;align-items:center;justify-content:space-between}
+    .multi-calculation-details>summary::-webkit-details-marker{display:none}
+    .multi-calculation-details>summary span{transition:transform .2s}
+    .multi-calculation-details[open]>summary span{transform:rotate(180deg)}
+    .multi-calculation-details>h3,.multi-calculation-details>.multi-metrics,.multi-calculation-details>.multi-table-wrap,.multi-calculation-details>div[id]{margin-left:12px;margin-right:12px}
   </style>
 </head>
 <body>
@@ -322,7 +328,7 @@ Warning: fs was declared with const; use let for reassignable variables.
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.5</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.6</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -350,6 +356,8 @@ Warning: fs was declared with const; use let for reassignable variables.
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
       <section id="multi-results" class="multi-results" hidden>
+        <details id="multi-calculation-details" class="multi-calculation-details">
+          <summary>Ver detalle de cálculos <span aria-hidden="true">▾</span></summary>
         <h3>Resultados del grupo</h3>
         <div class="multi-metrics">
           <div class="multi-metric"><span>Consumo total</span><strong id="multi-total">—</strong></div>
@@ -359,6 +367,7 @@ Warning: fs was declared with const; use let for reassignable variables.
         <h3>Resumen por OP</h3><div id="multi-ops-table"></div>
         <h3>Resumen por bobina</h3><div id="multi-rolls-table"></div>
         <h3>Historial de asignación OP–bobina</h3><div id="multi-trace-table"></div>
+        </details>
         <div class="multi-block" aria-labelledby="multi-consolidated-title">
           <h3 id="multi-consolidated-title">4 · Registro de producción</h3>
           <p class="multi-muted">Un solo envío para el grupo. En Excel, las OP se desglosan automáticamente en filas independientes.</p>
