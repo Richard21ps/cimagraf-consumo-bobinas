@@ -328,7 +328,7 @@ Warning: fs was declared with const; use let for reassignable variables.
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.6</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.7</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -355,9 +355,10 @@ Warning: fs was declared with const; use let for reassignable variables.
       </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Los kg incluyen el tuco; los metros son una equivalencia teórica.</p></section><section class="result-group consumption-group"><h4 class="result-group-title">CONSUMO TOTAL DE OP</h4><div class="result-pair"><div class="result-box"><p class="result-label">Metros consumidos</p><output class="result-value" id="multi-total-meters">— m</output></div><div class="result-box"><p class="result-label">Kg consumidos</p><output class="result-value" id="multi-total-consumption">— kg</output></div></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
-      <section id="multi-results" class="multi-results" hidden>
+      <section id="multi-results" class="multi-results">
         <details id="multi-calculation-details" class="multi-calculation-details">
-          <summary>Ver detalle de cálculos <span aria-hidden="true">▾</span></summary>
+          <summary>Ver desglose de cálculos <span aria-hidden="true">▾</span></summary>
+        <p id="multi-breakdown-hint" class="multi-muted" style="margin:15px">Completa los datos de las OP y bobinas para ver el desglose.</p>
         <h3>Resultados del grupo</h3>
         <div class="multi-metrics">
           <div class="multi-metric"><span>Consumo total</span><strong id="multi-total">—</strong></div>
@@ -786,9 +787,17 @@ function markDirty(){
  $('multi-delivery-meters').textContent='— m';
  $('multi-total-meters').textContent='— m';
  $('multi-total-consumption').textContent='— kg';
- $('multi-delivery-status').textContent='Recalcula después de modificar los datos.';nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
- $('multi-results').hidden=true;$('multi-error').hidden=true;$('multi-success').hidden=true;
+ $('multi-delivery-status').textContent='Completa los datos de producción para calcular.';
+ nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
+ $('multi-error').hidden=true;$('multi-success').hidden=true;
  $('multi-register').disabled=true;
+ $('multi-total').textContent='—';$('multi-saldo').textContent='—';$('multi-active').textContent='—';
+ $('multi-ops-table').replaceChildren();
+ $('multi-rolls-table').replaceChildren();
+ $('multi-trace-table').replaceChildren();
+ $('multi-op-registration-table').replaceChildren();
+ $('multi-breakdown-hint').hidden=false;
+ $('multi-summary-status').textContent='Completa los datos para preparar el registro.';
 }
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
@@ -870,9 +879,8 @@ function show(){
  try{
   const r=validate();
   const group=$('multi-group').value.trim();
-  if(!group)throw Error('Ingresa un identificador único del grupo para preparar un solo registro en Excel.');
   const type=ops.length>1?(rolls.length>1?'Varias OP / varias bobinas':'Varias OP / una bobina'):(rolls.length>1?'Una OP / varias bobinas':'Una OP / una bobina');
-  result={...r,group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;
+  result={...r,group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;$('multi-breakdown-hint').hidden=true;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
   $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
@@ -886,7 +894,7 @@ function show(){
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho,2),nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
- }catch(err){result=null;$('multi-results').hidden=true;$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;}
+ }catch(err){result=null;$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
 }
 function makeGroupSummary(r,group,type) {
  const num=n=>Number(n).toFixed(3).replace(/\.000$/,'');
@@ -905,10 +913,10 @@ let autoQueued=false;
 function scheduleAuto(){
  if(autoQueued)return;autoQueued=true;
  queueMicrotask(()=>{autoQueued=false;
-  const ready=$('multi-group').value.trim() &&
-   $('multi-gsm').value && ops.every(o=>o.id.trim()&&o.books&&o.copies&&o.advance) &&
+  const ready=$('multi-gsm').value && ops.every(o=>o.id.trim()&&o.books&&o.copies&&o.advance) &&
    rolls.every(r=>r.kg&&r.width);
   if(ready)show();
+  else $('multi-delivery-status').textContent='Faltan datos: completa libros, copias, avance, ancho y kg de las bobinas.';
  });
 }
 
@@ -940,8 +948,8 @@ function perOpData(index){
 function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
- $('multi-summary-status').textContent='Un solo envío para '+result.sourceOps.length+' OP. En Excel cada OP se desglosará mediante fórmula.';
- $('multi-register').disabled=false;
+ $('multi-summary-status').textContent=result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Ingresa un identificador de grupo para enviar a Forms.';
+ $('multi-register').disabled=!result.group;
  $('multi-register').textContent='Enviar a Forms';
 }
 function groupText(r){
@@ -982,6 +990,7 @@ $('forms-next').addEventListener('click',()=>{
 });
 $('multi-register').addEventListener('click',()=>{
  if(!result){show();if(!result)return;}
+ if(!result.group){$('multi-error').textContent='Ingresa el identificador del grupo antes de enviar a Forms.';$('multi-error').hidden=false;$('multi-group').focus();return;}
  if($('forms-modal').classList.contains('open'))return;
  const first=result.sourceOps[0];
  const initialMeters=result.usedRolls.reduce((sum,r)=>sum+r.initial/r.rate,0);
