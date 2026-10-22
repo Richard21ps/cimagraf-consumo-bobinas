@@ -385,7 +385,7 @@ Warning: fs was declared with const; use let for reassignable variables.
           <div class="multi-footer-actions">
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">Los números de OP se envían sin códigos técnicos; el detalle individual se prepara para la pregunta 15 de Forms.</p>
+          <p class="multi-note" id="multi-registration-note">El saldo descuenta merma y producción por bobina. Devolución mínima: 100 kg por bobina con saldo (0 kg si está agotada). La precarga conserva el formato de Forms.</p>
         </div>
       </section>
     </section>
@@ -783,6 +783,7 @@ if(!root||!simple||!complex||!layout)return;
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
+const MIN_RETURN_PER_BOBINA=100;
 let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:'',width:'',scrap:'0'}], result=null;
 let nextOpIndex=0, confirmedOps=new Set(), pendingOpIndex=-1;
 const nf=(x,d=3)=>new Intl.NumberFormat('es-PE',{maximumFractionDigits:d}).format(x);
@@ -835,6 +836,9 @@ function validate(){
  for(const r of rolls){
   r.id=r.id.trim();
   const kg=numeric(r.kg),width=numeric(r.width);
+  const scrap=(r.scrap??'')===''?0:numeric(r.scrap);
+  if(!Number.isFinite(scrap)||scrap<0)throw Error('La merma de '+r.id+' debe ser mayor o igual a 0 kg.');
+  if(Number.isFinite(kg)&&scrap>kg)throw Error('La merma de '+r.id+' no puede superar el peso inicial.');
   if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa los kg iniciales de todas las bobinas.');
   if(!Number.isFinite(width)||width<=0)throw Error('Indica un ancho en mm válido para '+r.id+'.');
   if(/[~^|,:\r\n]/.test(r.id))throw Error('Los identificadores de bobina no pueden contener separadores especiales.');
@@ -850,8 +854,8 @@ function validate(){
   opIds.add(o.id.toLocaleLowerCase());
  }
  const loads=rolls.map(r=>{
-  const width=numeric(r.width),initial=numeric(r.kg);
-  return {id:r.id,width,rate:width*gsm/1000000,initial,left:initial,used:0,usedMeters:0};
+  const width=numeric(r.width),initial=numeric(r.kg),scrap=(r.scrap??'')===''?0:numeric(r.scrap);
+  return {id:r.id,width,rate:width*gsm/1000000,initial,scrap,left:initial-scrap,used:0,usedMeters:0};
  });
  const details=[],sums=[],tol=1e-9;
  let ri=0,consumedTotal=0;
@@ -868,7 +872,7 @@ function validate(){
    if(takenMeters<=tol){r.left=0;ri++;continue;}
    const takenKg=takenMeters*r.rate;
    r.used+=takenKg;r.usedMeters+=takenMeters;
-   r.left=Math.max(0,r.initial-r.used);
+   r.left=Math.max(0,r.initial-r.scrap-r.used);
    pendingMeters=Math.max(0,pendingMeters-takenMeters);
    opKg+=takenKg;
    details.push({op:o.id,bobina:r.id,ancho:r.width,kg:takenKg,metros:takenMeters,saldo:r.left,seq:details.length+1});
@@ -877,10 +881,12 @@ function validate(){
   sums.push({op:o.id,kg:opKg,metros:meters});
   consumedTotal+=opKg;
  }
- const usedRolls=loads.filter(r=>r.used>tol);
+ const usedRolls=loads.filter(r=>r.used>tol||r.scrap>tol);
+ const totalScrap=usedRolls.reduce((a,r)=>a+r.scrap,0);
  const saldo=usedRolls.reduce((a,r)=>a+r.left,0);
  const saldoMetros=usedRolls.reduce((a,r)=>a+r.left/r.rate,0);
- return {paper,gsm,details,sums,loads,usedRolls,total:consumedTotal,saldo,saldoMetros,
+ const returnViolations=usedRolls.filter(r=>r.left>tol&&r.left<MIN_RETURN_PER_BOBINA-tol).map(r=>({id:r.id,kg:r.left}));
+ return {paper,gsm,details,sums,loads,usedRolls,total:consumedTotal,totalScrap,saldo,saldoMetros,returnViolations,
    sourceOps:ops.map(o=>({id:o.id,books:Number(o.books),copies:Number(o.copies),advance:Number(o.advance)}))};
 }
 function table(headers,rows){return '<div class="multi-table-wrap"><table class="multi-table"><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map((cell,i)=>'<td'+(i?' class="num"':'')+'>'+escapeHtml(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
@@ -889,21 +895,29 @@ function show(){
   const r=validate();
   const group=$('multi-group').value.trim();
   const type=ops.length>1?(rolls.length>1?'Varias OP / varias bobinas':'Varias OP / una bobina'):(rolls.length>1?'Una OP / varias bobinas':'Una OP / una bobina');
-  result={...r,group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;$('multi-breakdown-hint').hidden=true;
+  result={...r,group,type};$('multi-error').hidden=true;$('multi-success').hidden=r.returnViolations.length>0;$('multi-breakdown-hint').hidden=true;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
   $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
   $('multi-delivery-meters').textContent=nf(r.saldoMetros,2)+' m';
   $('multi-total-meters').textContent=nf(r.sums.reduce((t,x)=>t+x.metros,0),2)+' m';
   $('multi-total-consumption').textContent=nf(r.total)+' kg';
-  $('multi-delivery-status').textContent='Saldo estimado de la última bobina utilizada.';
+  $('multi-total-scrap').textContent=nf(r.totalScrap)+' kg';
+  const bad=r.returnViolations;
+  $('multi-policy-warning').hidden=bad.length===0;
+  $('multi-policy-warning').textContent=bad.length
+   ?'Control de devolución: mínimo de '+MIN_RETURN_PER_BOBINA+' kg por bobina con saldo. No cumple: '+bad.map(b=>b.id+' ('+nf(b.kg)+' kg)').join('; ')+'. Una bobina agotada puede quedar en 0 kg.'
+   :'';
+  $('multi-delivery-status').textContent=bad.length
+   ?'Saldo calculado; revisa las bobinas con devolución inferior al mínimo.'
+   :'Saldo después de descontar consumo productivo y merma.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
-  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Kg consumidos','Kg restantes','Estado'],r.loads.map(x=>[x.id,nf(x.width,2),nf(x.initial),nf(x.used),nf(x.left),x.used<=EPS?'Sin utilizar':x.left<=EPS?'Agotada':'Con saldo']));
+  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Merma (kg)','Consumo OP (kg)','Devolver (kg)','Control 100 kg'],r.loads.map(x=>[x.id,nf(x.width,2),nf(x.initial),nf(x.scrap),nf(x.used),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':x.left<MIN_RETURN_PER_BOBINA-EPS?'Menor a 100 kg':'Cumple']));
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho,2),nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
- }catch(err){result=null;$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
+ }catch(err){result=null;$('multi-policy-warning').hidden=true;$('multi-total-scrap').textContent='— kg';$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
 }
 function makeGroupSummary(r,group,type) {
  const num=n=>Number(n).toFixed(3).replace(/\.000$/,'');
@@ -912,7 +926,7 @@ function makeGroupSummary(r,group,type) {
   const s=r.sums.find(x=>x.op===o.id);
   return o.id+'(libros='+o.books+',copias='+o.copies+',avance_mm='+o.advance+',consumo_kg='+num(s.kg)+')';
  }).join(' ; ');
- const rollStats=r.loads.map(b=>b.id+'(ancho_mm='+num(b.width)+',inicial_kg='+num(b.initial)+',consumido_kg='+num(b.used)+',saldo_kg='+num(b.left)+')').join(' ; ');
+ const rollStats=r.loads.map(b=>b.id+'(ancho_mm='+num(b.width)+',inicial_kg='+num(b.initial)+',merma_kg='+num(b.scrap)+',consumido_kg='+num(b.used)+',saldo_kg='+num(b.left)+')').join(' ; ');
  const movements=r.details.map(d=>d.seq+':'+d.op+'>'+d.bobina+'='+num(d.kg)+'kg(saldo='+num(d.saldo)+'kg)').join(' ; ');
  return 'Grupo='+group+' | Tipo='+type+' | Papel='+r.paper+' | Gramaje_gm2='+r.gsm+' | Anchos_mm='+r.loads.map(b=>b.id+':'+b.width).join('; ')
   +' | Total_consumido_kg='+num(r.total)+' | Saldo_final_kg='+num(r.saldo)
@@ -957,8 +971,8 @@ function perOpData(index){
 function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
- $('multi-summary-status').textContent=result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Ingresa un identificador de grupo para enviar a Forms.';
- $('multi-register').disabled=!result.group;
+ $('multi-summary-status').textContent=result.returnViolations.length?'Envío bloqueado: alguna bobina utilizada tiene saldo inferior a 100 kg.':result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Ingresa un identificador de grupo para enviar a Forms.';
+ $('multi-register').disabled=!result.group||result.returnViolations.length>0;
  $('multi-register').textContent='Enviar a Forms';
 }
 function groupText(r){
@@ -1001,6 +1015,7 @@ $('forms-next').addEventListener('click',()=>{
 $('multi-register').addEventListener('click',()=>{
  if(!result){show();if(!result)return;}
  if(!result.group){$('multi-error').textContent='Ingresa el identificador del grupo antes de enviar a Forms.';$('multi-error').hidden=false;$('multi-group').focus();return;}
+ if(result.returnViolations.length){$('multi-policy-warning').textContent='Envío bloqueado: cada bobina utilizada debe devolver 0 kg o al menos 100 kg.';$('multi-policy-warning').hidden=false;return;}
  if($('forms-modal').classList.contains('open'))return;
  const first=result.sourceOps[0];
  const initialMeters=result.usedRolls.reduce((sum,r)=>sum+r.initial/r.rate,0);
