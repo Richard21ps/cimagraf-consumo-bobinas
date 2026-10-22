@@ -188,6 +188,10 @@ Warning: fs was declared with const; use let for reassignable variables.
     .multi-calculation-details>summary span{transition:transform .2s}
     .multi-calculation-details[open]>summary span{transform:rotate(180deg)}
     .multi-calculation-details>h3,.multi-calculation-details>.multi-metrics,.multi-calculation-details>.multi-table-wrap,.multi-calculation-details>div[id]{margin-left:12px;margin-right:12px}
+    /* El panel inferior nunca expone cálculos antes de abrir la flecha. */
+    #multi-calculation-details:not([open]) > :not(summary) { display:none !important; }
+    #multi-calculation-details .multi-calculation-content { padding:14px; }
+    #multi-calculation-details .multi-calculation-content > h3 { margin-top:18px; }
   </style>
 </head>
 <body>
@@ -328,7 +332,7 @@ Warning: fs was declared with const; use let for reassignable variables.
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.7</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.8</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -358,26 +362,29 @@ Warning: fs was declared with const; use let for reassignable variables.
       <section id="multi-results" class="multi-results">
         <details id="multi-calculation-details" class="multi-calculation-details">
           <summary>Ver desglose de cálculos <span aria-hidden="true">▾</span></summary>
-        <p id="multi-breakdown-hint" class="multi-muted" style="margin:15px">Completa los datos de las OP y bobinas para ver el desglose.</p>
-        <h3>Resultados del grupo</h3>
-        <div class="multi-metrics">
-          <div class="multi-metric"><span>Consumo total</span><strong id="multi-total">—</strong></div>
-          <div class="multi-metric"><span>Saldo de bobinas utilizadas</span><strong id="multi-saldo">—</strong></div>
-          <div class="multi-metric"><span>Última bobina utilizada</span><strong id="multi-active">—</strong></div>
-        </div>
-        <h3>Resumen por OP</h3><div id="multi-ops-table"></div>
-        <h3>Resumen por bobina</h3><div id="multi-rolls-table"></div>
-        <h3>Historial de asignación OP–bobina</h3><div id="multi-trace-table"></div>
+          <div class="multi-calculation-content">
+            <p id="multi-breakdown-hint" class="multi-muted" style="margin:15px">Completa los datos de las OP y bobinas para ver el desglose.</p>
+            <h3>Resultados del grupo</h3>
+            <div class="multi-metrics">
+              <div class="multi-metric"><span>Consumo total</span><strong id="multi-total">—</strong></div>
+              <div class="multi-metric"><span>Saldo de bobinas utilizadas</span><strong id="multi-saldo">—</strong></div>
+              <div class="multi-metric"><span>Última bobina utilizada</span><strong id="multi-active">—</strong></div>
+            </div>
+            <h3>Resumen por OP</h3><div id="multi-ops-table"></div>
+            <h3>Resumen por bobina</h3><div id="multi-rolls-table"></div>
+            <h3>Historial de asignación OP–bobina</h3><div id="multi-trace-table"></div>
+            <h3>Desglose del registro por OP</h3>
+            <div id="multi-op-registration-table" class="multi-table-wrap" aria-live="polite"></div>
+          </div>
         </details>
         <div class="multi-block" aria-labelledby="multi-consolidated-title">
-          <h3 id="multi-consolidated-title">4 · Registro de producción</h3>
-          <p class="multi-muted">Un solo envío para el grupo. En Excel, las OP se desglosan automáticamente en filas independientes.</p>
-          <div id="multi-op-registration-table" class="multi-table-wrap" aria-live="polite"></div>
+          <h3 id="multi-consolidated-title">4 · Enviar registro de producción</h3>
+          <p class="multi-muted">Un solo envío para todo el grupo. Los detalles del cálculo están disponibles al abrir la flecha superior.</p>
           <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
           <div class="multi-footer-actions">
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">El número de OP seguirá limpio. La nueva pregunta 15 guardará automáticamente las OP y los consumos individuales para el Excel; falta vincular su identificador de Forms.</p>
+          <p class="multi-note" id="multi-registration-note">Los números de OP se envían sin códigos técnicos; el detalle individual se prepara para la pregunta 15 de Forms.</p>
         </div>
       </section>
     </section>
