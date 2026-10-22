@@ -972,6 +972,7 @@ const originalFormsInstructions=$('forms-instructions').textContent;
 $('save-record').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
 $('forms-back').addEventListener('click',()=>{$('forms-instructions').textContent=originalFormsInstructions;});
 function resetMultiAfterConfirmation(){
+ $('multi-calculation-details').open=false;
  ops=[{id:'',books:'',copies:'',advance:''}];
  rolls=[{id:'Bobina 1',kg:'',width:''}];
  $('multi-group').value='';
