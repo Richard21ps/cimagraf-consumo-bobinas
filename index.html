@@ -332,7 +332,7 @@ Warning: fs was declared with const; use let for reassignable variables.
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.8</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.9</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -352,12 +352,13 @@ Warning: fs was declared with const; use let for reassignable variables.
       </div>
       <div class="multi-block multi-bobbins">
         <h3>3 · Bobinas en orden de utilización</h3>
-        <p class="multi-muted">Registra cada bobina una sola vez; el sistema no duplicará su peso por OP.</p>
+        <p class="multi-muted">Registra ancho, kg iniciales y merma en kg para cada bobina. La merma se descuenta una sola vez del peso disponible.</p>
         <div id="multi-roll-list"></div>
         <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
       </div>
-      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Los kg incluyen el tuco; los metros son una equivalencia teórica.</p></section><section class="result-group consumption-group"><h4 class="result-group-title">CONSUMO TOTAL DE OP</h4><div class="result-pair"><div class="result-box"><p class="result-label">Metros consumidos</p><output class="result-value" id="multi-total-meters">— m</output></div><div class="result-box"><p class="result-label">Kg consumidos</p><output class="result-value" id="multi-total-consumption">— kg</output></div></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
+      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Los kg incluyen el tuco; los metros son una equivalencia teórica.</p></section><section class="result-group consumption-group"><h4 class="result-group-title">CONSUMO TOTAL DE OP</h4><div class="result-pair"><div class="result-box"><p class="result-label">Metros consumidos</p><output class="result-value" id="multi-total-meters">— m</output></div><div class="result-box"><p class="result-label">Kg consumidos</p><output class="result-value" id="multi-total-consumption">— kg</output></div></div></section><p class="delivery-guidance">Merma total: <strong><output id="multi-total-scrap">— kg</output></strong></p><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
+      <p class="multi-alert" id="multi-policy-warning" role="status" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
       <section id="multi-results" class="multi-results">
         <details id="multi-calculation-details" class="multi-calculation-details">
@@ -782,7 +783,7 @@ if(!root||!simple||!complex||!layout)return;
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
-let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:'',width:''}], result=null;
+let ops=[{id:'',books:'',copies:'',advance:''}], rolls=[{id:'Bobina 1',kg:'',width:'',scrap:'0'}], result=null;
 let nextOpIndex=0, confirmedOps=new Set(), pendingOpIndex=-1;
 const nf=(x,d=3)=>new Intl.NumberFormat('es-PE',{maximumFractionDigits:d}).format(x);
 const numeric=x=>x===''?NaN:Number(x);
@@ -794,6 +795,7 @@ function markDirty(){
  $('multi-delivery-meters').textContent='— m';
  $('multi-total-meters').textContent='— m';
  $('multi-total-consumption').textContent='— kg';
+ $('multi-total-scrap').textContent='— kg';$('multi-policy-warning').hidden=true;
  $('multi-delivery-status').textContent='Completa los datos de producción para calcular.';
  nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
  $('multi-error').hidden=true;$('multi-success').hidden=true;
@@ -809,7 +811,7 @@ function markDirty(){
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por pliego (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+'</div></div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Merma (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0"')+'</div></div>').join('');
 }
 root.addEventListener('input',e=>{
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
@@ -823,7 +825,7 @@ root.addEventListener('click',e=>{
  if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
 });
 $('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:'',advance:''});markDirty();redraw();scheduleAuto();});
-$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:'',width:''});markDirty();redraw();scheduleAuto();});
+$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:'',width:'',scrap:'0'});markDirty();redraw();scheduleAuto();});
 function mode(useMulti){layout.hidden=useMulti;root.hidden=!useMulti;simple.setAttribute('aria-pressed',String(!useMulti));complex.setAttribute('aria-pressed',String(useMulti));}
 simple.addEventListener('click',()=>mode(false));complex.addEventListener('click',()=>mode(true));
 function validate(){
@@ -974,7 +976,7 @@ $('forms-back').addEventListener('click',()=>{$('forms-instructions').textConten
 function resetMultiAfterConfirmation(){
  $('multi-calculation-details').open=false;
  ops=[{id:'',books:'',copies:'',advance:''}];
- rolls=[{id:'Bobina 1',kg:'',width:''}];
+ rolls=[{id:'Bobina 1',kg:'',width:'',scrap:'0'}];
  $('multi-group').value='';
  $('multi-paper').selectedIndex=0;
  updateGrams('');
