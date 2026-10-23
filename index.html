@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.2">
+<link rel="stylesheet" href="compact-v40.css?v=4.3">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.2</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.3</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -356,7 +356,7 @@
         <div id="multi-roll-list"></div>
         <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
       </div>
-      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Peso neto de papel, sin tuco. Metros equivalentes según el ancho de cada bobina.</p></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
+      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Peso neto de papel, sin tuco. Metros equivalentes según el ancho de cada bobina.</p></section><section class="compact-bobbin-panel" aria-labelledby="compact-bobbin-title"><h4 id="compact-bobbin-title">Bobinas</h4><p class="usage-legend"><span><i class="usage-produced"></i>Producción</span><span><i class="usage-removed"></i>Retirado</span><span><i class="usage-balance"></i>Saldo</span></p><div id="multi-roll-usage" aria-live="polite"></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
       <p class="multi-alert" id="multi-policy-warning" role="status" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
@@ -834,7 +834,7 @@ function problemControls(roll,index){
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por pliego (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row bobbin-card"><div class="bobbin-entry"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Papel retirado (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0"')+'</div>'+problemControls(o,i)+'</div><div class="bobbin-visual" id="multi-roll-usage-'+i+'" aria-live="polite" aria-label="Estado de Bobina '+(i+1)+'"></div></div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Papel retirado (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0"')+'</div>'+problemControls(o,i)+'</div>').join('');
  renderRollUsage(result);
 }
 root.addEventListener('input',e=>{
@@ -941,24 +941,22 @@ function validate(){
 }
 function table(headers,rows){return '<div class="multi-table-wrap"><table class="multi-table"><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map((cell,i)=>'<td'+(i?' class="num"':'')+'>'+escapeHtml(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 function renderRollUsage(r){
- rolls.forEach((roll,index)=>{
- const target=$('multi-roll-usage-'+index);if(!target)return;
- const b=r?.loads[index];
- if(!b){target.innerHTML='<p class="usage-pending">Completa los datos para ver producción y saldo.</p>';return;}
+ const target=$('multi-roll-usage');if(!target)return;
+ target.innerHTML=rolls.map((roll,index)=>{
+  const b=r?.loads[index];
+  if(!b)return '<article class="mini-roll mini-pending"><span class="roll-mini-icon" aria-hidden="true"></span><div class="mini-roll-body"><div class="mini-roll-title"><strong>'+escapeHtml(roll.id)+'</strong><span>Por calcular</span></div><p class="mini-roll-values"><span>Producción <b>— kg</b></span><span>Saldo <b>— kg</b></span></p></div></article>';
   const active=b.used>EPS||b.scrap>EPS,empty=active&&b.left<=EPS;
   const below=active&&b.left>EPS&&b.left<MIN_RETURN_PER_BOBINA-EPS;
-  const state=!active?'SIN UTILIZAR':empty?'AGOTADA':below?'REVISAR SALDO':'CON SALDO';
+  const state=!active?'SIN UTILIZAR':empty?'AGOTADA':below?'REVISAR':'CON SALDO';
   const width=value=>Math.max(0,Math.min(100,value/b.initial*100));
+  const produced=width(b.used),removedEnd=width(b.used+b.scrap);
   const description=b.id+': producción '+nf(b.used)+' kg, papel retirado '+nf(b.scrap)+' kg, saldo '+nf(b.left)+' kg. '+state+'.';
-  target.innerHTML='<article class="usage-card '+(!active?'usage-idle':empty?'usage-empty':below?'usage-warning':'usage-ready')+'"><div class="usage-heading"><strong>'+escapeHtml(b.id)+'</strong><span class="usage-badge">'+(empty?'✓ ':'')+state+'</span></div>'
-   +'<div class="usage-values"><div class="usage-production-value"><span>PRODUCCIÓN</span><strong>'+nf(b.used)+' <small>kg</small></strong></div><div class="usage-stock-value"><span>'+(!active?'DISPONIBLE':'SALDO A DEVOLVER')+'</span><strong>'+nf(b.left)+' <small>kg</small></strong></div></div>'
-   +'<div class="usage-bar" role="img" aria-label="'+escapeHtml(description)+'">'
-   +'<span class="usage-produced" style="width:'+width(b.used)+'%"></span><span class="usage-removed" style="width:'+width(b.scrap)+'%"></span><span class="'+(active?'usage-balance':'usage-unused')+'" style="width:'+width(b.left)+'%"></span></div>'
-   +'<p class="usage-percent"><span>'+nf(width(b.used),1)+'% producción</span><span>'+nf(width(b.left),1)+'% saldo</span></p>'
-   +'<p class="usage-detail">Papel retirado: <strong>'+nf(b.scrap)+' kg</strong> · Inicial: '+nf(b.initial)+' kg</p>'
-   +'<p class="usage-detail">Ancho: '+nf(b.width,2)+' mm</p><p class="usage-legend"><span><i class="usage-produced"></i>Producción</span><span><i class="usage-removed"></i>Retirado</span><span><i class="usage-balance"></i>Saldo</span></p>'
-   +(empty?'<p class="usage-state-note">Sin papel disponible · Devolución 0.0 kg</p>':below?'<p class="usage-state-note">Saldo menor a 100 kg · Envío bloqueado</p>':!active?'<p class="usage-state-note">No suma a la devolución</p>':'')+'</article>';
- });
+  const balanceColor=active?'#65a887':'#d7e0e6';
+  return '<article class="mini-roll '+(!active?'usage-idle':empty?'usage-empty':below?'usage-warning':'usage-ready')+'"><span class="roll-mini-icon" aria-hidden="true" style="background:conic-gradient(#427a9e 0% '+produced+'%,#d5a457 '+produced+'% '+removedEnd+'%,'+balanceColor+' '+removedEnd+'% 100%)"></span><div class="mini-roll-body"><div class="mini-roll-title"><strong>'+escapeHtml(b.id)+'</strong><span class="mini-roll-badge">'+state+'</span></div>'
+   +'<p class="mini-roll-values"><span>Producción <b>'+nf(b.used)+' <small>kg</small></b></span><span>'+(!active?'Disponible':'Saldo')+' <b>'+nf(b.left)+' <small>kg</small></b></span></p>'
+   +'<div class="usage-bar" role="img" aria-label="'+escapeHtml(description)+'"><span class="usage-produced" style="width:'+produced+'%"></span><span class="usage-removed" style="width:'+width(b.scrap)+'%"></span><span class="'+(active?'usage-balance':'usage-unused')+'" style="width:'+width(b.left)+'%"></span></div>'
+   +(below?'<p class="mini-roll-note">Saldo menor a 100 kg · Envío bloqueado</p>':!active?'<p class="mini-roll-note">No suma a la devolución</p>':'')+'</div></article>';
+ }).join('');
 }
 
 function show(){
