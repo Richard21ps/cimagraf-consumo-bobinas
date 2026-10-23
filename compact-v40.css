@@ -114,3 +114,29 @@ header{margin-bottom:14px}
 .mini-pending{border-style:dashed;border-color:#d8e0e6}
 .mini-pending .mini-roll-title>span{background:#edf1f4;color:#627381}
 @media(min-width:1121px){.multi-editor .multi-bobbins .multi-remove{grid-column:2;grid-row:1}}
+
+/* 4.4: motivos de retiro en lenguaje directo y captura progresiva. */
+.roll-problems-wrap{grid-column:1 / -1;grid-row:2;min-width:0;border-top:1px solid #d8e5dd;padding-top:7px}
+.multi-editor .roll-problems-wrap .roll-problems{border:0;padding:0}
+.roll-problems>summary{align-items:center;min-height:28px;padding:2px 0}
+.roll-problems>summary .problem-question{font-size:13px;font-weight:700;color:#35576c}
+.roll-problems>summary .problem-summary-action{font-size:11px;color:#145b83;background:#e7f0f7;border-radius:6px;padding:5px 8px;white-space:nowrap}
+.roll-problems .problem-content{padding:10px 0 2px}
+.problem-choose{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.problem-choose>label{flex:1;min-width:180px;font-weight:650;font-size:12px}
+.problem-choose select{min-height:40px;font-size:14px;margin-top:4px}
+.problem-empty{flex:1;font-size:13px;color:#627381;margin:0;align-self:center}
+.problem-new-button,.problem-save-button,.problem-cancel-button{font-size:13px;min-height:40px;border-radius:8px;padding:8px 12px;font-weight:750;cursor:pointer}
+.problem-new-button{background:#fff;color:#145b83;border:1px solid #b5cddd}
+.problem-save-button{background:#145b83;color:#fff;border:1px solid #145b83}
+.problem-cancel-button{background:transparent;color:#627381;border:1px solid transparent}
+.problem-form{display:flex;gap:10px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid #d8e0e6;border-radius:9px;padding:10px;margin-top:8px}
+.problem-form>label{flex:1;min-width:200px;font-weight:650}
+.problem-form input{min-height:40px;font-size:14px}
+.problem-form-actions{display:flex;gap:5px;align-items:center}
+.problem-form[hidden],.problem-new-button[hidden]{display:none!important}
+.roll-problems-wrap .problem-tags{margin:6px 0 0;gap:6px}
+.roll-problems-wrap .problem-tags>span{background:#e9f4ed;color:#245f41;border:0;padding:3px 8px;font-size:12px;border-radius:6px}
+.roll-problems-wrap .problem-tags button{color:#245f41;min-width:26px;min-height:28px}
+.problem-message{font-size:12px;color:#176b4b;margin:7px 0 0}
+@media(max-width:580px){.roll-problems>summary .problem-question{font-size:12px}.roll-problems>summary .problem-summary-action{font-size:10px}.problem-choose{align-items:stretch}.problem-choose>label{min-width:100%}.problem-form>label{min-width:100%}}
