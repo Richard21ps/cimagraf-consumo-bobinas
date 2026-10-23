@@ -35,3 +35,44 @@ body #multi-root{padding:18px}
 @media(max-width:1120px){.multi-layout{grid-template-columns:minmax(0,1fr) 290px;gap:12px}.multi-editor .multi-row{grid-template-columns:minmax(0,1fr)}.multi-editor .multi-row-head .multi-remove{grid-column:1;grid-row:2;justify-self:end;min-height:28px;padding:3px 8px}.multi-editor .multi-row-fields{grid-column:1;grid-row:1}.multi-editor .multi-row-fields label{font-size:11px}}
 @media(max-width:900px){.multi-layout{grid-template-columns:1fr}.multi-aside{position:static;order:-1}.multi-editor .multi-row{grid-template-columns:minmax(0,1fr) auto}.multi-editor .multi-row-head .multi-remove{grid-column:2;grid-row:1;min-height:40px}.multi-editor .multi-row-fields label{font-size:12px}}
 @media(max-width:580px){.multi-editor .multi-grid{grid-template-columns:1fr}.multi-editor .multi-row{grid-template-columns:1fr}.multi-editor .multi-row-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.multi-editor .multi-row-head .multi-remove{grid-column:1;grid-row:2;min-height:28px}.multi-editor .multi-paper-picker{grid-template-columns:minmax(0,1fr) auto}}
+/* 4.1: problemáticas ampliables y lectura inmediata del balance. */
+.multi-editor .roll-problems{grid-column:1 / -1;grid-row:2;min-width:0;border-top:1px solid #d8e5dd;padding-top:8px}
+.roll-problems>summary{display:flex;justify-content:space-between;gap:10px;cursor:pointer;font-size:12px;font-weight:750;color:#35576c;list-style:none}
+.roll-problems>summary::-webkit-details-marker{display:none}
+.roll-problems>summary span{font-size:11px;font-weight:500;color:#627381}
+.problem-content{padding-top:12px}
+.problem-content label{font-size:12px;margin:0}
+.problem-content input,.problem-content select{font-size:14px;min-height:38px;padding:8px;margin-top:5px}
+.problem-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:10px}
+.problem-add .multi-button{min-height:38px;font-size:13px}
+.problem-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.problem-tags>span{display:inline-flex;align-items:center;gap:8px;background:#e7eff6;color:#244e6b;border:1px solid #c6d9e8;border-radius:20px;padding:4px 10px;font-size:12px;overflow-wrap:anywhere}
+.problem-tags button{background:none;border:0;color:#244e6b;cursor:pointer;font-size:20px;line-height:1;padding:3px}
+.problem-note,.problem-message{font-size:11px;color:#627381;margin:8px 0 0}
+.problem-message:empty{display:none}
+.usage-card{padding:14px;border-width:2px;margin-top:12px}
+.usage-heading strong{font-size:16px}
+.usage-heading .usage-badge{padding:5px 8px;border-radius:6px;font-size:10px;font-weight:900;letter-spacing:.03em;color:#246443;background:#e3f3e9}
+.usage-values{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0}
+.usage-values>div{padding:10px 7px;border-radius:8px;background:#eaf2f9;text-align:center;min-width:0}
+.usage-values>div.usage-stock-value{background:#e7f5ec}
+.usage-values span{display:block;font-size:10px;font-weight:850;color:#345c78}
+.usage-values strong{display:block;font-size:28px;line-height:1.2;color:#145b83;margin-top:5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.usage-values small{font-size:14px}
+.usage-stock-value strong,.usage-stock-value span{color:#176b4b}
+.usage-bar{height:26px;border-radius:6px;box-shadow:inset 0 0 0 1px #0000000a}
+.usage-percent{display:flex;justify-content:space-between;gap:5px;font-size:10px;font-weight:750;color:#35576c;margin:5px 0 10px}
+.usage-empty{border-color:#b2bac4;background:#f7f8fa}
+.usage-empty .usage-heading .usage-badge{background:#3c4d60;color:#fff}
+.usage-empty .usage-stock-value{background:#dfe4ea}
+.usage-empty .usage-stock-value strong,.usage-empty .usage-stock-value span{color:#3c4d60}
+.usage-ready{border-color:#9cc9ad}
+.usage-warning .usage-heading .usage-badge{background:#a2650b;color:#fff}
+.usage-warning .usage-stock-value{background:#fff0d9}
+.usage-warning .usage-stock-value strong,.usage-warning .usage-stock-value span{color:#8b5509}
+.usage-idle .usage-heading .usage-badge{background:#edf1f4;color:#627381}
+.usage-idle .usage-stock-value{background:#edf1f4}
+.usage-state-note{margin:10px 0 0;padding:7px;border-radius:6px;background:#e8ecf1;color:#3c4d60;font-size:11px;font-weight:800;text-align:center}
+.usage-warning .usage-state-note{background:#fff0d9;color:#8b5509}
+@media(max-width:1120px) and (min-width:901px){.multi-editor .multi-row-head .multi-remove{grid-row:3}}
+@media(max-width:580px){.multi-editor .multi-row-head .multi-remove{grid-row:3}.roll-problems>summary{align-items:center}.problem-add{grid-template-columns:1fr}.problem-add button{justify-self:start}}

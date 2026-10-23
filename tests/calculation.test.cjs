@@ -34,9 +34,16 @@ test('Tres bobinas: dos agotadas y una con saldo',()=>{const r=calculate([3000],
 const renderStart=html.indexOf('function renderRollUsage(r){');
 const renderSource=html.slice(renderStart,html.indexOf('\nfunction show(){',renderStart));
 function render(r){const target={innerHTML:''};const context={$:()=>target,EPS:1e-8,MIN_RETURN_PER_BOBINA:100,nf:String,escapeHtml:s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'),r};vm.createContext(context);vm.runInContext(renderSource+';renderRollUsage(r)',context);return target.innerHTML;}
-test('Gráfico: saldos reales de las tres bobinas',()=>{const output=render(calculate([3000],[[75,1000,5],[45,500,10],[200,700,10]]));assert.equal((output.match(/<span>Agotada<\/span>/g)||[]).length,2);assert.match(output,/Devolver: <strong>141 kg/);assert.match(output,/Retirado: 10 kg/);});
-test('Gráfico: bobina sin utilizar y saldo inferior al mínimo',()=>{const output=render(calculate([1000],[[179,1000,10],[300,500]]));assert.match(output,/Saldo menor a 100 kg/);assert.match(output,/Disponible: <strong>300 kg/);assert.match(output,/No suma a la devolución/);});
+test('Gráfico: saldos reales de las tres bobinas',()=>{const output=render(calculate([3000],[[75,1000,5],[45,500,10],[200,700,10]]));assert.equal((output.match(/usage-empty/g)||[]).length,2);assert.match(output,/141 <small>kg/);assert.match(output,/Papel retirado: <strong>10 kg/);assert.match(output,/SALDO A DEVOLVER/);assert.match(output,/PRODUCCIÓN/);});
+test('Gráfico: bobina sin utilizar y saldo inferior al mínimo',()=>{const output=render(calculate([1000],[[179,1000,10],[300,500]]));assert.match(output,/Saldo menor a 100 kg/);assert.match(output,/DISPONIBLE/);assert.match(output,/300 <small>kg/);assert.match(output,/No suma a la devolución/);});
 test('Gráfico: datos pendientes no muestran saldos anteriores',()=>assert.match(render(null),/Completa los datos/));
 test('Sintaxis de ambos scripts',()=>{for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);});
 assert.doesNotMatch(html,/id="multi-total-(meters|consumption|scrap)"/);
+const problemStart=html.indexOf('const PROBLEM_CATALOG_KEY=');
+const problemSource=html.slice(problemStart,html.indexOf('function redraw(){',problemStart));
+function problemContext(saved){const context={localStorage:{getItem:()=>saved},escapeHtml:s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')};vm.createContext(context);vm.runInContext(problemSource,context);return context;}
+test('Catálogo de problemáticas vacío y datos guardados inválidos',()=>{for(const saved of [null,'{','{}'])assert.equal(vm.runInContext('problemCatalog.length',problemContext(saved)),0);});
+test('Catálogo sin duplicados ni entradas inválidas',()=>{const c=problemContext(JSON.stringify([' Prueba   interna ','prueba interna',42,null,'']));assert.equal(vm.runInContext('problemCatalog.length',c),1);assert.equal(vm.runInContext('problemCatalog[0]',c),'Prueba interna');});
+test('Seleccionar problemáticas no duplica ni modifica el peso',()=>{const c=problemContext('[]');c.roll={scrap:'12'};vm.runInContext("assignProblem(roll,' Prueba A ');assignProblem(roll,'prueba a');assignProblem(roll,'Prueba B')",c);assert.equal(c.roll.problems.length,2);assert.equal(c.roll.scrap,'12');});
+test('Desplegable de problemáticas escapa nombres y comienza plegado',()=>{const c=problemContext('["<prueba>"]');c.roll={id:'Bobina 1'};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/&lt;prueba>/);assert.doesNotMatch(output,/<prueba>/);assert.doesNotMatch(output,/data-problems-roll="0" open/);});
 console.log(`${count} pruebas correctas y estructura del desglose verificada.`);

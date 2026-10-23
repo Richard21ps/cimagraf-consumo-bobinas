@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.0">
+<link rel="stylesheet" href="compact-v40.css?v=4.1">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.0</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.1</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -805,19 +805,72 @@ function markDirty(){
  $('multi-breakdown-hint').hidden=false;
  $('multi-summary-status').textContent='Completa los datos para preparar el registro.';
 }
+const PROBLEM_CATALOG_KEY='cimagraf-problematicas-papel-v1';
+const cleanProblem=value=>String(value??'').trim().replace(/\s+/g,' ').slice(0,80);
+function loadProblemCatalog(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(PROBLEM_CATALOG_KEY));
+  if(!Array.isArray(saved))return [];
+  const options=[];
+  for(const entry of saved){if(typeof entry!=='string')continue;const name=cleanProblem(entry);if(name&&!options.some(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase()))options.push(name);}
+  return options;
+ }catch(_){return [];}
+}
+let problemCatalog=loadProblemCatalog();
+function assignProblem(roll,name){
+ const value=cleanProblem(name);if(!value)return;
+ if(!Array.isArray(roll.problems))roll.problems=[];
+ if(!roll.problems.some(x=>x.toLocaleLowerCase()===value.toLocaleLowerCase()))roll.problems.push(value);
+ roll.problemsOpen=true;
+}
+function problemControls(roll,index){
+ const selected=roll.problems||[];
+ return '<details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary>Problemáticas del papel retirado <span>'+(selected.length?selected.length+' seleccionada'+(selected.length===1?'':'s'):'Opcional')+' ▾</span></summary><div class="problem-content">'
+  +'<label>Seleccionar problemática<select data-problem-select="'+index+'"><option value="">'+(problemCatalog.length?'Elige una opción':'Sin opciones: agrega la primera')+'</option>'+problemCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label>'
+  +'<div class="problem-add"><label>Nueva problemática<input data-problem-new="'+index+'" maxlength="80" placeholder="Escribe el nombre"></label><button type="button" class="multi-button" data-problem-add="'+index+'">+ Agregar</button></div>'
+  +'<div class="problem-tags">'+selected.map((name,i)=>'<span>'+escapeHtml(name)+'<button type="button" data-problem-roll="'+index+'" data-problem-remove="'+i+'" aria-label="Quitar '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>'
+  +'<p class="problem-note">Las opciones quedan disponibles en este equipo. El peso se ingresa en Papel retirado (kg); seleccionar problemáticas no cambia los kg.</p><p class="problem-message" role="status"></p></div></details>';
+}
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por pliego (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Papel retirado (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0"')+'</div></div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Papel retirado (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0"')+'</div>'+problemControls(o,i)+'</div>').join('');
 }
 root.addEventListener('input',e=>{
+ if(e.target.closest('.roll-problems'))return;
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
  if(type){const idx=Number(t.dataset[type]); (type==='op'?ops:rolls)[idx][t.dataset.field]=t.value;}
  markDirty();scheduleAuto();
 });
-root.addEventListener('change',()=>{markDirty();scheduleAuto();});
+root.addEventListener('change',e=>{
+ const panel=e.target.closest('.roll-problems');
+ if(panel){
+  if(e.target.dataset.problemSelect!==undefined&&e.target.value){assignProblem(rolls[Number(e.target.dataset.problemSelect)],e.target.value);redraw();}
+  return;
+ }
+ markDirty();scheduleAuto();
+});
+root.addEventListener('toggle',e=>{if(e.target.matches('.roll-problems')){const roll=rolls[Number(e.target.dataset.problemsRoll)];if(roll)roll.problemsOpen=e.target.open;}},true);
+root.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&e.target.dataset.problemNew!==undefined){e.preventDefault();e.target.closest('.roll-problems').querySelector('[data-problem-add]').click();}
+});
 root.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.problemAdd!==undefined){
+  const index=Number(b.dataset.problemAdd),panel=b.closest('.roll-problems');
+  const input=panel.querySelector('[data-problem-new]'),name=cleanProblem(input.value);
+  if(!name){panel.querySelector('.problem-message').textContent='Escribe el nombre de la problemática.';input.focus();return;}
+  const existing=problemCatalog.find(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase());
+  if(!existing)problemCatalog.push(name);
+  let saved=true;try{localStorage.setItem(PROBLEM_CATALOG_KEY,JSON.stringify(problemCatalog));}catch(_){saved=false;}
+  assignProblem(rolls[index],existing||name);redraw();
+  const updated=root.querySelector('[data-problems-roll="'+index+'"]');
+  updated.querySelector('.problem-message').textContent=saved?'Problemática añadida.':'Añadida para esta sesión. No se pudo guardar la lista en este equipo.';
+  updated.querySelector('[data-problem-new]').focus();return;
+ }
+ if(b.dataset.problemRemove!==undefined){
+  const roll=rolls[Number(b.dataset.problemRoll)];roll.problems.splice(Number(b.dataset.problemRemove),1);redraw();return;
+ }
  const remove=b.dataset.remove;
  if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
 });
@@ -890,18 +943,22 @@ function renderRollUsage(r){
  const target=$('multi-roll-usage');
  if(!r){target.innerHTML='<p class="multi-muted">Completa los datos para ver cada bobina.</p>';return;}
  target.innerHTML=r.loads.map(b=>{
-  const active=b.used>EPS||b.scrap>EPS;
-  const state=!active?'Sin utilizar':b.left<=EPS?'Agotada':b.left<MIN_RETURN_PER_BOBINA-EPS?'Saldo menor a 100 kg':'Con saldo';
+  const active=b.used>EPS||b.scrap>EPS,empty=active&&b.left<=EPS;
+  const below=active&&b.left>EPS&&b.left<MIN_RETURN_PER_BOBINA-EPS;
+  const state=!active?'SIN UTILIZAR':empty?'AGOTADA':below?'REVISAR SALDO':'CON SALDO';
   const width=value=>Math.max(0,Math.min(100,value/b.initial*100));
   const description=b.id+': producción '+nf(b.used)+' kg, papel retirado '+nf(b.scrap)+' kg, saldo '+nf(b.left)+' kg. '+state+'.';
-  return '<article class="usage-card'+(active&&b.left>EPS&&b.left<MIN_RETURN_PER_BOBINA-EPS?' usage-warning':'')+'"><div class="usage-heading"><strong>'+escapeHtml(b.id)+'</strong><span>'+state+'</span></div>'
-   +'<p class="usage-amount">'+(!active?'Disponible: ':'Devolver: ')+'<strong>'+nf(b.left)+' kg</strong></p>'
+  return '<article class="usage-card '+(!active?'usage-idle':empty?'usage-empty':below?'usage-warning':'usage-ready')+'"><div class="usage-heading"><strong>'+escapeHtml(b.id)+'</strong><span class="usage-badge">'+(empty?'✓ ':'')+state+'</span></div>'
+   +'<div class="usage-values"><div class="usage-production-value"><span>PRODUCCIÓN</span><strong>'+nf(b.used)+' <small>kg</small></strong></div><div class="usage-stock-value"><span>'+(!active?'DISPONIBLE':'SALDO A DEVOLVER')+'</span><strong>'+nf(b.left)+' <small>kg</small></strong></div></div>'
    +'<div class="usage-bar" role="img" aria-label="'+escapeHtml(description)+'">'
    +'<span class="usage-produced" style="width:'+width(b.used)+'%"></span><span class="usage-removed" style="width:'+width(b.scrap)+'%"></span><span class="'+(active?'usage-balance':'usage-unused')+'" style="width:'+width(b.left)+'%"></span></div>'
-   +'<p class="usage-detail">Producción: '+nf(b.used)+' kg · Retirado: '+nf(b.scrap)+' kg</p>'
-   +'<p class="usage-detail">Inicial: '+nf(b.initial)+' kg · Ancho: '+nf(b.width,2)+' mm'+(!active?' · No suma a la devolución':'')+'</p></article>';
+   +'<p class="usage-percent"><span>'+nf(width(b.used),1)+'% producción</span><span>'+nf(width(b.left),1)+'% saldo</span></p>'
+   +'<p class="usage-detail">Papel retirado: <strong>'+nf(b.scrap)+' kg</strong> · Inicial: '+nf(b.initial)+' kg</p>'
+   +'<p class="usage-detail">Ancho: '+nf(b.width,2)+' mm</p>'
+   +(empty?'<p class="usage-state-note">Sin papel disponible · Devolución 0 kg</p>':below?'<p class="usage-state-note">Saldo menor a 100 kg · Envío bloqueado</p>':!active?'<p class="usage-state-note">No suma a la devolución</p>':'')+'</article>';
  }).join('');
 }
+
 function show(){
  try{
   const r=validate();
