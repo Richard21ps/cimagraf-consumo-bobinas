@@ -16,7 +16,7 @@ function calculate(meters, bobbins) {
 function near(actual, expected) {assert.ok(Math.abs(actual-expected)<1e-7, `${actual} != ${expected}`);}
 let count=0;
 function test(name, run) {run(); count++; console.log('OK '+name);}
-test('Una OP / una bobina: merma una vez',()=>{const r=calculate([1000],[[200,1000,10]]);near(r.total,70);near(r.saldo,120);near(r.totalScrap,10);});
+test('Una OP / una bobina: papel retirado una vez',()=>{const r=calculate([1000],[[200,1000,10]]);near(r.total,70);near(r.saldo,120);near(r.totalScrap,10);});
 test('Varias OP / una bobina',()=>{const r=calculate([400,600],[[200,1000,10]]);near(r.sums[0].kg,28);near(r.sums[1].kg,42);near(r.saldo,120);});
 test('Una OP / varias bobinas con anchos distintos',()=>{const r=calculate([2000],[[75,1000,5],[200,500,10]]);near(r.total,105);near(r.loads[0].left,0);near(r.loads[1].left,155);near(r.totalScrap,15);});
 test('Varias OP / varias bobinas con anchos distintos',()=>{const r=calculate([600,1400],[[75,1000,5],[200,500,10]]);near(r.sums[0].kg,42);near(r.sums[1].kg,63);near(r.saldo,155);assert.equal(r.details.length,3);});
@@ -30,4 +30,13 @@ test('Bobina no utilizada no suma devolución',()=>{const r=calculate([1000],[[2
 test('Balance de masa y metraje por movimiento',()=>{const r=calculate([600,1400],[[75,1000,5],[200,500,10]]);for(const b of r.usedRolls)near(b.initial,b.scrap+b.used+b.left);near(r.details.reduce((s,d)=>s+d.metros,0),2000);});
 assert.match(html, /<details id="multi-calculation-details" class="multi-calculation-details">/);
 assert.ok(html.indexOf('id="multi-register"')>html.indexOf('</details>',html.indexOf('id="multi-calculation-details"')));
-console.log(`${count} pruebas del motor y 2 comprobaciones de estructura correctas.`);
+test('Tres bobinas: dos agotadas y una con saldo',()=>{const r=calculate([3000],[[75,1000,5],[45,500,10],[200,700,10]]);near(r.loads[0].left,0);near(r.loads[1].left,0);near(r.loads[2].left,141);near(r.saldo,141);near(r.total,154);});
+const renderStart=html.indexOf('function renderRollUsage(r){');
+const renderSource=html.slice(renderStart,html.indexOf('\nfunction show(){',renderStart));
+function render(r){const target={innerHTML:''};const context={$:()=>target,EPS:1e-8,MIN_RETURN_PER_BOBINA:100,nf:String,escapeHtml:s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'),r};vm.createContext(context);vm.runInContext(renderSource+';renderRollUsage(r)',context);return target.innerHTML;}
+test('Gráfico: saldos reales de las tres bobinas',()=>{const output=render(calculate([3000],[[75,1000,5],[45,500,10],[200,700,10]]));assert.equal((output.match(/<span>Agotada<\/span>/g)||[]).length,2);assert.match(output,/Devolver: <strong>141 kg/);assert.match(output,/Retirado: 10 kg/);});
+test('Gráfico: bobina sin utilizar y saldo inferior al mínimo',()=>{const output=render(calculate([1000],[[179,1000,10],[300,500]]));assert.match(output,/Saldo menor a 100 kg/);assert.match(output,/Disponible: <strong>300 kg/);assert.match(output,/No suma a la devolución/);});
+test('Gráfico: datos pendientes no muestran saldos anteriores',()=>assert.match(render(null),/Completa los datos/));
+test('Sintaxis de ambos scripts',()=>{for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);});
+assert.doesNotMatch(html,/id="multi-total-(meters|consumption|scrap)"/);
+console.log(`${count} pruebas correctas y estructura del desglose verificada.`);

@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
+<link rel="stylesheet" href="compact-v40.css?v=4.0">
   <style>
     :root {
       color-scheme: light;
@@ -266,7 +267,7 @@
               <div class="field full">
                 <label for="roll-kg">Peso inicial de bobina</label>
                 <input id="roll-kg" name="roll-kg" type="number" min="0" step="any" placeholder="Ej.: 50" inputmode="decimal" required>
-                <span class="hint">Ingresa los kg totales recibidos de almacén, incluyendo el tuco. No necesitas conocer el peso del tuco.</span>
+                <span class="hint">Ingresa el peso neto del papel recibido de almacén, sin tuco.</span>
               </div>
             </div>
           </section>
@@ -288,7 +289,7 @@
             <output class="delivery-weight" id="left-kilos">— <span class="delivery-unit">kg</span></output>
           </div>
           <p class="delivery-meters">Equivalencia teórica máxima: <output id="left-meters">— m</output></p>
-          <p class="delivery-guidance" id="delivery-guidance">Los kg por devolver incluirán el tuco. Los metros no serán exactos mientras desconozcamos su peso.</p>
+          <p class="delivery-guidance" id="delivery-guidance">Todos los pesos se registran sin tuco. Los metros son una equivalencia teórica.</p>
         </section>
         <section class="result-group consumption-group">
           <h3 class="result-group-title">CONSUMO DE LA OP (NO ES DEVOLUCIÓN)</h3>
@@ -325,13 +326,13 @@
               <p class="equation"><span>Metros equivalentes</span><span>=</span><span class="fraction"><span class="numerator">Kg por entregar × 1,000,000</span><span class="denominator">Ancho de bobina (mm) × gramaje (g/m²)</span></span></p>
             </section>
           </div>
-          <p class="formula-note">Los kg por devolver incluyen el tuco. Esta equivalencia en metros es un límite máximo teórico, porque el peso del tuco es desconocido. Los metros reales de papel son menores. Las cifras suponen que el consumo calculado representa todo el papel usado.</p>
+          <p class="formula-note">Los pesos son netos, sin tuco. Los metros se estiman con el ancho y gramaje del papel.</p>
         </details>
       </aside>
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 3.9</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.0</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -351,11 +352,11 @@
       </div>
       <div class="multi-block multi-bobbins">
         <h3>3 · Bobinas en orden de utilización</h3>
-        <p class="multi-muted">Registra ancho, kg iniciales y merma en kg para cada bobina. La merma se descuenta una sola vez del peso disponible.</p>
+        <p class="multi-muted">Pesos sin tuco. Papel retirado = lonjas iniciales + remanente separado al finalizar, pesados en kg. Ingresa la suma; se descuenta una sola vez.</p>
         <div id="multi-roll-list"></div>
         <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
       </div>
-      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Los kg incluyen el tuco; los metros son una equivalencia teórica.</p></section><section class="result-group consumption-group"><h4 class="result-group-title">CONSUMO TOTAL DE OP</h4><div class="result-pair"><div class="result-box"><p class="result-label">Metros consumidos</p><output class="result-value" id="multi-total-meters">— m</output></div><div class="result-box"><p class="result-label">Kg consumidos</p><output class="result-value" id="multi-total-consumption">— kg</output></div></div></section><p class="delivery-guidance">Merma total: <strong><output id="multi-total-scrap">— kg</output></strong></p><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
+      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Peso neto de papel, sin tuco. Metros equivalentes según el ancho de cada bobina.</p></section><section class="bobbin-usage" aria-labelledby="bobbin-usage-title"><h4 id="bobbin-usage-title">Estado de las bobinas</h4><p class="usage-legend"><span><i class="usage-produced"></i>Producción</span><span><i class="usage-removed"></i>Papel retirado</span><span><i class="usage-balance"></i>Saldo</span></p><div id="multi-roll-usage" aria-live="polite"><p class="multi-muted">Completa los datos para ver cada bobina.</p></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
       <p class="multi-alert" id="multi-policy-warning" role="status" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
@@ -384,7 +385,7 @@
           <div class="multi-footer-actions">
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">El saldo descuenta merma y producción por bobina. Devolución mínima: 100 kg por bobina con saldo (0 kg si está agotada). La precarga conserva el formato de Forms.</p>
+          <p class="multi-note" id="multi-registration-note">El saldo descuenta papel retirado y producción por bobina. Devolución mínima: 100 kg por bobina con saldo (0 kg si está agotada). La precarga conserva el formato de Forms.</p>
         </div>
       </section>
     </section>
@@ -422,7 +423,7 @@
         </div>
         <button class="reset" id="forms-back" type="button">Volver sin borrar</button>
       </div>
-      <p class="forms-instructions" id="forms-instructions">Los 10 datos se precargan automáticamente. Solo pulsa «Enviar» en Microsoft Forms. Los campos de metros representan una equivalencia teórica máxima por desconocerse el peso del tuco.</p>
+      <p class="forms-instructions" id="forms-instructions">Los 10 datos se precargan automáticamente. Solo pulsa «Enviar» en Microsoft Forms. Los pesos son netos, sin tuco; los metros representan una equivalencia teórica.</p>
       <iframe class="forms-frame" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
       <div class="forms-footer">
         <p>Espera la confirmación de Microsoft Forms antes de continuar. Esta calculadora no puede verificar por sí sola el envío.</p>
@@ -562,9 +563,7 @@
         const meters = books * copies * advance / 1000;
         const kilos = meters * width * material.gsm / 1000000;
         const hasStock = Number.isFinite(initialKg) && initialKg > 0;
-        // El peso inicial y el peso devuelto incluyen el mismo tuco: este no
-        // altera el balance en kg. Los metros calculados sin tara son solo
-        // equivalencias máximas, NO longitudes reales verificadas.
+        // Todos los pesos son netos de papel, sin tuco. Los metros son equivalentes teóricos.
         const remainingKg = hasStock ? initialKg - kilos : NaN;
         const kgPerMeter = width * material.gsm / 1000000;
         const initialMeters = hasStock ? initialKg / kgPerMeter : NaN;
@@ -576,15 +575,15 @@
         document.getElementById('left-meters').textContent = validReturn ? formatNumber(remainingMeters) + ' m' : '— m';
         document.getElementById('left-kilos').innerHTML = validReturn ? formatNumber(remainingKg, 3) + ' <span class="delivery-unit">kg</span>' : '— <span class="delivery-unit">kg</span>';
         document.getElementById('delivery-guidance').textContent = validReturn
-          ? 'Los kg a entregar incluyen el tuco. Los metros son un máximo teórico y pueden estar sobreestimados: no se conoce el peso del tuco.'
+          ? 'Los kg a entregar son de papel, sin tuco. Los metros son una equivalencia teórica.'
           : hasStock
             ? 'Revisa los datos: el consumo calculado supera los kg iniciales de la bobina.'
-            : 'Ingresa el peso inicial en kg, incluyendo el tuco, para calcular la devolución.';
+            : 'Ingresa el peso inicial del papel en kg, sin tuco, para calcular la devolución.';
         const details = formatNumber(books, 0) + ' libros · ' + formatNumber(copies, 0) + ' copias por libro · ' + material.name + ' ' + formatNumber(material.gsm) + ' g/m²';
         let status = details;
         if (!hasStock) status += ' · Completa los kg iniciales de bobina.';
         else if (remainingKg < 0) status += ' · El consumo supera el peso inicial; revisa los datos.';
-        else status += ' · Metros equivalentes máximos: no descuentan el tuco.';
+        else status += ' · Pesos sin tuco; metros equivalentes teóricos.';
         document.getElementById('status').textContent = status;
         return { books, copies, width, advance, initialKg, initialMeters, material, meters, kilos, remainingMeters, remainingKg, op };
       }
@@ -690,7 +689,7 @@
         const url = new URL(formsBaseUrl);
         questionKeys.forEach((key, index) => url.searchParams.set(key, answers[index]));
         // Forms mantiene sus diez campos numéricos: los metros precargados son
-        // equivalencias máximas SIN descontar el tuco, no medidas exactas.
+        // equivalencias teóricas de papel, con pesos netos sin tuco.
         // Microsoft Forms acepta la modalidad embed; no se abren ventanas automáticamente.
         const responseUrl = url.toString().replace(/\+/g, '%20');
         formsExternal.href = responseUrl;
@@ -793,9 +792,7 @@ function markDirty(){
  result=null;
  $('multi-delivery').innerHTML='— <span class="delivery-unit">kg</span>';
  $('multi-delivery-meters').textContent='— m';
- $('multi-total-meters').textContent='— m';
- $('multi-total-consumption').textContent='— kg';
- $('multi-total-scrap').textContent='— kg';$('multi-policy-warning').hidden=true;
+ renderRollUsage(null);$('multi-policy-warning').hidden=true;
  $('multi-delivery-status').textContent='Completa los datos de producción para calcular.';
  nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
  $('multi-error').hidden=true;$('multi-success').hidden=true;
@@ -811,7 +808,7 @@ function markDirty(){
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por pliego (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Merma (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0"')+'</div></div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Papel retirado (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0"')+'</div></div>').join('');
 }
 root.addEventListener('input',e=>{
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
@@ -836,8 +833,8 @@ function validate(){
   r.id=r.id.trim();
   const kg=numeric(r.kg),width=numeric(r.width);
   const scrap=(r.scrap??'')===''?0:numeric(r.scrap);
-  if(!Number.isFinite(scrap)||scrap<0)throw Error('La merma de '+r.id+' debe ser mayor o igual a 0 kg.');
-  if(Number.isFinite(kg)&&scrap>kg)throw Error('La merma de '+r.id+' no puede superar el peso inicial.');
+  if(!Number.isFinite(scrap)||scrap<0)throw Error('El papel retirado de '+r.id+' debe ser mayor o igual a 0 kg.');
+  if(Number.isFinite(kg)&&scrap>kg)throw Error('El papel retirado de '+r.id+' no puede superar el peso inicial.');
   if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa los kg iniciales de todas las bobinas.');
   if(!Number.isFinite(width)||width<=0)throw Error('Indica un ancho en mm válido para '+r.id+'.');
   if(/[~^|,:\r\n]/.test(r.id))throw Error('Los identificadores de bobina no pueden contener separadores especiales.');
@@ -889,6 +886,22 @@ function validate(){
    sourceOps:ops.map(o=>({id:o.id,books:Number(o.books),copies:Number(o.copies),advance:Number(o.advance)}))};
 }
 function table(headers,rows){return '<div class="multi-table-wrap"><table class="multi-table"><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map((cell,i)=>'<td'+(i?' class="num"':'')+'>'+escapeHtml(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
+function renderRollUsage(r){
+ const target=$('multi-roll-usage');
+ if(!r){target.innerHTML='<p class="multi-muted">Completa los datos para ver cada bobina.</p>';return;}
+ target.innerHTML=r.loads.map(b=>{
+  const active=b.used>EPS||b.scrap>EPS;
+  const state=!active?'Sin utilizar':b.left<=EPS?'Agotada':b.left<MIN_RETURN_PER_BOBINA-EPS?'Saldo menor a 100 kg':'Con saldo';
+  const width=value=>Math.max(0,Math.min(100,value/b.initial*100));
+  const description=b.id+': producción '+nf(b.used)+' kg, papel retirado '+nf(b.scrap)+' kg, saldo '+nf(b.left)+' kg. '+state+'.';
+  return '<article class="usage-card'+(active&&b.left>EPS&&b.left<MIN_RETURN_PER_BOBINA-EPS?' usage-warning':'')+'"><div class="usage-heading"><strong>'+escapeHtml(b.id)+'</strong><span>'+state+'</span></div>'
+   +'<p class="usage-amount">'+(!active?'Disponible: ':'Devolver: ')+'<strong>'+nf(b.left)+' kg</strong></p>'
+   +'<div class="usage-bar" role="img" aria-label="'+escapeHtml(description)+'">'
+   +'<span class="usage-produced" style="width:'+width(b.used)+'%"></span><span class="usage-removed" style="width:'+width(b.scrap)+'%"></span><span class="'+(active?'usage-balance':'usage-unused')+'" style="width:'+width(b.left)+'%"></span></div>'
+   +'<p class="usage-detail">Producción: '+nf(b.used)+' kg · Retirado: '+nf(b.scrap)+' kg</p>'
+   +'<p class="usage-detail">Inicial: '+nf(b.initial)+' kg · Ancho: '+nf(b.width,2)+' mm'+(!active?' · No suma a la devolución':'')+'</p></article>';
+ }).join('');
+}
 function show(){
  try{
   const r=validate();
@@ -899,9 +912,7 @@ function show(){
   $('multi-results').hidden=false;
   $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
   $('multi-delivery-meters').textContent=nf(r.saldoMetros,2)+' m';
-  $('multi-total-meters').textContent=nf(r.sums.reduce((t,x)=>t+x.metros,0),2)+' m';
-  $('multi-total-consumption').textContent=nf(r.total)+' kg';
-  $('multi-total-scrap').textContent=nf(r.totalScrap)+' kg';
+  renderRollUsage(r);
   const bad=r.returnViolations;
   $('multi-policy-warning').hidden=bad.length===0;
   $('multi-policy-warning').textContent=bad.length
@@ -909,14 +920,14 @@ function show(){
    :'';
   $('multi-delivery-status').textContent=bad.length
    ?'Saldo calculado; revisa las bobinas con devolución inferior al mínimo.'
-   :'Saldo después de descontar consumo productivo y merma.';
+   :'Saldo después de descontar producción y papel retirado.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
-  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Merma (kg)','Consumo OP (kg)','Devolver (kg)','Control 100 kg'],r.loads.map(x=>[x.id,nf(x.width,2),nf(x.initial),nf(x.scrap),nf(x.used),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':x.left<MIN_RETURN_PER_BOBINA-EPS?'Menor a 100 kg':'Cumple']));
+  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Papel retirado (kg)','Consumo OP (kg)','Devolver (kg)','Control 100 kg'],r.loads.map(x=>[x.id,nf(x.width,2),nf(x.initial),nf(x.scrap),nf(x.used),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':x.left<MIN_RETURN_PER_BOBINA-EPS?'Menor a 100 kg':'Cumple']));
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho,2),nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
- }catch(err){result=null;$('multi-policy-warning').hidden=true;$('multi-total-scrap').textContent='— kg';$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
+ }catch(err){result=null;$('multi-policy-warning').hidden=true;renderRollUsage(null);$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
 }
 function makeGroupSummary(r,group,type) {
  const num=n=>Number(n).toFixed(3).replace(/\.000$/,'');
