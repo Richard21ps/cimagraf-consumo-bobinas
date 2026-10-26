@@ -166,3 +166,12 @@ header{margin-bottom:14px}
  .print-total strong{font-size:20pt;white-space:nowrap}
  .print-review{border:1px solid #777;padding:8px;font-weight:bold;font-size:9pt;break-inside:avoid}
 }
+
+/* 4.6: identidad Cimagraf integrada en pantalla e impresión. */
+.brand-header{display:flex;align-items:center;gap:20px}
+.brand-logo{width:175px;height:auto;flex:0 0 auto;object-fit:contain;background:#fff;border-radius:5px}
+.brand-title{min-width:0}
+.brand-title h1{font-size:30px}
+.brand-title .intro{font-size:15px;margin-top:7px}
+@media(max-width:650px){.brand-header{gap:10px;align-items:flex-start;flex-direction:column}.brand-logo{width:145px}.brand-title h1{font-size:26px}}
+@media print{.print-logo{float:right;width:150px;height:auto;margin:0 0 10px 16px}.print-heading:after{content:'';display:block;clear:both}}
