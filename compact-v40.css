@@ -175,3 +175,27 @@ header{margin-bottom:14px}
 .brand-title .intro{font-size:15px;margin-top:7px}
 @media(max-width:650px){.brand-header{gap:10px;grid-template-columns:1fr}.brand-logo{width:145px;grid-column:1;grid-row:1}.brand-title{grid-column:1;grid-row:2}.brand-title h1{font-size:26px}}
 @media print{.print-logo{float:right;width:150px;height:auto;margin:0 0 10px 16px;background:transparent;mix-blend-mode:normal}.print-heading:after{content:'';display:block;clear:both}}
+
+/* 4.7: sobrante con tara, cifras de retiro y datos de material destacados. */
+.multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(5,minmax(0,1fr))}
+.removal-help{grid-column:1 / -1;grid-row:2;margin:0;font-size:11px;color:#627381;line-height:1.4}
+.core-tare{grid-column:1 / -1;grid-row:3;border:1px solid #dfc394;border-radius:7px;padding:7px 10px;background:#fffaf0}
+.core-tare[hidden]{display:none!important}
+.core-tare summary{font-size:12px;font-weight:700;cursor:pointer;color:#865c1f}
+.core-tare label{max-width:260px;margin-top:8px;font-size:12px}
+.core-tare input{font-size:14px;min-height:38px;padding:8px}
+.core-tare p{font-size:11px;color:#865c1f;margin:7px 0 0}
+.multi-editor .roll-problems-wrap{grid-row:4}
+.mini-roll-values{grid-template-columns:1fr 1.25fr 1fr;gap:5px}
+.mini-roll-values .mini-removed{color:#8b621b}
+.mini-roll-values .mini-removed b{color:#a57013}
+@media(max-width:1120px) and (min-width:901px){.multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.multi-editor .multi-bobbins .multi-remove{grid-row:5}}
+@media(max-width:580px){.multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.multi-editor .multi-bobbins .multi-remove{grid-row:5}}
+@media print{
+ .print-material-strip{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;padding:10px;border:2px solid #333;margin:12px 0 8px;break-inside:avoid}
+ .print-material-strip span{display:block;font-size:8pt;color:#555}
+ .print-material-strip strong{display:block;font-size:13pt;margin-top:3px}
+ .print-width-detail{font-size:9pt;margin:5px 0 12px;break-inside:avoid}
+}
+
+.mini-roll-values>span{display:flex;flex-direction:column;justify-content:space-between;gap:2px}
