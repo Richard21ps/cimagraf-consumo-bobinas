@@ -199,3 +199,11 @@ header{margin-bottom:14px}
 }
 
 .mini-roll-values>span{display:flex;flex-direction:column;justify-content:space-between;gap:2px}
+
+/* 4.8: motivos de papel retirado y tara automática del sobrante. */
+.core-tare-note{grid-column:1 / -1;grid-row:4;font-size:12px;color:#496473;background:#f0f5f7;border-radius:6px;padding:7px 10px;line-height:1.4}
+.core-tare-note[hidden],.core-tare-note:empty{display:none}
+.core-tare-note span{display:block;font-size:11px;color:#627381;margin-top:2px}
+.core-tare-note label{font-size:12px;max-width:240px}
+.core-tare-note input{min-height:36px;padding:6px}
+.multi-editor .roll-problems-wrap{grid-row:3}
