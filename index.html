@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.8">
+<link rel="stylesheet" href="compact-v40.css?v=4.8.1">
   <style>
     :root {
       color-scheme: light;
@@ -864,7 +864,13 @@ function redraw(){
 root.addEventListener('input',e=>{
  if(e.target.closest('.roll-problems'))return;
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
- if(type){const idx=Number(t.dataset[type]); (type==='op'?ops:rolls)[idx][t.dataset.field]=t.value;}
+ if(type){
+  const idx=Number(t.dataset[type]);(type==='op'?ops:rolls)[idx][t.dataset.field]=t.value;
+  if(type==='roll'&&t.dataset.field==='scrap'&&Number(t.value)>0){
+   rolls[idx].problemsOpen=true;
+   const panel=root.querySelector('[data-problems-roll="'+idx+'"]');if(panel)panel.open=true;
+  }
+ }
  markDirty();scheduleAuto();
 });
 root.addEventListener('change',e=>{
