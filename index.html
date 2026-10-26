@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.8.1">
+<link rel="stylesheet" href="compact-v40.css?v=4.8.2">
   <style>
     :root {
       color-scheme: light;
@@ -1008,7 +1008,7 @@ function renderRollUsage(r){
   if(!b){
    let removal;try{removal=bobbinRemoval(roll,true);}catch(_){removal=null;}
    const pending=removal?.pending,amount=removal?(pending?removal.retired+removal.gross:removal.total):null;
-   return '<article class="mini-roll mini-pending"><span class="roll-mini-icon" aria-hidden="true"></span><div class="mini-roll-body"><div class="mini-roll-title"><strong>'+escapeHtml(roll.id)+'</strong><span>'+(pending?'FALTA TARA':'Por calcular')+'</span></div><p class="mini-roll-values"><span>Producción <b>— kg</b></span><span class="mini-removed">Retirado + sobrante <b>'+(amount===null?'—':nf(amount))+' <small>kg</small></b></span><span>Saldo <b>— kg</b></span></p>'+(pending?'<p class="mini-roll-note">La suma incluye cartón. Saldo pendiente hasta conocer la tara.</p>':'')+'</div></article>';
+   return '<article class="mini-roll mini-pending"><span class="roll-mini-icon" aria-hidden="true"></span><div class="mini-roll-body"><div class="mini-roll-title"><strong>'+escapeHtml(roll.id)+'</strong><span>'+(pending?'FALTA TARA':'Por calcular')+'</span></div><p class="mini-roll-values"><span>Producción <b>— kg</b></span><span class="mini-removed">Papel separado <b>'+(amount===null?'—':nf(amount))+' <small>kg</small></b></span><span>Saldo <b>— kg</b></span></p>'+(pending?'<p class="mini-roll-note">La suma incluye cartón. Saldo pendiente hasta conocer la tara.</p>':'')+'</div></article>';
   }
   const active=b.used>EPS||b.scrap>EPS,empty=active&&b.left<=EPS;
   const state=!active?'SIN UTILIZAR':empty?'AGOTADA':'CON SALDO';
@@ -1017,7 +1017,7 @@ function renderRollUsage(r){
   const description=b.id+': producción '+nf(b.used)+' kg, papel retirado y sobrante neto '+nf(b.scrap)+' kg, saldo '+nf(b.left)+' kg. '+state+'.';
   const balanceColor=active?'#65a887':'#d7e0e6';
   return '<article class="mini-roll '+(!active?'usage-idle':empty?'usage-empty':'usage-ready')+'"><span class="roll-mini-icon" aria-hidden="true" style="background:conic-gradient(#427a9e 0% '+produced+'%,#d5a457 '+produced+'% '+removedEnd+'%,'+balanceColor+' '+removedEnd+'% 100%)"></span><div class="mini-roll-body"><div class="mini-roll-title"><strong>'+escapeHtml(b.id)+'</strong><span class="mini-roll-badge">'+state+'</span></div>'
-   +'<p class="mini-roll-values"><span>Producción <b>'+nf(b.used)+' <small>kg</small></b></span><span class="mini-removed">Retirado + sobrante <b>'+nf(b.scrap)+' <small>kg</small></b></span><span>'+(!active?'Disponible':'Saldo')+' <b>'+nf(b.left)+' <small>kg</small></b></span></p>'
+   +'<p class="mini-roll-values"><span>Producción <b>'+nf(b.used)+' <small>kg</small></b></span><span class="mini-removed">Papel separado <b>'+nf(b.scrap)+' <small>kg</small></b></span><span>'+(!active?'Disponible':'Saldo')+' <b>'+nf(b.left)+' <small>kg</small></b></span></p>'
    +'<div class="usage-bar" role="img" aria-label="'+escapeHtml(description)+'"><span class="usage-produced" style="width:'+produced+'%"></span><span class="usage-removed" style="width:'+width(b.scrap)+'%"></span><span class="'+(active?'usage-balance':'usage-unused')+'" style="width:'+width(b.left)+'%"></span></div>'
    +(!active?'<p class="mini-roll-note">No suma a la devolución</p>':'')+'</div></article>';
  }).join('');
