@@ -168,10 +168,10 @@ header{margin-bottom:14px}
 }
 
 /* 4.6: identidad Cimagraf integrada en pantalla e impresión. */
-.brand-header{display:flex;align-items:center;gap:20px}
-.brand-logo{width:175px;height:auto;flex:0 0 auto;object-fit:contain;background:transparent;border-radius:0;mix-blend-mode:multiply}
-.brand-title{min-width:0}
+.brand-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:20px}
+.brand-logo{width:175px;height:auto;grid-column:2;grid-row:1;justify-self:end;object-fit:contain;background:transparent;border-radius:0;mix-blend-mode:multiply}
+.brand-title{min-width:0;grid-column:1;grid-row:1}
 .brand-title h1{font-size:30px}
 .brand-title .intro{font-size:15px;margin-top:7px}
-@media(max-width:650px){.brand-header{gap:10px;align-items:flex-start;flex-direction:column}.brand-logo{width:145px}.brand-title h1{font-size:26px}}
+@media(max-width:650px){.brand-header{gap:10px;grid-template-columns:1fr}.brand-logo{width:145px;grid-column:1;grid-row:1}.brand-title{grid-column:1;grid-row:2}.brand-title h1{font-size:26px}}
 @media print{.print-logo{float:right;width:150px;height:auto;margin:0 0 10px 16px;background:transparent;mix-blend-mode:normal}.print-heading:after{content:'';display:block;clear:both}}
