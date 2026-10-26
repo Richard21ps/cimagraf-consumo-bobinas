@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.4">
+<link rel="stylesheet" href="compact-v40.css?v=4.5">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.4</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.5</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -384,6 +384,7 @@
           <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
           <div class="multi-footer-actions">
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
+            <button class="multi-button" id="multi-print" type="button" disabled>Imprimir resumen</button>
           </div>
           <p class="multi-note" id="multi-registration-note">El saldo descuenta papel retirado y producción por bobina. Devolución mínima: 100 kg por bobina con saldo (0 kg si está agotada). La precarga conserva el formato de Forms.</p>
         </div>
@@ -434,6 +435,8 @@
       </div>
     </div>
   </div>
+
+  <section id="print-summary" class="print-summary" aria-label="Resumen para imprimir"></section>
 
   <script>
     (() => {
@@ -797,6 +800,8 @@ function markDirty(){
  nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
  $('multi-error').hidden=true;$('multi-success').hidden=true;
  $('multi-register').disabled=true;
+ $('multi-print').disabled=true;
+ $('print-summary').replaceChildren();
  $('multi-total').textContent='—';$('multi-saldo').textContent='—';$('multi-active').textContent='—';
  $('multi-ops-table').replaceChildren();
  $('multi-rolls-table').replaceChildren();
@@ -995,8 +1000,29 @@ function show(){
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho,2),nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
- }catch(err){result=null;$('multi-policy-warning').hidden=true;renderRollUsage(null);$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
+ }catch(err){result=null;$('multi-print').disabled=true;$('print-summary').replaceChildren();$('multi-policy-warning').hidden=true;renderRollUsage(null);$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
 }
+function buildPrintSummary(r,stamp){
+ const rows=r.details.map(d=>[d.op,d.bobina,nf(d.kg),nf(d.saldo)]);
+ const finalRows=r.usedRolls.map(b=>[b.id,nf(b.initial),nf(b.scrap),nf(b.used),nf(b.left)]);
+ return '<header class="print-heading"><p>CIMAGRAF · ÁREA DIGITAL</p><h1>Consumo y devolución de bobinas</h1><p>Trabajo actual · '+escapeHtml(stamp)+'</p></header>'
+  +'<div class="print-meta"><strong>Grupo: '+escapeHtml(r.group||'Sin identificador')+'</strong><span>Papel: '+escapeHtml(r.paper)+' · Gramaje: '+nf(r.gsm)+' g/m²</span></div>'
+  +'<h2>Consumo por OP y bobina</h2>'+table(['OP','Bobina','Consumido (kg)','Saldo tras OP (kg)'],rows)
+  +'<p class="print-note">El saldo tras OP es lo que queda en esa bobina después del consumo indicado. Estos saldos no se suman.</p>'
+  +'<h2>Saldo final por bobina</h2>'+table(['Bobina','Inicial (kg)','Retirado (kg)','Producción (kg)','Devolver (kg)'],finalRows)
+  +'<div class="print-total">TOTAL A ENTREGAR AL ALMACÉN <strong>'+nf(r.saldo)+' kg</strong></div>'
+  +(r.returnViolations.length?'<p class="print-review">Revisar devolución: '+r.returnViolations.map(b=>escapeHtml(b.id)+' ('+nf(b.kg)+' kg)').join('; ')+'. El saldo real es menor a 100 kg por bobina.</p>':'')
+  +'<p class="print-note">Pesos netos de papel, sin tuco. El papel retirado se descuenta una sola vez. Solo se incluyen bobinas utilizadas o con papel retirado.</p>';
+}
+function preparePrintSummary(){
+ if(!result)return false;
+ const stamp=new Date().toLocaleString('es-PE',{timeZone:'America/Lima',dateStyle:'short',timeStyle:'short'});
+ $('print-summary').innerHTML=buildPrintSummary(result,stamp);
+ document.body.classList.add('printing-summary');return true;
+}
+$('multi-print').addEventListener('click',()=>{if(preparePrintSummary())window.print();});
+window.addEventListener('beforeprint',preparePrintSummary);
+window.addEventListener('afterprint',()=>document.body.classList.remove('printing-summary'));
 function makeGroupSummary(r,group,type) {
  const num=n=>Number(n).toFixed(3).replace(/\.000$/,'');
  // Texto compacto con trazabilidad suficiente para reconstruir movimientos.
@@ -1051,6 +1077,7 @@ function refreshOpQueue(){
  $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  $('multi-summary-status').textContent=result.returnViolations.length?'Envío bloqueado: alguna bobina utilizada tiene saldo inferior a 100 kg.':result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Ingresa un identificador de grupo para enviar a Forms.';
  $('multi-register').disabled=!result.group||result.returnViolations.length>0;
+ $('multi-print').disabled=false;
  $('multi-register').textContent='Enviar a Forms';
 }
 function groupText(r){
