@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.8.2">
+<link rel="stylesheet" href="compact-v40.css?v=4.9">
   <style>
     :root {
       color-scheme: light;
@@ -781,6 +781,8 @@ if(!root||!simple||!complex||!layout)return;
   balance:'r6461e1c1fa7f44ccbf714af864bf7fe5'
  };
  // Pregunta 15 'Datos automáticos de OP': sustituir con el ID del vínculo predefinido.
+ // Completar con los identificadores del enlace prellenado del mismo Forms.
+ const WITHDRAWAL_FORM_KEYS = { reasons:'', areas:'' };
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
@@ -827,14 +829,32 @@ function assignProblem(roll,name){
  if(!roll.problems.some(x=>x.toLocaleLowerCase()===value.toLocaleLowerCase()))roll.problems.push(value);
  roll.problemsOpen=true;
 }
+const AREA_CATALOG_KEY='cimagraf-areas-papel-v1';
+function loadAreaCatalog(){
+ const areas=['Almacén','Planta digital'];
+ try{const saved=JSON.parse(localStorage.getItem(AREA_CATALOG_KEY));if(Array.isArray(saved))for(const entry of saved){if(typeof entry!=='string')continue;const name=cleanProblem(entry);if(name&&!areas.some(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase()))areas.push(name);}}catch(_){}
+ return areas;
+}
+let areaCatalog=loadAreaCatalog();
+function assignArea(roll,name){
+ const value=cleanProblem(name);if(!value)return;
+ if(!Array.isArray(roll.areas))roll.areas=[];
+ if(!roll.areas.some(x=>x.toLocaleLowerCase()===value.toLocaleLowerCase()))roll.areas.push(value);
+ roll.problemsOpen=true;
+}
+function areaControls(roll,index){
+ return '<section class="withdrawal-areas" aria-label="Áreas involucradas de '+escapeHtml(roll.id)+'"><div class="problem-choose"><label>Áreas involucradas<select data-area-select="'+index+'"><option value="">Seleccionar área…</option>'+areaCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label><button type="button" class="problem-new-button" data-area-start="'+index+'"'+(roll.areaAdding?' hidden':'')+'>+ Agregar área</button></div>'
+  +'<div class="area-form problem-form"'+(roll.areaAdding?'':' hidden')+'><label>Nombre del área<input data-area-new="'+index+'" maxlength="80" placeholder="Ej.: Mantenimiento"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-area-add="'+index+'">Guardar área</button><button type="button" class="problem-cancel-button" data-area-cancel="'+index+'">Cancelar</button></div></div><p class="area-message problem-message" role="status"></p></section>';
+}
+function updateWithdrawalMetadata(){markDirty();redraw();scheduleAuto();}
 function problemControls(roll,index){
  const selected=roll.problems||[],adding=Boolean(roll.problemAdding);
  return '<div class="roll-problems-wrap"><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">¿Por qué se retiró papel?</span><span class="problem-summary-action">'+(selected.length?selected.length+' motivo'+(selected.length===1?'':'s'):'Agregar motivo')+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo al papel retirado, no al sobrante de tuco.</p>'
   +'<div class="problem-choose">'+(problemCatalog.length?'<label>Elige un motivo<select data-problem-select="'+index+'"><option value="">Seleccionar…</option>'+problemCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label>':'<p class="problem-empty">Agrega el primer motivo con tus palabras.</p>')
   +'<button type="button" class="problem-new-button" data-problem-start="'+index+'"'+(adding?' hidden':'')+'>+ Agregar motivo</button></div>'
-  +'<div class="problem-form"'+(adding?'':' hidden')+'><label>¿Qué pasó?<input data-problem-new="'+index+'" maxlength="80" placeholder="Escribe el motivo con tus palabras"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-problem-add="'+index+'">Guardar motivo</button><button type="button" class="problem-cancel-button" data-problem-cancel="'+index+'">Cancelar</button></div></div>'
-  +'<p class="problem-message" role="status"></p></div></details>'
-  +(selected.length?'<div class="problem-tags" aria-label="Motivos elegidos para '+escapeHtml(roll.id)+'">'+selected.map((name,i)=>'<span>✓ '+escapeHtml(name)+'<button type="button" data-problem-roll="'+index+'" data-problem-remove="'+i+'" aria-label="Quitar motivo '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>':'')+'</div>';
+  +'<div class="reason-form problem-form"'+(adding?'':' hidden')+'><label>¿Qué pasó?<input data-problem-new="'+index+'" maxlength="80" placeholder="Escribe el motivo con tus palabras"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-problem-add="'+index+'">Guardar motivo</button><button type="button" class="problem-cancel-button" data-problem-cancel="'+index+'">Cancelar</button></div></div>'
+  +'<p class="reason-message problem-message" role="status"></p>'+areaControls(roll,index)+'</div></details>'
+  +(selected.length?'<div class="problem-tags" aria-label="Motivos elegidos para '+escapeHtml(roll.id)+'">'+selected.map((name,i)=>'<span>✓ '+escapeHtml(name)+'<button type="button" data-problem-roll="'+index+'" data-problem-remove="'+i+'" aria-label="Quitar motivo '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>':'')+((roll.areas||[]).length?'<div class="problem-tags area-tags" aria-label="Áreas elegidas para '+escapeHtml(roll.id)+'">'+roll.areas.map((name,i)=>'<span>Área: '+escapeHtml(name)+'<button type="button" data-area-roll="'+index+'" data-area-remove="'+i+'" aria-label="Quitar área '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>':'')+'</div>';
 }
 
 function coreTareControls(roll,index){
@@ -876,40 +896,53 @@ root.addEventListener('input',e=>{
 root.addEventListener('change',e=>{
  const panel=e.target.closest('.roll-problems');
  if(panel){
-  if(e.target.dataset.problemSelect!==undefined&&e.target.value){assignProblem(rolls[Number(e.target.dataset.problemSelect)],e.target.value);redraw();}
+  if(e.target.dataset.problemSelect!==undefined&&e.target.value){assignProblem(rolls[Number(e.target.dataset.problemSelect)],e.target.value);updateWithdrawalMetadata();}
+  if(e.target.dataset.areaSelect!==undefined&&e.target.value){assignArea(rolls[Number(e.target.dataset.areaSelect)],e.target.value);updateWithdrawalMetadata();}
   return;
  }
  markDirty();scheduleAuto();
 });
 root.addEventListener('toggle',e=>{if(e.target.matches('.roll-problems')){const roll=rolls[Number(e.target.dataset.problemsRoll)];if(roll)roll.problemsOpen=e.target.open;}},true);
 root.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&e.target.dataset.areaNew!==undefined){e.preventDefault();e.target.closest('.roll-problems').querySelector('[data-area-add]').click();}
  if(e.key==='Enter'&&e.target.dataset.problemNew!==undefined){e.preventDefault();e.target.closest('.roll-problems').querySelector('[data-problem-add]').click();}
 });
 root.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.areaStart!==undefined){const panel=b.closest('.roll-problems');rolls[Number(b.dataset.areaStart)].areaAdding=true;panel.querySelector('.area-form').hidden=false;b.hidden=true;panel.querySelector('[data-area-new]').focus();return;}
+ if(b.dataset.areaCancel!==undefined){const panel=b.closest('.roll-problems');rolls[Number(b.dataset.areaCancel)].areaAdding=false;panel.querySelector('.area-form').hidden=true;panel.querySelector('[data-area-new]').value='';panel.querySelector('.area-message').textContent='';const start=panel.querySelector('[data-area-start]');start.hidden=false;start.focus();return;}
+ if(b.dataset.areaAdd!==undefined){
+  const index=Number(b.dataset.areaAdd),panel=b.closest('.roll-problems'),input=panel.querySelector('[data-area-new]'),name=cleanProblem(input.value);
+  if(!name){panel.querySelector('.area-message').textContent='Escribe el nombre del área.';input.focus();return;}
+  const existing=areaCatalog.find(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase());if(!existing)areaCatalog.push(name);
+  let saved=true;try{localStorage.setItem(AREA_CATALOG_KEY,JSON.stringify(areaCatalog));}catch(_){saved=false;}
+  assignArea(rolls[index],existing||name);rolls[index].areaAdding=false;updateWithdrawalMetadata();
+  const updated=root.querySelector('[data-problems-roll="'+index+'"]');updated.querySelector('.area-message').textContent=saved?'Área guardada. Puedes usarla en otras bobinas.':'Área añadida para esta sesión.';updated.querySelector('[data-area-select]').focus();return;
+ }
+ if(b.dataset.areaRemove!==undefined){const roll=rolls[Number(b.dataset.areaRoll)];roll.areas.splice(Number(b.dataset.areaRemove),1);updateWithdrawalMetadata();return;}
  if(b.dataset.problemStart!==undefined){
   const panel=b.closest('.roll-problems');rolls[Number(b.dataset.problemStart)].problemAdding=true;
-  panel.querySelector('.problem-form').hidden=false;b.hidden=true;panel.querySelector('[data-problem-new]').focus();return;
+  panel.querySelector('.reason-form').hidden=false;b.hidden=true;panel.querySelector('[data-problem-new]').focus();return;
  }
  if(b.dataset.problemCancel!==undefined){
   const panel=b.closest('.roll-problems');rolls[Number(b.dataset.problemCancel)].problemAdding=false;
-  panel.querySelector('.problem-form').hidden=true;panel.querySelector('[data-problem-new]').value='';
-  panel.querySelector('.problem-message').textContent='';const start=panel.querySelector('[data-problem-start]');start.hidden=false;start.focus();return;
+  panel.querySelector('.reason-form').hidden=true;panel.querySelector('[data-problem-new]').value='';
+  panel.querySelector('.reason-message').textContent='';const start=panel.querySelector('[data-problem-start]');start.hidden=false;start.focus();return;
  }
  if(b.dataset.problemAdd!==undefined){
   const index=Number(b.dataset.problemAdd),panel=b.closest('.roll-problems');
   const input=panel.querySelector('[data-problem-new]'),name=cleanProblem(input.value);
-  if(!name){panel.querySelector('.problem-message').textContent='Escribe brevemente qué pasó.';input.focus();return;}
+  if(!name){panel.querySelector('.reason-message').textContent='Escribe brevemente qué pasó.';input.focus();return;}
   const existing=problemCatalog.find(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase());
   if(!existing)problemCatalog.push(name);
   let saved=true;try{localStorage.setItem(PROBLEM_CATALOG_KEY,JSON.stringify(problemCatalog));}catch(_){saved=false;}
-  assignProblem(rolls[index],existing||name);rolls[index].problemAdding=false;redraw();
+  assignProblem(rolls[index],existing||name);rolls[index].problemAdding=false;updateWithdrawalMetadata();
   const updated=root.querySelector('[data-problems-roll="'+index+'"]');
-  updated.querySelector('.problem-message').textContent=saved?'Motivo guardado. Ya puedes usarlo en otras bobinas.':'Motivo añadido. Estará disponible durante esta sesión.';
+  updated.querySelector('.reason-message').textContent=saved?'Motivo guardado. Ya puedes usarlo en otras bobinas.':'Motivo añadido. Estará disponible durante esta sesión.';
   updated.querySelector('[data-problem-select]').focus();return;
  }
  if(b.dataset.problemRemove!==undefined){
-  const roll=rolls[Number(b.dataset.problemRoll)];roll.problems.splice(Number(b.dataset.problemRemove),1);redraw();return;
+  const roll=rolls[Number(b.dataset.problemRoll)];roll.problems.splice(Number(b.dataset.problemRemove),1);updateWithdrawalMetadata();return;
  }
  const remove=b.dataset.remove;
  if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
@@ -967,7 +1000,7 @@ function validate(){
  }
  const loads=rolls.map(r=>{
   const width=numeric(r.width),initial=numeric(r.kg),removal=bobbinRemoval(r),scrap=removal.total;
-  return {id:r.id,width,rate:width*gsm/1000000,initial,scrap,retired:removal.retired,coreGross:removal.gross,coreTare:removal.tare,corePaper:removal.corePaper,left:initial-scrap,used:0,usedMeters:0};
+  return {id:r.id,width,rate:width*gsm/1000000,initial,scrap,retired:removal.retired,problems:[...(r.problems||[])],areas:[...(r.areas||[])],coreGross:removal.gross,coreTare:removal.tare,corePaper:removal.corePaper,left:initial-scrap,used:0,usedMeters:0};
  });
  const details=[],sums=[],tol=1e-9;
  let ri=0,consumedTotal=0;
@@ -1056,6 +1089,7 @@ function buildPrintSummary(r,stamp){
   +'<h2>Consumo por OP y bobina</h2>'+table(['OP','Bobina','Ancho (mm)','Consumido (kg)','Saldo tras OP (kg)'],rows)
   +'<p class="print-note">El saldo tras OP es lo que queda en esa bobina después del consumo indicado. Estos saldos no se suman.</p>'
   +'<h2>Saldo final por bobina</h2>'+table(['Bobina','Ancho (mm)','Inicial (kg)','Retirado (kg)','Sobrante de papel (kg)','Producción (kg)','Devolver (kg)'],finalRows)
+  +(r.usedRolls.some(b=>b.retired>0)?'<h2>Motivos del papel retirado</h2>'+table(['Bobina','Papel retirado (kg)','Motivos','Áreas involucradas'],r.usedRolls.filter(b=>b.retired>0).map(b=>[b.id,nf(b.retired),(b.problems||[]).join('; ')||'Sin indicar',(b.areas||[]).join('; ')||'Sin indicar'])):'')
   +'<div class="print-total">TOTAL A ENTREGAR AL ALMACÉN <strong>'+nf(r.saldo)+' kg</strong></div>'
   +'<p class="print-note">Pesos netos de papel, sin cartón. Sobrante de papel = sobrante con tuco − peso del tuco vacío. Papel retirado y sobrante se descuentan una sola vez.</p>';
 }
@@ -1121,10 +1155,17 @@ function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  $('multi-summary-status').textContent=result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Ingresa un identificador de grupo para enviar a Forms.';
+ if(result.loads.some(b=>b.retired>0)&&!withdrawalFieldsConnected())$('multi-summary-status').textContent+=' Los motivos y áreas aparecen en la impresión; su envío a Forms está pendiente de conectar.';
  $('multi-register').disabled=!result.group;
  $('multi-print').disabled=false;
  $('multi-register').textContent='Enviar a Forms';
 }
+function withdrawalFormAnswers(r){
+ const withdrawn=r.loads.filter(b=>b.retired>0);
+ const describe=(b,values)=>b.id+' ('+fmt(b.retired)+' kg): '+(values.length?values.join('; '):'Sin indicar');
+ return {reasons:withdrawn.map(b=>describe(b,b.problems||[])).join(' | '),areas:withdrawn.map(b=>describe(b,b.areas||[])).join(' | ')};
+}
+function withdrawalFieldsConnected(){return Object.values(WITHDRAWAL_FORM_KEYS).every(key=>/^r[a-z0-9]{32}$/.test(key));}
 function groupText(r){
  const inventory=r.usedRolls.map(b=>b.id+':'+fmt(b.initial)+':'+fmt(b.left)).join(',');
  const rows=r.sourceOps.map((o,i)=>{
@@ -1191,6 +1232,8 @@ $('multi-register').addEventListener('click',()=>{
   $('multi-error').hidden=false;return;
  }
  if(opPacket.length>3200){$('multi-error').textContent='Grupo demasiado largo para la precarga de Forms. Divide el grupo.';$('multi-error').hidden=false;return;}
+ const withdrawal=withdrawalFormAnswers(result);
+ if(withdrawalFieldsConnected())for(const field of ['reasons','areas']){if(withdrawal[field])url.searchParams.set(WITHDRAWAL_FORM_KEYS[field],withdrawal[field]);}
  const legacy=[opPacket,String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
  perOpValue('copies'),result.paper,fmt(result.gsm),widthAnswer,
  perOpValue('advance'),fmt(initialMeters),fmt(remainingMeters),fmt(result.saldo)];

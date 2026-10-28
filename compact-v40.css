@@ -207,3 +207,8 @@ header{margin-bottom:14px}
 .core-tare-note label{font-size:12px;max-width:240px}
 .core-tare-note input{min-height:36px;padding:6px}
 .multi-editor .roll-problems-wrap{grid-row:3}
+
+/* 4.9: áreas del papel retirado, dentro del mismo apartado de motivos. */
+.withdrawal-areas{margin-top:12px;padding-top:10px;border-top:1px solid #d8e0e6}
+.roll-problems-wrap .area-tags>span{background:#e8eff6;color:#244e6b}
+.roll-problems-wrap .area-tags button{color:#244e6b}
