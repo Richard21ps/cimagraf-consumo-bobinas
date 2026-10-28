@@ -220,3 +220,11 @@ header{margin-bottom:14px}
 .forms-open-options{padding:10px 18px;background:#fff;border-bottom:1px solid #d8e0e6}
 .forms-open-options .forms-external{display:inline-block;border-radius:7px;padding:10px 14px;background:#145b83;color:#fff;text-decoration:none;margin:0}
 .forms-open-options p{font-size:12px;color:#536572;margin:6px 0 0;line-height:1.4}
+
+/* 4.9.3: ventana compacta y vista integrada opcional. */
+.forms-panel{height:auto;max-height:94vh;max-height:94dvh;min-height:0;overflow-y:auto}
+.forms-heading,.forms-instructions,.forms-open-options,.forms-footer{flex:0 0 auto}
+.forms-inline-toggle{align-self:flex-start;margin:10px 18px;font-size:13px}
+.forms-frame{flex:1 0 360px;min-height:360px}
+.forms-frame[hidden]{display:none!important}
+@media(max-width:600px){.forms-panel{max-height:98vh;max-height:98dvh}.forms-heading{flex-wrap:wrap}.forms-open-options{padding:10px 12px}.forms-open-options .forms-external{display:block;text-align:center}.forms-inline-toggle{margin:8px 12px}}

@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.9.2">
+<link rel="stylesheet" href="compact-v40.css?v=4.9.3">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.9.2</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.9.3</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -426,7 +426,8 @@
       </div>
       <p class="forms-instructions" id="forms-instructions">Los 10 datos se precargan automáticamente. Solo pulsa «Enviar» en Microsoft Forms. Los pesos son netos, sin tuco; los metros representan una equivalencia teórica.</p>
       <div class="forms-open-options"><a id="forms-external" class="forms-external" target="_blank" rel="noopener noreferrer" href="#">Abrir Forms con datos precargados ↗</a><p>Si Microsoft solicita iniciar sesión o muestra el formulario en blanco, ábrelo en otra pestaña con este botón. No uses el vínculo normal del formulario.</p></div>
-      <iframe class="forms-frame" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
+      <button type="button" class="forms-inline-toggle reset" id="forms-inline-toggle" aria-expanded="false" aria-controls="forms-frame">Mostrar formulario dentro de la calculadora</button>
+      <iframe hidden class="forms-frame" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
       <div class="forms-footer">
         <p>Espera la confirmación de Microsoft Forms antes de continuar. Esta calculadora no puede verificar por sí sola el envío.</p>
         <div class="forms-footer-actions">
@@ -782,7 +783,7 @@ if(!root||!simple||!complex||!layout)return;
  };
  // Pregunta 15 'Datos automáticos de OP': sustituir con el ID del vínculo predefinido.
  // Completar con los identificadores del enlace prellenado del mismo Forms.
- const WITHDRAWAL_FORM_KEYS = { reasons:'', areas:'' };
+ const WITHDRAWAL_FORM_KEYS = { retired:'', coreGross:'', reasons:'', areas:'' };
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
@@ -1160,7 +1161,7 @@ function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  $('multi-summary-status').textContent=result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Ingresa un identificador de grupo para enviar a Forms.';
- if(result.loads.some(b=>b.retired>0)&&!withdrawalFieldsConnected())$('multi-summary-status').textContent+=' Los motivos y áreas aparecen en la impresión; su envío a Forms está pendiente de conectar.';
+ if(!withdrawalFieldsConnected())$('multi-summary-status').textContent+=' Papel retirado, sobrante, motivos y áreas: conexión pendiente con las preguntas nuevas de Forms.';
  $('multi-register').disabled=!result.group;
  $('multi-print').disabled=false;
  $('multi-register').textContent='Enviar a Forms';
@@ -1168,9 +1169,9 @@ function refreshOpQueue(){
 function withdrawalFormAnswers(r){
  const withdrawn=r.loads.filter(b=>b.retired>0);
  const describe=(b,values)=>b.id+' ('+fmt(b.retired)+' kg): '+(values.length?values.join('; '):'Sin indicar');
- return {reasons:withdrawn.map(b=>describe(b,b.problems||[])).join(' | '),areas:withdrawn.map(b=>describe(b,b.areas||[])).join(' | ')};
+ return {retired:fmt(r.loads.reduce((sum,b)=>sum+Number(b.retired||0),0)),coreGross:fmt(r.loads.reduce((sum,b)=>sum+Number(b.coreGross||0),0)),reasons:withdrawn.map(b=>describe(b,b.problems||[])).join(' | ')||'No aplica',areas:withdrawn.map(b=>describe(b,b.areas||[])).join(' | ')||'No aplica'};
 }
-function withdrawalFieldsConnected(){return Object.values(WITHDRAWAL_FORM_KEYS).every(key=>/^r[a-z0-9]{32}$/.test(key));}
+function withdrawalFieldsConnected(){return ['retired','coreGross','reasons','areas'].every(field=>/^r[a-z0-9]{32}$/.test(WITHDRAWAL_FORM_KEYS[field]||''));}
 function groupText(r){
  const inventory=r.usedRolls.map(b=>b.id+':'+fmt(b.initial)+':'+fmt(b.left)).join(',');
  const rows=r.sourceOps.map((o,i)=>{
@@ -1208,6 +1209,11 @@ $('forms-next').addEventListener('click',()=>{
  resetMultiAfterConfirmation();
  $('forms-instructions').textContent=originalFormsInstructions;
 });
+$('forms-inline-toggle').addEventListener('click',()=>{
+ const frame=$('forms-frame');frame.hidden=!frame.hidden;
+ $('forms-inline-toggle').setAttribute('aria-expanded',String(!frame.hidden));
+ $('forms-inline-toggle').textContent=frame.hidden?'Mostrar formulario dentro de la calculadora':'Ocultar formulario integrado';
+});
 $('multi-register').addEventListener('click',()=>{
  if(!result){show();if(!result)return;}
  if(!result.group){$('multi-error').textContent='Ingresa el identificador del grupo antes de enviar a Forms.';$('multi-error').hidden=false;$('multi-group').focus();return;}
@@ -1238,7 +1244,7 @@ $('multi-register').addEventListener('click',()=>{
  }
  if(opPacket.length>3200){$('multi-error').textContent='Grupo demasiado largo para la precarga de Forms. Divide el grupo.';$('multi-error').hidden=false;return;}
  const withdrawal=withdrawalFormAnswers(result);
- if(withdrawalFieldsConnected())for(const field of ['reasons','areas']){if(withdrawal[field])url.searchParams.set(WITHDRAWAL_FORM_KEYS[field],withdrawal[field]);}
+ for(const field of ['retired','coreGross','reasons','areas']){const key=WITHDRAWAL_FORM_KEYS[field];if(/^r[a-z0-9]{32}$/.test(key||''))url.searchParams.set(key,withdrawal[field]);}
  const legacy=[opPacket,String(result.sourceOps.reduce((sum,o)=>sum+o.books,0)),
  perOpValue('copies'),result.paper,fmt(result.gsm),widthAnswer,
  perOpValue('advance'),fmt(initialMeters),fmt(remainingMeters),fmt(result.saldo)];
@@ -1250,6 +1256,7 @@ $('multi-register').addEventListener('click',()=>{
  const external=url.toString().replace(/\+/g,'%20');
  if(external.length>6500){$('multi-error').textContent='El detalle excede el límite recomendado de URL. Divide el grupo.';$('multi-error').hidden=false;return;}
  $('forms-external').href=external;url.searchParams.set('embed','true');
+ $('forms-frame').hidden=true;$('forms-inline-toggle').setAttribute('aria-expanded','false');$('forms-inline-toggle').textContent='Mostrar formulario dentro de la calculadora';
  $('forms-frame').src=url.toString().replace(/\+/g,'%20');
  $('forms-op-label').textContent='Grupo: '+result.group+' · '+result.sourceOps.length+' OP';
  $('forms-instructions').textContent='Revisa los datos precargados. «Datos automáticos de OP» también debe aparecer completo; no lo edites. Pulsa Enviar una sola vez y espera la confirmación de Microsoft Forms.';
