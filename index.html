@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.9">
+<link rel="stylesheet" href="compact-v40.css?v=4.9.1">
   <style>
     :root {
       color-scheme: light;
@@ -849,12 +849,20 @@ function areaControls(roll,index){
 function updateWithdrawalMetadata(){markDirty();redraw();scheduleAuto();}
 function problemControls(roll,index){
  const selected=roll.problems||[],adding=Boolean(roll.problemAdding);
- return '<div class="roll-problems-wrap"><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">¿Por qué se retiró papel?</span><span class="problem-summary-action">'+(selected.length?selected.length+' motivo'+(selected.length===1?'':'s'):'Agregar motivo')+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo al papel retirado, no al sobrante de tuco.</p>'
+ return '<div class="roll-problems-wrap"'+(Number(roll.scrap)>0?'':' hidden')+'><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">¿Por qué se retiró papel?</span><span class="problem-summary-action">'+(selected.length?selected.length+' motivo'+(selected.length===1?'':'s'):'Agregar motivo')+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo al papel retirado, no al sobrante de tuco.</p>'
   +'<div class="problem-choose">'+(problemCatalog.length?'<label>Elige un motivo<select data-problem-select="'+index+'"><option value="">Seleccionar…</option>'+problemCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label>':'<p class="problem-empty">Agrega el primer motivo con tus palabras.</p>')
   +'<button type="button" class="problem-new-button" data-problem-start="'+index+'"'+(adding?' hidden':'')+'>+ Agregar motivo</button></div>'
   +'<div class="reason-form problem-form"'+(adding?'':' hidden')+'><label>¿Qué pasó?<input data-problem-new="'+index+'" maxlength="80" placeholder="Escribe el motivo con tus palabras"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-problem-add="'+index+'">Guardar motivo</button><button type="button" class="problem-cancel-button" data-problem-cancel="'+index+'">Cancelar</button></div></div>'
   +'<p class="reason-message problem-message" role="status"></p>'+areaControls(roll,index)+'</div></details>'
   +(selected.length?'<div class="problem-tags" aria-label="Motivos elegidos para '+escapeHtml(roll.id)+'">'+selected.map((name,i)=>'<span>✓ '+escapeHtml(name)+'<button type="button" data-problem-roll="'+index+'" data-problem-remove="'+i+'" aria-label="Quitar motivo '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>':'')+((roll.areas||[]).length?'<div class="problem-tags area-tags" aria-label="Áreas elegidas para '+escapeHtml(roll.id)+'">'+roll.areas.map((name,i)=>'<span>Área: '+escapeHtml(name)+'<button type="button" data-area-roll="'+index+'" data-area-remove="'+i+'" aria-label="Quitar área '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>':'')+'</div>';
+}
+
+function syncWithdrawalControls(index){
+ const roll=rolls[index],hasWithdrawal=Number(roll.scrap)>0;
+ roll.problemsOpen=hasWithdrawal;
+ const panel=root.querySelector('[data-problems-roll="'+index+'"]');if(!panel)return;
+ panel.closest('.roll-problems-wrap').hidden=!hasWithdrawal;
+ panel.open=hasWithdrawal;
 }
 
 function coreTareControls(roll,index){
@@ -886,10 +894,7 @@ root.addEventListener('input',e=>{
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
  if(type){
   const idx=Number(t.dataset[type]);(type==='op'?ops:rolls)[idx][t.dataset.field]=t.value;
-  if(type==='roll'&&t.dataset.field==='scrap'&&Number(t.value)>0){
-   rolls[idx].problemsOpen=true;
-   const panel=root.querySelector('[data-problems-roll="'+idx+'"]');if(panel)panel.open=true;
-  }
+  if(type==='roll'&&t.dataset.field==='scrap')syncWithdrawalControls(idx);
  }
  markDirty();scheduleAuto();
 });

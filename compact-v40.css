@@ -212,3 +212,6 @@ header{margin-bottom:14px}
 .withdrawal-areas{margin-top:12px;padding-top:10px;border-top:1px solid #d8e0e6}
 .roll-problems-wrap .area-tags>span{background:#e8eff6;color:#244e6b}
 .roll-problems-wrap .area-tags button{color:#244e6b}
+
+/* Motivos y áreas solo cuando hay papel retirado. */
+.roll-problems-wrap[hidden]{display:none!important}
