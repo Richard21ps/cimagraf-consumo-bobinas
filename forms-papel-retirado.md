@@ -1,11 +1,18 @@
 # Motivos y áreas del papel retirado
 
-La calculadora v4.9.3 permite seleccionar motivos y varias áreas por bobina.
+La calculadora v4.9.4 permite seleccionar motivos y varias áreas por bobina.
 El apartado se abre cuando se escribe un peso positivo de papel retirado.
 Los catálogos se guardan en el navegador del equipo. Las selecciones del
 trabajo aparecen en su impresión.
 
-## Conectar con el mismo Microsoft Forms
+## Conexión con el mismo Microsoft Forms
+
+Las cuatro preguntas están conectadas con los identificadores del vínculo
+previamente rellenado facilitado por el propietario el 28/10/2026. Los valores
+de ese vínculo solo sirvieron para identificar preguntas; no se guardaron
+como respuestas ni como valores fijos de la calculadora.
+
+### Mantenimiento si se reemplazan preguntas
 
 Agregar estas cuatro preguntas al formulario existente:
 

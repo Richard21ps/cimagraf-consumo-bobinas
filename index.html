@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.9.3">
+<link rel="stylesheet" href="compact-v40.css?v=4.9.4">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.9.3</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.9.4</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -783,7 +783,12 @@ if(!root||!simple||!complex||!layout)return;
  };
  // Pregunta 15 'Datos automáticos de OP': sustituir con el ID del vínculo predefinido.
  // Completar con los identificadores del enlace prellenado del mismo Forms.
- const WITHDRAWAL_FORM_KEYS = { retired:'', coreGross:'', reasons:'', areas:'' };
+ const WITHDRAWAL_FORM_KEYS = {
+  retired:'rb7ca9bd0b6a6460f88cc587e008af38f',
+  coreGross:'rc459d8332ecd430e8abea5453d19b919',
+  reasons:'rfb2612aef72a481abfd0f8a13e7d53e7',
+  areas:'r6f7bff5b0b75451e9a11e48e6531be7d'
+ };
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
