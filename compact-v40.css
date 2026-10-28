@@ -259,3 +259,16 @@ header{margin-bottom:14px}
 #forms-modal .forms-open-options summary{cursor:pointer;color:#536572}
 #forms-modal .forms-open-options[open] .forms-external{margin-top:8px}
 @media(max-width:600px){#forms-modal .forms-panel{height:98vh;height:98dvh;max-height:98vh;max-height:98dvh}}
+
+/* 4.10.3: primero el resumen y después el registro, con pasos compactos. */
+#multi-root .multi-footer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:620px}
+#multi-print,#multi-register{display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:10px 14px;font-size:15px;line-height:1.3;border:1px solid #145b83}
+#multi-print{background:#eff6fa;color:#145b83}
+#multi-register{background:#145b83;color:#fff}
+#multi-print::before,#multi-register::before{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;border-radius:50%;font-size:13px;font-weight:850}
+#multi-print::before{content:'1';background:#d9e9f3;color:#145b83}
+#multi-register::before{content:'2';background:#fff;color:#145b83}
+#multi-print:not(:disabled):hover{background:#deedf6}
+#multi-register:not(:disabled):hover{background:#0d4669}
+#multi-print:focus-visible,#multi-register:focus-visible{outline:3px solid #d5a457;outline-offset:3px}
+@media(max-width:480px){#multi-root .multi-footer-actions{grid-template-columns:1fr;gap:8px}#multi-print,#multi-register{justify-content:flex-start;min-height:48px}}

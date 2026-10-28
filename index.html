@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.10.2">
+<link rel="stylesheet" href="compact-v40.css?v=4.10.3">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.10.2</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.10.3</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -379,12 +379,12 @@
           </div>
         </details>
         <div class="multi-block" aria-labelledby="multi-consolidated-title">
-          <h3 id="multi-consolidated-title">4 · Enviar registro de producción</h3>
-          <p class="multi-muted">Un solo envío para todo el grupo. Los detalles del cálculo están disponibles al abrir la flecha superior.</p>
+          <h3 id="multi-consolidated-title">4 · Resumen y registro</h3>
+          <p class="multi-muted" id="multi-action-guide">Primero revisa o imprime el resumen. Luego envía el grupo una sola vez a Forms.</p>
           <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
-          <div class="multi-footer-actions">
-            <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
-            <button class="multi-button" id="multi-print" type="button" disabled>Imprimir resumen</button>
+          <div class="multi-footer-actions" role="group" aria-label="Resumen y envío del grupo" aria-describedby="multi-action-guide">
+            <button class="multi-button" id="multi-print" type="button" aria-label="Paso 1: imprimir resumen" disabled>Imprimir resumen</button>
+            <button class="multi-primary" id="multi-register" type="button" aria-label="Paso 2: enviar a Forms" disabled>Enviar a Forms</button>
           </div>
           <p class="multi-note" id="multi-registration-note">El saldo descuenta producción, lonjas y sobrante neto por bobina. La precarga conserva el formato de Forms.</p>
         </div>
