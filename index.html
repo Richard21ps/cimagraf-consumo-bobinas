@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.9.4">
+<link rel="stylesheet" href="compact-v40.css?v=4.10">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.9.4</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.10</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -386,7 +386,7 @@
             <button class="multi-primary" id="multi-register" type="button" disabled>Enviar a Forms</button>
             <button class="multi-button" id="multi-print" type="button" disabled>Imprimir resumen</button>
           </div>
-          <p class="multi-note" id="multi-registration-note">El saldo descuenta producción, papel retirado y sobrante neto por bobina. La precarga conserva el formato de Forms.</p>
+          <p class="multi-note" id="multi-registration-note">El saldo descuenta producción, lonjas y sobrante neto por bobina. La precarga conserva el formato de Forms.</p>
         </div>
       </section>
     </section>
@@ -848,19 +848,28 @@ function assignArea(roll,name){
  if(!roll.areas.some(x=>x.toLocaleLowerCase()===value.toLocaleLowerCase()))roll.areas.push(value);
  roll.problemsOpen=true;
 }
+function selectedWithdrawalField(roll,index,kind){
+ const isArea=kind==='area',values=isArea?roll.areas:roll.problems;
+ return '<div class="problem-tags '+(isArea?'area-tags':'reason-tags')+'">'+values.map((name,i)=>'<span>'+escapeHtml(name)+'<button type="button" data-'+kind+'-roll="'+index+'" data-'+kind+'-remove="'+i+'" aria-label="Cambiar '+(isArea?'área':'motivo')+' '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">Cambiar</button></span>').join('')+'</div>';
+}
 function areaControls(roll,index){
- return '<section class="withdrawal-areas" aria-label="Áreas involucradas de '+escapeHtml(roll.id)+'"><div class="problem-choose"><label>Áreas involucradas<select data-area-select="'+index+'"><option value="">Seleccionar área…</option>'+areaCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label><button type="button" class="problem-new-button" data-area-start="'+index+'"'+(roll.areaAdding?' hidden':'')+'>+ Agregar área</button></div>'
+ const selected=roll.areas||[];
+ if(selected.length)return '<section class="withdrawal-areas withdrawal-selected"><strong>Área involucrada</strong>'+selectedWithdrawalField(roll,index,'area')+'<p class="area-message problem-message" role="status"></p></section>';
+ return '<section class="withdrawal-areas" aria-label="Áreas involucradas de '+escapeHtml(roll.id)+'"><div class="problem-choose"><label>Área involucrada<select data-area-select="'+index+'"><option value="">Seleccionar área…</option>'+areaCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label><button type="button" class="problem-new-button" data-area-start="'+index+'"'+(roll.areaAdding?' hidden':'')+'>+ Agregar área</button></div>'
   +'<div class="area-form problem-form"'+(roll.areaAdding?'':' hidden')+'><label>Nombre del área<input data-area-new="'+index+'" maxlength="80" placeholder="Ej.: Mantenimiento"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-area-add="'+index+'">Guardar área</button><button type="button" class="problem-cancel-button" data-area-cancel="'+index+'">Cancelar</button></div></div><p class="area-message problem-message" role="status"></p></section>';
 }
 function updateWithdrawalMetadata(){markDirty();redraw();scheduleAuto();}
-function problemControls(roll,index){
+function reasonControls(roll,index){
  const selected=roll.problems||[],adding=Boolean(roll.problemAdding);
- return '<div class="roll-problems-wrap"'+(Number(roll.scrap)>0?'':' hidden')+'><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">¿Por qué se retiró papel?</span><span class="problem-summary-action">'+(selected.length?selected.length+' motivo'+(selected.length===1?'':'s'):'Agregar motivo')+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo al papel retirado, no al sobrante de tuco.</p>'
-  +'<div class="problem-choose">'+(problemCatalog.length?'<label>Elige un motivo<select data-problem-select="'+index+'"><option value="">Seleccionar…</option>'+problemCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label>':'<p class="problem-empty">Agrega el primer motivo con tus palabras.</p>')
+ if(selected.length)return '<section class="withdrawal-reason withdrawal-selected"><strong>Motivo de las lonjas</strong>'+selectedWithdrawalField(roll,index,'problem')+'<p class="reason-message problem-message" role="status"></p></section>';
+ return '<section class="withdrawal-reason"><div class="problem-choose">'+(problemCatalog.length?'<label>Motivo de las lonjas<select data-problem-select="'+index+'"><option value="">Elige un motivo…</option>'+problemCatalog.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('')+'</select></label>':'<p class="problem-empty">Agrega el primer motivo con tus palabras.</p>')
   +'<button type="button" class="problem-new-button" data-problem-start="'+index+'"'+(adding?' hidden':'')+'>+ Agregar motivo</button></div>'
-  +'<div class="reason-form problem-form"'+(adding?'':' hidden')+'><label>¿Qué pasó?<input data-problem-new="'+index+'" maxlength="80" placeholder="Escribe el motivo con tus palabras"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-problem-add="'+index+'">Guardar motivo</button><button type="button" class="problem-cancel-button" data-problem-cancel="'+index+'">Cancelar</button></div></div>'
-  +'<p class="reason-message problem-message" role="status"></p>'+areaControls(roll,index)+'</div></details>'
-  +(selected.length?'<div class="problem-tags" aria-label="Motivos elegidos para '+escapeHtml(roll.id)+'">'+selected.map((name,i)=>'<span>✓ '+escapeHtml(name)+'<button type="button" data-problem-roll="'+index+'" data-problem-remove="'+i+'" aria-label="Quitar motivo '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>':'')+((roll.areas||[]).length?'<div class="problem-tags area-tags" aria-label="Áreas elegidas para '+escapeHtml(roll.id)+'">'+roll.areas.map((name,i)=>'<span>Área: '+escapeHtml(name)+'<button type="button" data-area-roll="'+index+'" data-area-remove="'+i+'" aria-label="Quitar área '+escapeHtml(name)+' de '+escapeHtml(roll.id)+'">×</button></span>').join('')+'</div>':'')+'</div>';
+  +'<div class="reason-form problem-form"'+(adding?'':' hidden')+'><label>¿Qué pasó?<input data-problem-new="'+index+'" maxlength="80" placeholder="Escribe el motivo con tus palabras"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-problem-add="'+index+'">Guardar motivo</button><button type="button" class="problem-cancel-button" data-problem-cancel="'+index+'">Cancelar</button></div></div><p class="reason-message problem-message" role="status"></p></section>';
+}
+function problemControls(roll,index){
+ const selected=roll.problems||[],areas=roll.areas||[];
+ const status=selected.length&&areas.length?'Datos completos':'Completar datos';
+ return '<div class="roll-problems-wrap"'+(Number(roll.scrap)>0?'':' hidden')+'><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">Motivo y área de las lonjas</span><span class="problem-summary-action">'+status+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo a las lonjas, no al sobrante de tuco.</p><div class="withdrawal-fields">'+reasonControls(roll,index)+areaControls(roll,index)+'</div></div></details></div>';
 }
 
 function syncWithdrawalControls(index){
@@ -892,7 +901,7 @@ function refreshCoreTareNotes(){
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'+field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')+field('Cantidad de libros',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')+field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')+field('Avance por pliego (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')+'</div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Papel retirado (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0" title="Peso de las lonjas y del papel separado al inicio o durante el trabajo, sin contar el sobrante junto al tuco."')+field('Sobrante de tuco (kg)',o.coreGross??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="coreGross" placeholder="0" title="Peso del papel que queda junto al tuco, incluyendo el tubo de cartón."')+'</div><p class="removal-help">Papel retirado: lonjas y papel separado al inicio o durante el trabajo. No incluyas aquí el sobrante del tuco.</p>'+problemControls(o,i)+coreTareControls(o,i)+'</div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Lonjas (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0" title="Peso de las lonjas y del papel separado al inicio o durante el trabajo, sin contar el sobrante junto al tuco."')+field('Sobrante de tuco (kg)',o.coreGross??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="coreGross" placeholder="0" title="Peso del papel que queda junto al tuco, incluyendo el tubo de cartón."')+'</div><p class="removal-help">Lonjas: lonjas y papel separado al inicio o durante el trabajo. No incluyas aquí el sobrante del tuco.</p>'+problemControls(o,i)+coreTareControls(o,i)+'</div>').join('');
  refreshCoreTareNotes();renderRollUsage(result);
 }
 root.addEventListener('input',e=>{
@@ -928,7 +937,7 @@ root.addEventListener('click',e=>{
   const existing=areaCatalog.find(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase());if(!existing)areaCatalog.push(name);
   let saved=true;try{localStorage.setItem(AREA_CATALOG_KEY,JSON.stringify(areaCatalog));}catch(_){saved=false;}
   assignArea(rolls[index],existing||name);rolls[index].areaAdding=false;updateWithdrawalMetadata();
-  const updated=root.querySelector('[data-problems-roll="'+index+'"]');updated.querySelector('.area-message').textContent=saved?'Área guardada. Puedes usarla en otras bobinas.':'Área añadida para esta sesión.';updated.querySelector('[data-area-select]').focus();return;
+  const updated=root.querySelector('[data-problems-roll="'+index+'"]');updated.querySelector('.area-message').textContent=saved?'Área guardada. Puedes usarla en otras bobinas.':'Área añadida para esta sesión.';updated.querySelector('[data-area-remove]').focus();return;
  }
  if(b.dataset.areaRemove!==undefined){const roll=rolls[Number(b.dataset.areaRoll)];roll.areas.splice(Number(b.dataset.areaRemove),1);updateWithdrawalMetadata();return;}
  if(b.dataset.problemStart!==undefined){
@@ -950,7 +959,7 @@ root.addEventListener('click',e=>{
   assignProblem(rolls[index],existing||name);rolls[index].problemAdding=false;updateWithdrawalMetadata();
   const updated=root.querySelector('[data-problems-roll="'+index+'"]');
   updated.querySelector('.reason-message').textContent=saved?'Motivo guardado. Ya puedes usarlo en otras bobinas.':'Motivo añadido. Estará disponible durante esta sesión.';
-  updated.querySelector('[data-problem-select]').focus();return;
+  updated.querySelector('[data-problem-remove]').focus();return;
  }
  if(b.dataset.problemRemove!==undefined){
   const roll=rolls[Number(b.dataset.problemRoll)];roll.problems.splice(Number(b.dataset.problemRemove),1);updateWithdrawalMetadata();return;
@@ -973,7 +982,7 @@ function coreTareFor(paper,width){
 function bobbinRemoval(r,allowUnknown=false){
  const retired=(r.scrap??'')===''?0:numeric(r.scrap);
  const gross=(r.coreGross??'')===''?0:numeric(r.coreGross);
- if(!Number.isFinite(retired)||retired<0)throw Error('El papel retirado de '+r.id+' debe ser mayor o igual a 0 kg.');
+ if(!Number.isFinite(retired)||retired<0)throw Error('El peso de lonjas de '+r.id+' debe ser mayor o igual a 0 kg.');
  if(!Number.isFinite(gross)||gross<0)throw Error('El sobrante de tuco de '+r.id+' debe ser mayor o igual a 0 kg.');
  const automaticTare=coreTareFor($('multi-paper').value,r.width);
  const rawTare=automaticTare??(r.coreTare??'');
@@ -994,7 +1003,7 @@ function validate(){
   r.id=r.id.trim();
   const kg=numeric(r.kg),width=numeric(r.width);
   const removal=bobbinRemoval(r),scrap=removal.total;
-  if(Number.isFinite(kg)&&scrap>kg)throw Error('El papel retirado y el sobrante de papel de '+r.id+' no pueden superar el peso inicial.');
+  if(Number.isFinite(kg)&&scrap>kg)throw Error('Las lonjas y el sobrante de papel de '+r.id+' no pueden superar el peso inicial.');
   if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa los kg iniciales de todas las bobinas.');
   if(!Number.isFinite(width)||width<=0)throw Error('Indica un ancho en mm válido para '+r.id+'.');
   if(/[~^|,:\r\n]/.test(r.id))throw Error('Los identificadores de bobina no pueden contener separadores especiales.');
@@ -1058,7 +1067,7 @@ function renderRollUsage(r){
   const state=!active?'SIN UTILIZAR':empty?'AGOTADA':'CON SALDO';
   const width=value=>Math.max(0,Math.min(100,value/b.initial*100));
   const produced=width(b.used),removedEnd=width(b.used+b.scrap);
-  const description=b.id+': producción '+nf(b.used)+' kg, papel retirado y sobrante neto '+nf(b.scrap)+' kg, saldo '+nf(b.left)+' kg. '+state+'.';
+  const description=b.id+': producción '+nf(b.used)+' kg, lonjas y sobrante neto '+nf(b.scrap)+' kg, saldo '+nf(b.left)+' kg. '+state+'.';
   const balanceColor=active?'#65a887':'#d7e0e6';
   return '<article class="mini-roll '+(!active?'usage-idle':empty?'usage-empty':'usage-ready')+'"><span class="roll-mini-icon" aria-hidden="true" style="background:conic-gradient(#427a9e 0% '+produced+'%,#d5a457 '+produced+'% '+removedEnd+'%,'+balanceColor+' '+removedEnd+'% 100%)"></span><div class="mini-roll-body"><div class="mini-roll-title"><strong>'+escapeHtml(b.id)+'</strong><span class="mini-roll-badge">'+state+'</span></div>'
    +'<p class="mini-roll-values"><span>Producción <b>'+nf(b.used)+' <small>kg</small></b></span><span class="mini-removed">Papel separado <b>'+nf(b.scrap)+' <small>kg</small></b></span><span>'+(!active?'Disponible':'Saldo')+' <b>'+nf(b.left)+' <small>kg</small></b></span></p>'
@@ -1079,10 +1088,10 @@ function show(){
   $('multi-delivery-meters').textContent=nf(r.saldoMetros,2)+' m';
   renderRollUsage(r);
   $('multi-policy-warning').hidden=true;
-  $('multi-delivery-status').textContent='Saldo después de descontar producción, papel retirado y sobrante neto.';
+  $('multi-delivery-status').textContent='Saldo después de descontar producción, lonjas y sobrante neto.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Kg consumidos','Metros consumidos'],r.sums.map(x=>[x.op,nf(x.kg),nf(x.metros,2)]));
-  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Papel retirado (kg)','Sobrante con tuco (kg)','Tuco vacío (kg)','Sobrante de papel (kg)','Consumo OP (kg)','Devolver (kg)','Estado'],r.loads.map(x=>[x.id,nf(x.width),nf(x.initial),nf(x.retired),nf(x.coreGross),nf(x.coreTare),nf(x.corePaper),nf(x.used),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':'Con saldo']));
+  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Lonjas (kg)','Sobrante con tuco (kg)','Tuco vacío (kg)','Sobrante de papel (kg)','Consumo OP (kg)','Devolver (kg)','Estado'],r.loads.map(x=>[x.id,nf(x.width),nf(x.initial),nf(x.retired),nf(x.coreGross),nf(x.coreTare),nf(x.corePaper),nf(x.used),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':'Con saldo']));
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Kg consumidos','Metros','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho,2),nf(x.kg),nf(x.metros,2),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
@@ -1099,10 +1108,10 @@ function buildPrintSummary(r,stamp){
   +'<div class="print-meta"><strong>Grupo: '+escapeHtml(r.group||'Sin identificador')+'</strong></div>'
   +'<h2>Consumo por OP y bobina</h2>'+table(['OP','Bobina','Ancho (mm)','Consumido (kg)','Saldo tras OP (kg)'],rows)
   +'<p class="print-note">El saldo tras OP es lo que queda en esa bobina después del consumo indicado. Estos saldos no se suman.</p>'
-  +'<h2>Saldo final por bobina</h2>'+table(['Bobina','Ancho (mm)','Inicial (kg)','Retirado (kg)','Sobrante de papel (kg)','Producción (kg)','Devolver (kg)'],finalRows)
-  +(r.usedRolls.some(b=>b.retired>0)?'<h2>Motivos del papel retirado</h2>'+table(['Bobina','Papel retirado (kg)','Motivos','Áreas involucradas'],r.usedRolls.filter(b=>b.retired>0).map(b=>[b.id,nf(b.retired),(b.problems||[]).join('; ')||'Sin indicar',(b.areas||[]).join('; ')||'Sin indicar'])):'')
+  +'<h2>Saldo final por bobina</h2>'+table(['Bobina','Ancho (mm)','Inicial (kg)','Lonjas (kg)','Sobrante de papel (kg)','Producción (kg)','Devolver (kg)'],finalRows)
+  +(r.usedRolls.some(b=>b.retired>0)?'<h2>Motivos de las lonjas</h2>'+table(['Bobina','Lonjas (kg)','Motivos','Áreas involucradas'],r.usedRolls.filter(b=>b.retired>0).map(b=>[b.id,nf(b.retired),(b.problems||[]).join('; ')||'Sin indicar',(b.areas||[]).join('; ')||'Sin indicar'])):'')
   +'<div class="print-total">TOTAL A ENTREGAR AL ALMACÉN <strong>'+nf(r.saldo)+' kg</strong></div>'
-  +'<p class="print-note">Pesos netos de papel, sin cartón. Sobrante de papel = sobrante con tuco − peso del tuco vacío. Papel retirado y sobrante se descuentan una sola vez.</p>';
+  +'<p class="print-note">Pesos netos de papel, sin cartón. Sobrante de papel = sobrante con tuco − peso del tuco vacío. Lonjas y sobrante se descuentan una sola vez.</p>';
 }
 function preparePrintSummary(){
  if(!result)return false;
@@ -1166,7 +1175,7 @@ function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros','Copias','Avance (mm)','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.books,o.copies,o.advance,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  $('multi-summary-status').textContent=result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Ingresa un identificador de grupo para enviar a Forms.';
- if(!withdrawalFieldsConnected())$('multi-summary-status').textContent+=' Papel retirado, sobrante, motivos y áreas: conexión pendiente con las preguntas nuevas de Forms.';
+ if(!withdrawalFieldsConnected())$('multi-summary-status').textContent+=' Lonjas, sobrante, motivos y áreas: conexión pendiente con las preguntas nuevas de Forms.';
  $('multi-register').disabled=!result.group;
  $('multi-print').disabled=false;
  $('multi-register').textContent='Enviar a Forms';

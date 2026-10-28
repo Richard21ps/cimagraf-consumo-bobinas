@@ -228,3 +228,16 @@ header{margin-bottom:14px}
 .forms-frame{flex:1 0 360px;min-height:360px}
 .forms-frame[hidden]{display:none!important}
 @media(max-width:600px){.forms-panel{max-height:98vh;max-height:98dvh}.forms-heading{flex-wrap:wrap}.forms-open-options{padding:10px 12px}.forms-open-options .forms-external{display:block;text-align:center}.forms-inline-toggle{margin:8px 12px}}
+
+/* 4.10: motivo y área contiguos; la selección reemplaza al desplegable. */
+.withdrawal-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.withdrawal-fields>section{min-width:0;margin:0;padding:0;border:0}
+.withdrawal-fields .problem-choose{display:block}
+.withdrawal-fields .problem-choose>label{display:block;min-width:0}
+.withdrawal-fields .problem-new-button{margin-top:6px;min-height:32px;padding:5px 9px;font-size:12px}
+.withdrawal-fields .problem-form{padding:8px}
+.withdrawal-fields .problem-form>label{min-width:0;flex-basis:100%}
+.withdrawal-selected>strong{display:block;font-size:12px;color:#35576c}
+.withdrawal-fields .problem-tags>span{display:flex;justify-content:space-between;width:100%;border-radius:7px;padding:7px 9px}
+.withdrawal-fields .problem-tags button{font-size:12px;font-weight:700;white-space:nowrap}
+@media(max-width:480px){.withdrawal-fields{grid-template-columns:1fr;gap:10px}}
