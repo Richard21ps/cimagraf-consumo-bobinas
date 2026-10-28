@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.10">
+<link rel="stylesheet" href="compact-v40.css?v=4.10.1">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.10</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.10.1</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -425,9 +425,9 @@
         <button class="reset" id="forms-back" type="button">Volver sin borrar</button>
       </div>
       <p class="forms-instructions" id="forms-instructions">Los 10 datos se precargan automáticamente. Solo pulsa «Enviar» en Microsoft Forms. Los pesos son netos, sin tuco; los metros representan una equivalencia teórica.</p>
-      <div class="forms-open-options"><a id="forms-external" class="forms-external" target="_blank" rel="noopener noreferrer" href="#">Abrir Forms con datos precargados ↗</a><p>Si Microsoft solicita iniciar sesión o muestra el formulario en blanco, ábrelo en otra pestaña con este botón. No uses el vínculo normal del formulario.</p></div>
-      <button type="button" class="forms-inline-toggle reset" id="forms-inline-toggle" aria-expanded="false" aria-controls="forms-frame">Mostrar formulario dentro de la calculadora</button>
-      <iframe hidden class="forms-frame" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
+      <div class="forms-open-options"><a id="forms-external" class="forms-external" target="_blank" rel="noopener noreferrer" href="#">Abrir Forms con datos precargados ↗</a><p>El formulario se carga debajo con los datos precargados. Si Microsoft muestra solo su tarjeta o solicita iniciar sesión, usa este botón para continuar.</p></div>
+      <button type="button" class="forms-inline-toggle reset" id="forms-inline-toggle" aria-expanded="true" aria-controls="forms-frame">Ocultar formulario integrado</button>
+      <iframe class="forms-frame" height="650" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
       <div class="forms-footer">
         <p>Espera la confirmación de Microsoft Forms antes de continuar. Esta calculadora no puede verificar por sí sola el envío.</p>
         <div class="forms-footer-actions">
@@ -1270,13 +1270,18 @@ $('multi-register').addEventListener('click',()=>{
  const external=url.toString().replace(/\+/g,'%20');
  if(external.length>6500){$('multi-error').textContent='El detalle excede el límite recomendado de URL. Divide el grupo.';$('multi-error').hidden=false;return;}
  $('forms-external').href=external;url.searchParams.set('embed','true');
- $('forms-frame').hidden=true;$('forms-inline-toggle').setAttribute('aria-expanded','false');$('forms-inline-toggle').textContent='Mostrar formulario dentro de la calculadora';
- $('forms-frame').src=url.toString().replace(/\+/g,'%20');
+ $('forms-frame').hidden=false;$('forms-inline-toggle').setAttribute('aria-expanded','true');$('forms-inline-toggle').textContent='Ocultar formulario integrado';
+ const embeddedUrl=url.toString().replace(/\+/g,'%20');
+ $('forms-frame').src='about:blank';
  $('forms-op-label').textContent='Grupo: '+result.group+' · '+result.sourceOps.length+' OP';
  $('forms-instructions').textContent='Revisa los datos precargados. «Datos automáticos de OP» también debe aparecer completo; no lo edites. Pulsa Enviar una sola vez y espera la confirmación de Microsoft Forms.';
  $('forms-next').textContent='Ya envié · Siguiente grupo';
  pendingOpIndex=0;
  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
+ // Forms no debe inicializarse dentro de un marco oculto o sin tamaño.
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  if($('forms-modal').classList.contains('open')&&$('forms-external').href===external)$('forms-frame').src=embeddedUrl;
+ }));
 });
 // Catálogo de materiales compartido por ambos modos mediante almacenamiento local.
 const materialCatalogKey='consumo-bobina-materiales-v1';

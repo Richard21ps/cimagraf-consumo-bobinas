@@ -109,10 +109,10 @@ test('Precarga Forms: botón e iframe conservan los datos de una y varias OP',()
  const packets=html.slice(html.indexOf('function withdrawalFormAnswers('),html.indexOf('const originalFormsInstructions='));
  const listener=html.slice(html.indexOf("$('multi-register').addEventListener('click'"),html.indexOf('// Catálogo de materiales compartido'));
  for(const meters of [[1000],[400,600]]){
-  const r=calculate(meters,[[200,1000,10]]);r.loads[0].problems=['MATERIAL DAÑADO'];r.loads[0].areas=['Almacén','Planta digital'];r.group='GRUPO PRUEBA';r.type=meters.length>1?'Varias OP / una bobina':'Una OP / una bobina';const elements={};let click;
-  const c={result:r,URL,document:{body:{classList:{add(){}}}},$:id=>elements[id]??(elements[id]={setAttribute(){},classList:{contains:()=>false,add(){}},addEventListener:(event,fn)=>{if(id==='multi-register')click=fn;}})};
-  vm.createContext(c);vm.runInContext(defs+formatting+packets+listener,c);click();
-  const external=new URL(elements['forms-external'].href),embedded=new URL(elements['forms-frame'].src);
+  const r=calculate(meters,[[200,1000,10]]);r.loads[0].problems=['MATERIAL DAÑADO'];r.loads[0].areas=['Almacén','Planta digital'];r.group='GRUPO PRUEBA';r.type=meters.length>1?'Varias OP / una bobina':'Una OP / una bobina';const elements={};const frames=[];let click;
+  const c={result:r,URL,requestAnimationFrame:fn=>frames.push(fn),document:{body:{classList:{add(){}}}},$:id=>elements[id]??(elements[id]={setAttribute(){},classList:{contains:()=>Boolean(elements[id]?.open),add(){elements[id].open=true;}},addEventListener:(event,fn)=>{if(id==='multi-register')click=fn;}})};
+  vm.createContext(c);vm.runInContext(defs+formatting+packets+listener,c);click();assert.equal(elements['forms-frame'].src,'about:blank');while(frames.length)frames.shift()();
+  const external=new URL(elements['forms-external'].href),embedded=new URL(elements['forms-frame'].src);assert.equal(elements['forms-frame'].hidden,false);
   assert.equal(external.searchParams.get('r790012348e2543d18936c9ae9ddb82e7'),'GRUPO PRUEBA');
   assert.equal(external.searchParams.get('r1a6fb6883bc444629eea97caf2ece32c'),r.sourceOps.map(o=>o.id).join(', '));
   assert.equal(external.searchParams.get('rf67ad5d129824657b4de24dee465a751'),'70');
@@ -128,7 +128,7 @@ test('Precarga Forms: botón e iframe conservan los datos de una y varias OP',()
 });
 
 test('Forms: pesos nuevos suman retirado y sobrante bruto por separado',()=>{const c={fmt:String,r:{loads:[{id:'Bobina 1',retired:5,coreGross:10,corePaper:9.01,problems:['Lonjas'],areas:['Almacén']},{id:'Bobina 2',retired:3,coreGross:4,corePaper:2.7235}]},WITHDRAWAL_FORM_KEYS:{retired:'r'+'1'.repeat(32),coreGross:'r'+'2'.repeat(32),reasons:'r'+'3'.repeat(32),areas:'r'+'4'.repeat(32)}};vm.createContext(c);const a=vm.runInContext(withdrawalSource+';withdrawalFormAnswers(r)',c);assert.equal(a.retired,'8');assert.equal(a.coreGross,'14');assert.equal(vm.runInContext('withdrawalFieldsConnected()',c),true);c.r.loads=[{retired:0,coreGross:0}];const z=vm.runInContext('withdrawalFormAnswers(r)',c);assert.equal(z.retired,'0');assert.equal(z.coreGross,'0');assert.equal(z.reasons,'No aplica');assert.equal(z.areas,'No aplica');});
-test('Forms: interfaz integrada opcional, oculta al abrir',()=>{assert.match(html,/<iframe hidden class="forms-frame"/);assert.match(html,/id="forms-inline-toggle"/);assert.match(html,/forms-frame'\)\.hidden=true/);});
+test('Forms: interfaz integrada abierta al iniciar',()=>{assert.match(html,/<iframe class="forms-frame" height="650"/);assert.doesNotMatch(html,/<iframe hidden class="forms-frame"/);assert.match(html,/id="forms-inline-toggle"/);assert.match(html,/forms-frame'\)\.hidden=false/);});
 
 test('Forms: las cuatro preguntas configuradas son distintas y están conectadas',()=>{const start=html.indexOf('const WITHDRAWAL_FORM_KEYS =');const defs=html.slice(start,html.indexOf('const GROUP_DETAIL_QUESTION_KEY',start));const c={};vm.createContext(c);vm.runInContext(defs+withdrawalSource,c);assert.equal(vm.runInContext('withdrawalFieldsConnected()',c),true);assert.equal(vm.runInContext('new Set(Object.values(WITHDRAWAL_FORM_KEYS)).size',c),4);});
 
