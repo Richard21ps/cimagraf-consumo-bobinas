@@ -103,4 +103,24 @@ test('Impresión: motivo y área del papel retirado por bobina, sin alterar sald
 test('Motivos y áreas ocultos con cero o vacío desde el primer dibujo',()=>{const c=problemContext('[]');for(const scrap of ['0','',0]){c.roll={id:'Bobina 1',scrap,areas:['Almacén'],problems:['Daño']};assert.match(vm.runInContext('problemControls(roll,0)',c),/class="roll-problems-wrap" hidden/);}c.roll.scrap='0.1';assert.doesNotMatch(vm.runInContext('problemControls(roll,0)',c),/class="roll-problems-wrap" hidden/);});
 test('Papel retirado positivo abre; cero y vacío ocultan solo esa bobina',()=>{const wrappers=[{hidden:true},{hidden:true}],panels=wrappers.map(w=>({open:false,closest:()=>w}));const c={localStorage:{getItem:()=>null},rolls:[{scrap:'0',problems:['Daño'],areas:['Almacén']},{scrap:'12'}],root:{querySelector:selector=>panels[Number(selector.match(/"(\d+)"/)[1])]}};vm.createContext(c);vm.runInContext(problemSource,c);vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,false);assert.equal(panels[1].open,true);for(const scrap of ['0','']){c.rolls[1].scrap=scrap;vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,true);assert.equal(panels[1].open,false);}assert.equal(wrappers[0].hidden,true);c.rolls[1].scrap='2';vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,false);assert.equal(c.rolls[0].problems[0],'Daño');assert.equal(c.rolls[0].areas[0],'Almacén');});
 
+test('Precarga Forms: botón e iframe conservan los datos de una y varias OP',()=>{
+ const defs=html.slice(html.indexOf('const GROUP_FORM_KEYS ='),html.indexOf('const EPS=',html.indexOf('const GROUP_FORM_KEYS =')));
+ const formatting=html.slice(html.indexOf('function fmt(n)'),html.indexOf('function perOpData('));
+ const packets=html.slice(html.indexOf('function withdrawalFormAnswers('),html.indexOf('const originalFormsInstructions='));
+ const listener=html.slice(html.indexOf("$('multi-register').addEventListener('click'"),html.indexOf('// Catálogo de materiales compartido'));
+ for(const meters of [[1000],[400,600]]){
+  const r=calculate(meters,[[200,1000,10]]);r.group='GRUPO PRUEBA';r.type=meters.length>1?'Varias OP / una bobina':'Una OP / una bobina';const elements={};let click;
+  const c={result:r,URL,document:{body:{classList:{add(){}}}},$:id=>elements[id]??(elements[id]={classList:{contains:()=>false,add(){}},addEventListener:(event,fn)=>{if(id==='multi-register')click=fn;}})};
+  vm.createContext(c);vm.runInContext(defs+formatting+packets+listener,c);click();
+  const external=new URL(elements['forms-external'].href),embedded=new URL(elements['forms-frame'].src);
+  assert.equal(external.searchParams.get('r790012348e2543d18936c9ae9ddb82e7'),'GRUPO PRUEBA');
+  assert.equal(external.searchParams.get('r1a6fb6883bc444629eea97caf2ece32c'),r.sourceOps.map(o=>o.id).join(', '));
+  assert.equal(external.searchParams.get('rf67ad5d129824657b4de24dee465a751'),'70');
+  assert.equal(external.searchParams.get('r6461e1c1fa7f44ccbf714af864bf7fe5'),'120');
+  assert.ok(external.searchParams.get('r5fe334ce1fbe4cd9b5cc674705401176').startsWith('CIMAGRAF_OPS_V2||'));
+  assert.equal(embedded.searchParams.get('embed'),'true');embedded.searchParams.delete('embed');assert.deepEqual([...embedded.searchParams],[...external.searchParams]);
+  assert.equal(external.searchParams.has(''),false);
+ }
+});
+
 console.log(`${count} pruebas correctas y estructura del desglose verificada.`);

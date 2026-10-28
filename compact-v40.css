@@ -215,3 +215,8 @@ header{margin-bottom:14px}
 
 /* Motivos y áreas solo cuando hay papel retirado. */
 .roll-problems-wrap[hidden]{display:none!important}
+
+/* 4.9.2: acceso visible a la precarga fuera del iframe de Microsoft. */
+.forms-open-options{padding:10px 18px;background:#fff;border-bottom:1px solid #d8e0e6}
+.forms-open-options .forms-external{display:inline-block;border-radius:7px;padding:10px 14px;background:#145b83;color:#fff;text-decoration:none;margin:0}
+.forms-open-options p{font-size:12px;color:#536572;margin:6px 0 0;line-height:1.4}
