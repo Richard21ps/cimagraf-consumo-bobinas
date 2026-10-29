@@ -272,3 +272,7 @@ header{margin-bottom:14px}
 #multi-register:not(:disabled):hover{background:#0d4669}
 #multi-print:focus-visible,#multi-register:focus-visible{outline:3px solid #d5a457;outline-offset:3px}
 @media(max-width:480px){#multi-root .multi-footer-actions{grid-template-columns:1fr;gap:8px}#multi-print,#multi-register{justify-content:flex-start;min-height:48px}}
+
+.cloud-pdf-panel{width:min(100% - 28px,1480px);margin:0 auto 24px;padding:16px;background:#fff;border:1px solid #d7e3ea;border-radius:12px;color:#35576c;font-size:13px;box-sizing:border-box}.cloud-pdf-panel p{margin:7px 0}.cloud-pdf-panel details{margin-top:12px}.cloud-pdf-panel summary{cursor:pointer}.cloud-pdf-panel input{width:100%;margin:6px 0 10px}.cloud-pdf-panel [hidden]{display:none!important}.cloud-pdf-panel a{display:inline-block;margin:8px;color:#145b83}.cloud-error{color:#942d2d;font-weight:700}@media print{.cloud-pdf-panel{display:none!important}}
+
+#forms-cloud-status:empty{display:none}#forms-cloud-status.cloud-error{color:#942d2d}#forms-modal #cloud-folder-setup{margin:8px 0;font-size:12px}#cloud-folder-setup summary{cursor:pointer}#cloud-folder-url{width:100%;box-sizing:border-box;min-height:38px;margin:5px 0}#cloud-folder-setup .multi-button{min-height:30px;padding:5px 9px;font-size:12px}

@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.10.3">
+<link rel="stylesheet" href="compact-v40.css?v=4.11.0">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.10.3</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.11.0</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -430,6 +430,12 @@
       <iframe class="forms-frame" height="650" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
       <div class="forms-footer">
         <p>Espera la confirmación de Microsoft Forms antes de continuar. Esta calculadora no puede verificar por sí sola el envío.</p>
+        <p id="forms-cloud-status" role="status" aria-live="polite"></p>
+ <details id="cloud-folder-setup"><summary>Configurar carpeta en este equipo</summary>
+ <p>Configuración inicial: pega el vínculo de la carpeta compartida de OneDrive de Cimagraf. La cuenta debe tener permiso de edición.</p>
+ <label for="cloud-folder-url">Vínculo de la carpeta</label><input id="cloud-folder-url" type="url" autocomplete="off" placeholder="https://grupocimagraf-my.sharepoint.com/…">
+ <button class="multi-button" id="cloud-change-folder" type="button">Cambiar carpeta</button>
+ </details>
         <div class="forms-footer-actions">
           <button class="save-material" id="forms-next" type="button">Ya envié · Siguiente OP</button>
         </div>
@@ -1301,9 +1307,22 @@ const materialModalObserver=new MutationObserver(()=>{if(!sharedMaterialModal.cl
 materialModalObserver.observe(sharedMaterialModal,{attributes:true,attributeFilter:['class']});
 updateCatalog();
 redraw();mode(true);scheduleAuto();
+window.CimagrafArchive={
+ snapshot:()=>JSON.parse(JSON.stringify({result,ops,rolls,group:$('multi-group').value,paper:$('multi-paper').value,gsm:$('multi-gsm').value})),
+ restore:s=>{ops=s.ops;rolls=s.rolls;$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();},
+ reset:resetMultiAfterConfirmation
+};
 })();
 </script>
   
+<section class="cloud-pdf-panel" aria-label="Archivo de resúmenes PDF">
+ <strong>Resúmenes en OneDrive</strong>
+ <p id="cloud-pdf-status" role="status" aria-live="polite">Después de enviar Forms, pulsa «Ya envié · Guardar PDF». Microsoft puede solicitar iniciar sesión.</p>
+ <button class="multi-button" id="cloud-retry" type="button" hidden>Reintentar guardar PDF</button>
+ <a id="cloud-last-pdf" target="_blank" rel="noopener noreferrer" hidden>Ver último PDF guardado ↗</a>
+
+</section>
+<script src="cloud-pdf.js?v=4.11.0"></script>
 </body>
 </html>
 
