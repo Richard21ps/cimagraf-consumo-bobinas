@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.11.0">
+<link rel="stylesheet" href="compact-v40.css?v=4.11.1">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.11.0</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.11.1</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -425,7 +425,7 @@
         <button class="reset" id="forms-back" type="button">Volver sin borrar</button>
       </div>
       <p class="forms-instructions" id="forms-instructions">Los 10 datos se precargan automáticamente. Solo pulsa «Enviar» en Microsoft Forms. Los pesos son netos, sin tuco; los metros representan una equivalencia teórica.</p>
-      <details class="forms-open-options"><summary>Ayuda si Microsoft no carga</summary><a id="forms-external" class="forms-external" target="_blank" rel="noopener noreferrer" href="#">Abrir Forms con datos precargados ↗</a><p>Úsalo solo si Microsoft solicita iniciar sesión fuera del formulario integrado.</p></details>
+      <div class="forms-open-options"><a id="forms-external" class="forms-external" target="_blank" rel="noopener noreferrer" href="#">¿No carga? Abrir Forms con datos precargados ↗</a><button class="reset" id="forms-reload" type="button">Reintentar aquí</button><p>Si el cuadro queda gris o vacío, usa el botón azul. Envía una sola vez y vuelve aquí para guardar el PDF.</p></div>
       <button type="button" class="forms-inline-toggle reset" id="forms-inline-toggle" aria-expanded="true" aria-controls="forms-frame">Ocultar formulario integrado</button>
       <iframe class="forms-frame" height="650" id="forms-frame" title="Formulario de registro de consumo de bobinas" loading="eager"></iframe>
       <div class="forms-footer">
@@ -1229,6 +1229,17 @@ $('forms-next').addEventListener('click',()=>{
  resetMultiAfterConfirmation();
  $('forms-instructions').textContent=originalFormsInstructions;
 });
+$('forms-reload').addEventListener('click',()=>{
+ const external=$('forms-external').getAttribute('href');
+ if(!external||external==='#')return;
+ const url=new URL(external);url.searchParams.set('embed','true');
+ const frame=$('forms-frame');frame.hidden=false;frame.src='about:blank';
+ $('forms-inline-toggle').setAttribute('aria-expanded','true');
+ $('forms-inline-toggle').textContent='Ocultar formulario integrado';
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  if($('forms-modal').classList.contains('open')&&$('forms-external').getAttribute('href')===external)frame.src=url.toString().replace(/\+/g,'%20');
+ }));
+});
 $('forms-inline-toggle').addEventListener('click',()=>{
  const frame=$('forms-frame');frame.hidden=!frame.hidden;
  $('forms-inline-toggle').setAttribute('aria-expanded',String(!frame.hidden));
@@ -1280,7 +1291,7 @@ $('multi-register').addEventListener('click',()=>{
  const embeddedUrl=url.toString().replace(/\+/g,'%20');
  $('forms-frame').src='about:blank';
  $('forms-op-label').textContent='Grupo: '+result.group+' · '+result.sourceOps.length+' OP';
- $('forms-instructions').textContent='Revisa los datos precargados. «Datos automáticos de OP» también debe aparecer completo; no lo edites. Pulsa Enviar una sola vez y espera la confirmación de Microsoft Forms.';
+ $('forms-instructions').textContent='Los datos de la calculadora se precargan en Forms. Revísalos, completa lo que falte y pulsa Enviar una sola vez. Espera la confirmación de Microsoft.';
  $('forms-next').textContent='Ya envié · Siguiente grupo';
  pendingOpIndex=0;
  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
@@ -1322,7 +1333,7 @@ window.CimagrafArchive={
  <a id="cloud-last-pdf" target="_blank" rel="noopener noreferrer" hidden>Ver último PDF guardado ↗</a>
 
 </section>
-<script src="cloud-pdf.js?v=4.11.0"></script>
+<script src="cloud-pdf.js?v=4.11.1"></script>
 </body>
 </html>
 
