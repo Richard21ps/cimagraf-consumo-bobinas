@@ -84,3 +84,19 @@ plantilla y su PDF, con una página o 45 movimientos, sin autenticar usuarios,
 escribir archivos en OneDrive ni enviar Forms. Las pruebas de la carga mock
 verifican que se pasa exactamente el HTML compartido al conversor, el A4,
 los márgenes, la protección de filas y el retorno en memoria.
+
+## Volver al editor sin bloqueo — v4.14.2
+
+«Volver sin borrar» conserva los datos y desbloquea el editor, incluso durante
+una carga lenta del PDF. La finalización de esa carga no vuelve a bloquearlo.
+Mientras el PDF se guarda se puede editar, pero no iniciar un segundo registro.
+
+Al volver a registrar sin cambios, se retoma el mismo Forms y PDF. Con cambios,
+el motor valida y prepara una nueva precarga y un PDF con los datos corregidos.
+Los PDF previamente guardados se conservan. El programa no envía, modifica ni
+verifica respuestas de Microsoft Forms: si el usuario ya lo envió, no debe
+volver a enviar esa respuesta.
+
+La recuperación clona las OP y bobinas para que editar el formulario no altere
+la instantánea archivada. Las pruebas cubren retorno con guardado correcto,
+reapertura sin cambios, correcciones y retorno durante una carga pendiente.

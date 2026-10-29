@@ -344,7 +344,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.14.1</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.14.2</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -1332,7 +1332,7 @@ redraw();mode(true);scheduleAuto();
 window.CimagrafArchive={
  reportHTML:(r,created)=>buildPrintSummary(r,new Date(created).toLocaleString('es-PE',{timeZone:'America/Lima',dateStyle:'short',timeStyle:'short'})),
  snapshot:()=>JSON.parse(JSON.stringify({result,ops,rolls,formsUrl:$('forms-external').href,group:$('multi-group').value,paper:$('multi-paper').value,gsm:$('multi-gsm').value})),
- restore:s=>{ops=s.ops;rolls=s.rolls;$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();},
+ restore:s=>{ops=JSON.parse(JSON.stringify(s.ops));rolls=JSON.parse(JSON.stringify(s.rolls));$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();},
  resume:s=>{
   if(!s.formsUrl)return;
   const url=new URL(s.formsUrl);if(url.origin!=='https://forms.cloud.microsoft')return;
@@ -1357,7 +1357,7 @@ window.CimagrafArchive={
 </section>
 <script src="report-pdf.js?v=4.13.0"></script>
 <script src="cloud-destination.js?v=4.13.0"></script>
-<script src="cloud-pdf.js?v=4.13.0"></script>
+<script src="cloud-pdf.js?v=4.14.2"></script>
 </body>
 </html>
 

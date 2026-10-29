@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><title>Prueba de retorno al editor CIMAGRAF</title>
+<style>body{font:14px Arial;margin:0;color:#172b3a}header{padding:12px;background:#eaf4f9}button{padding:8px;margin-right:8px}iframe{width:100%;height:850px;border:0}#state{font-weight:bold}</style>
+<header><strong>PRUEBA AISLADA · DATOS FICTICIOS</strong>
+<p>No inicia sesión, no envía respuestas a Forms ni guarda archivos en OneDrive. Usa el editor y los botones reales con servicios simulados y almacenamiento aislado.</p>
+<button id="seed" disabled>Cargar ejemplo ficticio</button>
+<label><input id="slow" type="checkbox" checked> Simular carga pendiente</label>
+<button id="complete">Completar guardado simulado</button><p id="state">Cargando…</p></header>
+<iframe id="app" title="Calculadora de prueba"></iframe>
+<script>
+const app=document.getElementById('app'),state=document.getElementById('state');
+let uploads=0;window.finishTestUpload=null;
+window.testUploaded=()=>{uploads++;state.textContent='PDF simulados: '+uploads;};
+document.getElementById('complete').onclick=()=>{window.finishTestUpload?.();window.finishTestUpload=null;};
+document.getElementById('seed').onclick=()=>{
+ const d=app.contentDocument;
+ const fields={'#multi-group':'TEST-RETORNO','[data-op="0"][data-field="id"]':'OP-PRUEBA','[data-op="0"][data-field="books"]':'1000','[data-op="0"][data-field="copies"]':'20','[data-op="0"][data-field="advance"]':'240','[data-roll="0"][data-field="width"]':'480','[data-roll="0"][data-field="kg"]':'400'};
+ for(const [selector,value] of Object.entries(fields)){const el=d.querySelector(selector);el.value=value;el.dispatchEvent(new app.contentWindow.Event('input',{bubbles:true}));}
+};
+const mock=`<script>
+const memory=()=>{const values=new Map();return {getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};};
+Object.defineProperty(window,'sessionStorage',{value:memory()});Object.defineProperty(window,'localStorage',{value:memory()});
+window.msal={PublicClientApplication:class {async initialize(){}async handleRedirectPromise(){}getActiveAccount(){return {username:'prueba'};}async acquireTokenSilent(){return {accessToken:'SIMULADO'};}}};
+window.CimagrafPDFDestination={driveId:'SIMULADO',folderId:'SIMULADO'};
+window.CimagrafReportPDF={render:async()=>new ArrayBuffer(123)};
+window.fetch=async()=>{
+ if(parent.document.getElementById('slow').checked)await new Promise(resolve=>{parent.finishTestUpload=resolve;});
+ parent.testUploaded();return {ok:true,json:async()=>({id:'SIMULADO',size:123})};
+};
+<\/script>`;
+app.onload=()=>{if(!app.contentWindow.CimagrafArchive)return;document.getElementById('seed').disabled=false;state.textContent='Prueba lista. Carga el ejemplo y pulsa Enviar a Forms.';};
+fetch('../index.html',{cache:'no-store'}).then(r=>r.text()).then(html=>{
+ const base=new URL('../',location.href).href;
+ html=html.replace('<head>','<head><base href="'+base+'"><meta http-equiv="Content-Security-Policy" content="frame-src \'none\'">');
+ html=html.replace(/<script src="cloud-pdf\.js\?[^\"]+"><\/script>/,mock+'$&');
+ app.srcdoc=html;
+}).catch(e=>{state.textContent='Error: '+e.message;});
+</script></html>

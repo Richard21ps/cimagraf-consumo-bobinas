@@ -7,7 +7,7 @@ const REDIRECT='https://richard21ps.github.io/cimagraf-consumo-bobinas/';
 const PENDING='cimagraf-pdf-pending-v1',TARGET='cimagraf-pdf-folder-v1';
 const scopes=['Files.ReadWrite'];
 const $=id=>document.getElementById(id);
-let auth,job,busy=false;
+let auth,job,busy=false,editing=false;
 const status=$('cloud-pdf-status');
 function report(text,error=false){status.textContent=text;status.classList.toggle('cloud-error',error);$('forms-cloud-status').textContent=text;$('forms-cloud-status').classList.toggle('cloud-error',error);}
 function script(src,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve();const el=document.createElement('script');el.src=src;el.integrity='sha384-dzOMecW+tQeM+pH4bitTcEtSsfZE54pSeogsBeGqCoTt2TnO/Gkuo9xuaQdUNcNg';el.crossOrigin='anonymous';el.onload=resolve;el.onerror=()=>{el.remove();reject(new Error('No se pudo cargar la conexión. Revisa Internet e inténtalo otra vez.'));};document.head.append(el);});}
@@ -72,11 +72,20 @@ function finish(){
  sessionStorage.removeItem(PENDING);job=null;$('multi-root').inert=false;
  window.CimagrafArchive.reset();report('Grupo terminado. PDF guardado en OneDrive.');
 }
-function remember(){$('multi-root').inert=true;sessionStorage.setItem(PENDING,JSON.stringify(job));}
+function remember(){$('multi-root').inert=!editing;sessionStorage.setItem(PENDING,JSON.stringify(job));}
+function sameInputs(a,b){
+ const data=(key,value)=>['problemsOpen','problemAdding','areaAdding'].includes(key)?undefined:value;
+ return ['ops','rolls','group','paper','gsm'].every(key=>JSON.stringify(a[key],data)===JSON.stringify(b[key],data));
+}
+function backToEditor(){
+ editing=true;$('multi-root').inert=false;
+ report(busy?'Puedes corregir los datos. El PDF anterior sigue guardándose; espera a que termine antes de volver a registrar.':'Puedes corregir los datos y volver a pulsar «Enviar a Forms». Si ya enviaste Forms, no lo envíes otra vez.');
+ $('multi-group').focus({preventScroll:true});
+}
 function recover(){try{const saved=JSON.parse(sessionStorage.getItem(PENDING)||'null');if(saved?.snapshot?.result&&saved.id&&saved.created){job=saved;$('multi-root').inert=true;window.CimagrafArchive.restore(saved.snapshot);window.CimagrafArchive.resume(saved.snapshot);report(saved.saved?'PDF guardado. Completa Forms y confirma su envío para continuar.':'Hay un PDF pendiente. Usa «Reintentar guardar PDF»; no envíes Forms otra vez si ya lo enviaste.');$('cloud-retry').hidden=!!saved.saved;$('forms-next').textContent='Ya envié · Siguiente grupo';}}catch(_){report('No se pudo recuperar el guardado pendiente.',true);}}
 async function save(){
  if(busy||!job||job.saved)return;
- busy=true;$('forms-next').disabled=true;$('cloud-retry').disabled=true;$('forms-back').disabled=true;
+ busy=true;$('forms-next').disabled=true;$('cloud-retry').disabled=true;
  try{
   const configured=configuredDestination();
   if(!configured&&!$('cloud-folder-url').value.trim()){$('forms-modal').classList.add('open');document.body.classList.add('forms-open');$('cloud-folder-setup').open=true;$('cloud-folder-url').focus();throw new Error('Configura la carpeta de OneDrive una sola vez en este equipo.');}
@@ -94,8 +103,20 @@ async function save(){
  }catch(e){report(e.message||'No se pudo guardar el PDF. Los datos se conservan.',true);$('cloud-retry').hidden=false;}
  finally{busy=false;$('forms-next').textContent='Ya envié · Siguiente grupo';$('forms-next').disabled=false;$('cloud-retry').disabled=false;$('forms-back').disabled=false;}
 }
-$('multi-register').addEventListener('click',()=>{if(!$('forms-modal').classList.contains('open'))return;job={id:crypto.randomUUID(),created:new Date().toISOString(),snapshot:window.CimagrafArchive.snapshot()};remember();$('forms-next').textContent='Guardando PDF…';save();});
-document.addEventListener('click',e=>{if(e.target.closest('#multi-register')&&sessionStorage.getItem(PENDING)){e.preventDefault();e.stopImmediatePropagation();report('Guarda primero el PDF pendiente. No vuelvas a enviar Forms.',true);if(job)window.CimagrafArchive.resume(job.snapshot);return;}if(!e.target.closest('#forms-next'))return;e.preventDefault();e.stopImmediatePropagation();if(!job){report('No hay un resumen preparado para guardar.',true);return;}if(job.saved)finish();else save();},true);
+$('forms-back').addEventListener('click',backToEditor);
+$('multi-register').addEventListener('click',()=>{if(!$('forms-modal').classList.contains('open'))return;editing=false;job={id:crypto.randomUUID(),created:new Date().toISOString(),snapshot:window.CimagrafArchive.snapshot()};remember();$('forms-next').textContent='Guardando PDF…';save();});
+document.addEventListener('click',e=>{
+ if(e.target.closest('#multi-register')&&job){
+  if(busy){e.preventDefault();e.stopImmediatePropagation();report('El PDF sigue guardándose. Puedes editar; espera a que termine antes de volver a registrar.');return;}
+  if(sameInputs(job.snapshot,window.CimagrafArchive.snapshot())){
+   e.preventDefault();e.stopImmediatePropagation();editing=false;remember();window.CimagrafArchive.resume(job.snapshot);
+   report(job.saved?'PDF ya guardado. Completa Forms y confirma su envío; no se genera otro PDF.':'Se retoma el registro pendiente con los mismos datos.');
+   if(!job.saved)save();return;
+  }
+  // Con cambios, el motor valida y prepara una nueva precarga antes de crear el PDF.
+ }
+ if(!e.target.closest('#forms-next'))return;e.preventDefault();e.stopImmediatePropagation();if(!job){report('No hay un resumen preparado para guardar.',true);return;}if(job.saved)finish();else save();
+},true);
 $('cloud-retry').addEventListener('click',save);
 $('cloud-folder-export')?.addEventListener('click',()=>{
  const folder=configuredDestination();
