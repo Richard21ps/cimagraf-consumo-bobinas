@@ -41,14 +41,17 @@ function folderLink(value){const u=new URL(value);if(u.protocol!=='https:'||u.ho
 function shareId(value){return 'u!'+btoa(unescape(encodeURIComponent(value))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');}
 function configuredDestination(){
  const fixed=window.CimagrafPDFDestination;
+ if(typeof fixed?.owner==='string'&&fixed.owner.trim()&&typeof fixed?.path==='string'&&fixed.path.trim())return {owner:fixed.owner.trim(),path:fixed.path.trim()};
  if(typeof fixed?.driveId==='string'&&fixed.driveId.trim()&&typeof fixed?.folderId==='string'&&fixed.folderId.trim())return {drive:fixed.driveId.trim(),id:fixed.folderId.trim()};
  try{const local=JSON.parse(localStorage.getItem(TARGET)||'null');return typeof local?.drive==='string'&&local.drive&&typeof local?.id==='string'&&local.id?local:null;}catch(_){return null;}
 }
 async function target(access){
  const configured=configuredDestination();
  if(configured?.drive&&configured?.id)return configured;
- const link=folderLink($('cloud-folder-url').value.trim());
- const item=await graph('/shares/'+shareId(link)+'/driveItem',access);
+ const endpoint=configured?.owner&&configured?.path
+  ?'/users/'+encodeURIComponent(configured.owner)+'/drive/root:/'+configured.path.split('/').map(encodeURIComponent).join('/')
+  :'/shares/'+shareId(folderLink($('cloud-folder-url').value.trim()))+'/driveItem';
+ const item=await graph(endpoint,access);
  const folder=item.remoteItem||item;
  if(!folder.folder||!folder.id||!folder.parentReference?.driveId)throw new Error('El vínculo debe apuntar a una carpeta, no a un archivo.');
  const result={drive:folder.parentReference.driveId,id:folder.id,name:folder.name};
@@ -100,7 +103,7 @@ async function save(){
   const configured=configuredDestination();
   if(!configured&&!$('cloud-folder-url').value.trim()){$('forms-modal').classList.add('open');document.body.classList.add('forms-open');$('cloud-folder-setup').open=true;$('cloud-folder-url').focus();throw new Error('Configura la carpeta de OneDrive una sola vez en este equipo.');}
   // La URL de carpeta queda únicamente en la sesión durante el inicio de sesión.
-  if($('cloud-folder-url').value.trim())sessionStorage.setItem('cimagraf-pdf-folder-link',folderLink($('cloud-folder-url').value.trim()));
+  if(!configured&&$('cloud-folder-url').value.trim())sessionStorage.setItem('cimagraf-pdf-folder-link',folderLink($('cloud-folder-url').value.trim()));
   remember();report('Conectando con Microsoft…');
   const access=await token();if(!access)return;
   const folder=await target(access);report('Generando y guardando PDF…');
@@ -116,13 +119,13 @@ async function save(){
 $('multi-register').addEventListener('click',()=>{if(!$('forms-modal').classList.contains('open'))return;job={id:crypto.randomUUID(),created:new Date().toISOString(),snapshot:window.CimagrafArchive.snapshot()};remember();$('forms-next').textContent='Guardando PDF…';save();});
 document.addEventListener('click',e=>{if(e.target.closest('#multi-register')&&sessionStorage.getItem(PENDING)){e.preventDefault();e.stopImmediatePropagation();report('Guarda primero el PDF pendiente. No vuelvas a enviar Forms.',true);if(job)window.CimagrafArchive.resume(job.snapshot);return;}if(!e.target.closest('#forms-next'))return;e.preventDefault();e.stopImmediatePropagation();if(!job){report('No hay un resumen preparado para guardar.',true);return;}if(job.saved)finish();else save();},true);
 $('cloud-retry').addEventListener('click',save);
-$('cloud-folder-export').addEventListener('click',()=>{
+$('cloud-folder-export')?.addEventListener('click',()=>{
  const folder=configuredDestination();
  if(!folder){report('Todavía no hay una carpeta conectada en este navegador. Abre este apartado en el equipo donde ya se guardó el PDF.',true);return;}
  const output=$('cloud-folder-identifiers');
  output.value=JSON.stringify({driveId:folder.drive,folderId:folder.id});output.hidden=false;output.focus();output.select();
 });
-if(window.CimagrafPDFDestination?.driveId&&window.CimagrafPDFDestination?.folderId){$('cloud-folder-setup').hidden=true;}
+if((window.CimagrafPDFDestination?.driveId&&window.CimagrafPDFDestination?.folderId)||(window.CimagrafPDFDestination?.owner&&window.CimagrafPDFDestination?.path)){$('cloud-folder-setup').hidden=true;}
 $('cloud-change-folder').addEventListener('click',()=>{localStorage.removeItem(TARGET);$('cloud-folder-setup').open=true;report('Pega el vínculo de la carpeta y reintenta guardar.');});
 try{const link=sessionStorage.getItem('cimagraf-pdf-folder-link');if(link)$('cloud-folder-url').value=link;}catch(_){}
 recover();

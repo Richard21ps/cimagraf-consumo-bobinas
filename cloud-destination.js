@@ -1,3 +1,6 @@
-/* Identificadores de destino: no contienen tokens ni conceden acceso a OneDrive.
-   Se completan una vez con la carpeta resuelta por Microsoft Graph. */
-window.CimagrafPDFDestination = Object.freeze({driveId:'',folderId:''});
+/* Destino común confirmado desde el vínculo facilitado por el propietario.
+   No contiene vínculo compartido, tokens ni secretos de cliente. */
+window.CimagrafPDFDestination = Object.freeze({
+ owner:'richard.pereyra@cimagraf.com.pe',
+ path:'REGISTRO DE PDF DIGITAL'
+});

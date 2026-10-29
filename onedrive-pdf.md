@@ -1,4 +1,4 @@
-# PDF directo a OneDrive — v4.12.0
+# PDF directo a OneDrive — v4.12.2
 
 Se usa Microsoft Graph con autenticación delegada, sin Power Automate,
 servidor propio ni secreto de cliente. La aplicación y el inquilino son los
@@ -12,7 +12,8 @@ La configuración de permisos por sí sola no equivale al consentimiento.
 ## Operación
 
 1. Pulsar «Enviar a Forms»: abre el formulario e inicia el guardado del PDF.
-2. Configurar la carpeta una sola vez por equipo e iniciar sesión si hace falta.
+2. La carpeta común se selecciona automáticamente: REGISTRO DE PDF DIGITAL
+   del OneDrive de richard.pereyra@cimagraf.com.pe. Iniciar sesión si hace falta.
    El trabajo y el vínculo precargado de Forms se conservan durante el retorno.
 3. La confirmación de Graph marca el PDF guardado; NO borra el trabajo ni
    certifica que Forms recibió la respuesta.
@@ -28,10 +29,14 @@ pantalla de autenticación dentro del marco. Revisar la configuración de Forms
 «Cualquier persona puede responder». El enlace alternativo precargado permanece
 visible, sin alterar permisos del formulario ni enviar respuestas de prueba.
 
-La carpeta se resuelve mediante /shares/{shareId}/driveItem y sus identificadores
-se guardan en localStorage del equipo. El vínculo compartido no se publica
-ni se incorpora al repositorio. Mientras se inicia sesión queda únicamente
-en sessionStorage; se retira después del guardado correcto.
+La ubicación fue confirmada al abrir el vínculo facilitado por el propietario:
+/personal/richard_pereyra_cimagraf_com_pe/Documents/REGISTRO DE PDF DIGITAL.
+cloud-destination.js fija owner y path, sin incluir el enlace de uso compartido.
+Graph resuelve /users/{owner}/drive/root:/{path} con la sesión de la cuenta activa
+y devuelve driveId y folderId. La carga conserva las comprobaciones de tamaño
+e identificador del archivo. No se solicita un enlace por equipo ni se crea
+una carpeta alternativa si falta acceso. Los permisos de edición siguen siendo
+necesarios; esta configuración no concede permisos ni cambia los existentes.
 
 El nombre usa las OP, fecha/hora y un identificador del registro. Los reintentos del mismo
 registro escriben el mismo archivo; un nuevo registro obtiene otro UUID.
@@ -56,15 +61,10 @@ MSAL con caché de sesión, no se incorporan al código ni se registran en logs.
 - La carga real necesita completar el inicio de sesión y confirmar el permiso
   de edición en la carpeta. No se envían respuestas de prueba a Forms.
 
-## Destino común — preparación v4.12.1
+## Destino común activado — v4.12.2
 
-cloud-destination.js admite driveId y folderId comunes para todos los equipos.
-Si ambos están definidos, prevalecen sobre el destino local, la carga no pide
-vínculo y el apartado de configuración por equipo se oculta. La autenticación
-y los permisos de edición siguen siendo necesarios.
-
-El destino común sigue pendiente de recibir los identificadores reales. Para
-obtenerlos, en el navegador donde ya se guardó un PDF abrir «Administración de
-la carpeta de PDF» y «Mostrar identificadores de la carpeta conectada».
-Enviar únicamente ese JSON al mantenedor para completar cloud-destination.js.
-No publicar el vínculo compartido ni tokens. Los ID no conceden acceso.
+La ruta owner/path tiene prioridad sobre configuraciones locales anteriores.
+El apartado para introducir vínculos queda oculto y el destino común aparece
+junto al estado del PDF. Las pruebas cubren un navegador sin configuración,
+una configuración local distinta y una denegación de permisos. La primera carga
+real con esta ruta debe comprobarse con una cuenta autorizada.
