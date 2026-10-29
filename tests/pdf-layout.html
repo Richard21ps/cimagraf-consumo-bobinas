@@ -1,0 +1,21 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Prueba visual PDF CIMAGRAF</title>
+<link rel="stylesheet" href="../report-summary.css">
+<style>body{font-family:Arial;background:#e6e9ec;margin:20px}button{padding:12px}#source{background:#fff;width:186mm;padding:12mm;box-sizing:content-box;margin:16px auto}#app{position:absolute;left:-10000px;width:1200px;height:800px}#result{width:100%;height:900px;border:0}#state{padding:12px;background:white}</style>
+<h1>Prueba visual con datos ficticios</h1><p>No guarda en OneDrive ni envía respuestas a Forms.</p>
+<button id="render" disabled>Generar PDF de prueba</button><button id="many" disabled>Probar varias páginas</button><p id="state">Cargando plantilla…</p><a id="download" hidden download="cimagraf-prueba.pdf">Descargar PDF de prueba</a><iframe id="result" title="PDF generado" hidden></iframe><div id="source"></div><iframe id="app" src="../index.html" title="Calculadora para recuperar plantilla"></iframe>
+<script src="../report-pdf.js"></script><script>
+const r={group:'PRUEBA VISUAL',paper:'Bond',gsm:90,saldo:192.64,
+ sourceOps:[{id:'OP01',books:1000,copies:20,advance:240}],sums:[{metros:4800,kg:207.36}],
+ details:[{op:'OP01',bobina:'Bobina 1',ancho:480,kg:207.36,saldo:192.64}],
+ usedRolls:[{id:'Bobina 1',width:480,initial:400,retired:0,corePaper:0,used:207.36,left:192.64,problems:[],areas:[]}]};
+const app=document.getElementById('app'),state=document.getElementById('state');let url;
+app.onload=()=>{document.getElementById('render').disabled=false;document.getElementById('many').disabled=false;state.textContent='Plantilla de impresión lista.';};
+async function generate(many){try{
+ state.textContent='Generando…';const data=JSON.parse(JSON.stringify(r));
+ if(many){data.details=Array.from({length:45},(_,i)=>({...data.details[0],op:'OP'+(i+1)}));data.usedRolls[0].retired=5;data.usedRolls[0].problems=['Lonjas dañadas'];data.usedRolls[0].areas=['Almacén'];}
+ const html=app.contentWindow.CimagrafArchive.reportHTML(data,'2026-10-29T12:30:00Z');document.getElementById('source').innerHTML='<section class="cimagraf-report">'+html+'</section>';
+ const bytes=await CimagrafReportPDF.render(html);if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+ const result=document.getElementById('result');result.src=url;result.hidden=false;const a=document.getElementById('download');a.href=url;a.hidden=false;state.textContent='PDF generado: '+bytes.byteLength+' bytes. La plantilla original está debajo.';
+}catch(e){state.textContent='Error: '+e.message;}}
+document.getElementById('render').onclick=()=>generate(false);document.getElementById('many').onclick=()=>generate(true);
+</script></html>

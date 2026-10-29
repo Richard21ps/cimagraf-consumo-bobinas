@@ -1,0 +1,26 @@
+/* Una sola hoja de estilos para impresión y PDF archivado. */
+.cimagraf-report{font-family:Arial,sans-serif;font-size:10pt;line-height:1.35;color:#111;background:#fff;margin:0;width:100%;box-sizing:border-box;text-align:left}
+.cimagraf-report *{box-sizing:border-box}
+.cimagraf-report .print-heading{margin:0 0 14px;border-bottom:2px solid #222;padding-bottom:10px}
+.cimagraf-report .print-heading p{margin:3px 0;font-size:9pt}
+.cimagraf-report .print-heading h1{font-size:19pt;margin:5px 0;line-height:1.12;letter-spacing:-.025em}
+.cimagraf-report .print-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:10pt;margin-bottom:15px}
+.cimagraf-report h2{font-size:12pt;margin:16px 0 7px;break-after:avoid}
+.cimagraf-report .multi-table-wrap{overflow:visible;margin:0 0 7px}
+.cimagraf-report .multi-table{min-width:0;width:100%;border-collapse:collapse;font-size:9pt;table-layout:fixed}
+.cimagraf-report .multi-table th,.cimagraf-report .multi-table td{border:1px solid #bbb;padding:6px;text-align:left;color:#111;overflow-wrap:anywhere;vertical-align:top}
+.cimagraf-report .multi-table th{background:#eee;white-space:normal;font-weight:bold}
+.cimagraf-report .multi-table td.num{text-align:right;white-space:normal;font-variant-numeric:tabular-nums}
+.cimagraf-report .multi-table tbody td:first-child{text-align:left}
+.cimagraf-report .multi-table thead{display:table-header-group}
+.cimagraf-report .multi-table tr{break-inside:avoid}
+.cimagraf-report .print-note{font-size:8pt;color:#444;margin:7px 0}
+.cimagraf-report .print-total{border:2px solid #222;border-radius:5px;padding:10px;margin:15px 0 8px;font-size:11pt;display:flex;justify-content:space-between;align-items:center;gap:10px;break-inside:avoid}
+.cimagraf-report .print-total strong{font-size:20pt;white-space:nowrap}
+.cimagraf-report .print-review{border:1px solid #777;padding:8px;font-weight:bold;font-size:9pt;break-inside:avoid}
+.cimagraf-report .print-logo{float:right;width:150px;height:auto;margin:0 0 10px 16px;background:transparent;mix-blend-mode:normal}
+.cimagraf-report .print-heading:after{content:'';display:block;clear:both}
+.cimagraf-report .print-material-strip{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;padding:10px;border:2px solid #333;margin:12px 0 8px;break-inside:avoid}
+.cimagraf-report .print-material-strip span{display:block;font-size:8pt;color:#555}
+.cimagraf-report .print-material-strip strong{display:block;font-size:13pt;margin-top:3px}
+.cimagraf-report .print-width-detail{font-size:9pt;margin:5px 0 12px;break-inside:avoid}

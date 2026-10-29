@@ -10,7 +10,7 @@ const $=id=>document.getElementById(id);
 let auth,job,busy=false;
 const status=$('cloud-pdf-status');
 function report(text,error=false){status.textContent=text;status.classList.toggle('cloud-error',error);$('forms-cloud-status').textContent=text;$('forms-cloud-status').classList.toggle('cloud-error',error);}
-function script(src,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve();const el=document.createElement('script');el.src=src;el.integrity=src.includes('msal-browser')?'sha384-dzOMecW+tQeM+pH4bitTcEtSsfZE54pSeogsBeGqCoTt2TnO/Gkuo9xuaQdUNcNg':'sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3';el.crossOrigin='anonymous';el.onload=resolve;el.onerror=()=>{el.remove();reject(new Error('No se pudo cargar la conexión. Revisa Internet e inténtalo otra vez.'));};document.head.append(el);});}
+function script(src,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve();const el=document.createElement('script');el.src=src;el.integrity='sha384-dzOMecW+tQeM+pH4bitTcEtSsfZE54pSeogsBeGqCoTt2TnO/Gkuo9xuaQdUNcNg';el.crossOrigin='anonymous';el.onload=resolve;el.onerror=()=>{el.remove();reject(new Error('No se pudo cargar la conexión. Revisa Internet e inténtalo otra vez.'));};document.head.append(el);});}
 async function initAuth(){
  if(auth)return auth;
  await script('https://cdn.jsdelivr.net/npm/@azure/msal-browser@5.27.0/lib/msal-browser.min.js','msal');
@@ -58,30 +58,8 @@ async function target(access){
  localStorage.setItem(TARGET,JSON.stringify(result));$('cloud-folder-url').value='';$('cloud-folder-setup').open=false;
  return result;
 }
-const number=v=>new Intl.NumberFormat('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1}).format(Number(v)||0);
 async function pdf(r,created){
- await script('https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js','jspdf');
- const doc=new jspdf.jsPDF({unit:'mm',format:'a4'});let y=18;
- const text=(value,bold=false,size=10)=>{doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);const lines=doc.splitTextToSize(String(value),180);for(const line of lines){if(y>275){doc.addPage();y=18;}doc.text(line,15,y);y+=5;}y+=2;};
- const heading=value=>{y+=4;text(value,true,12);};
- const logo=document.querySelector('.brand-logo');if(logo?.src.startsWith('data:image/png'))doc.addImage(logo.src,'PNG',143,10,52,15.6);
- doc.setTextColor(20,91,131);text('CIMAGRAF · ÁREA DIGITAL',true,11);y=34;
- text('Consumo y devolución de bobinas',true,17);
- doc.setTextColor(35,45,55);
- text('Grupo: '+r.group+' · '+new Date(created).toLocaleString('es-PE',{timeZone:'America/Lima'}));
- text('Material: '+r.paper+' · Gramaje: '+number(r.gsm)+' g/m²',true);
- text('Anchos: '+r.usedRolls.map(b=>b.id+': '+number(b.width)+' mm').join(' | '));
- heading('Producción por OP');
- r.sourceOps.forEach((o,i)=>{text('OP '+o.id,true);text(o.books+' libros · '+o.copies+' copias/libro · Avance '+number(o.advance)+' mm');text(number(r.sums[i].metros)+' m · '+number(r.sums[i].kg)+' kg');});
- heading('Consumo por OP y bobina');
- r.details.forEach(d=>text('OP '+d.op+' | '+d.bobina+' | '+number(d.ancho)+' mm | Producción '+number(d.kg)+' kg | Saldo tras OP '+number(d.saldo)+' kg'));
- text('Los saldos tras cada OP son parciales y no se suman.',false,9);
- heading('Saldo final por bobina');
- r.usedRolls.forEach(b=>{text(b.id+' · '+number(b.width)+' mm'+(b.left<=0.000001?' · AGOTADA':''),true);text('Inicial '+number(b.initial)+' kg | Producción '+number(b.used)+' kg');text('Lonjas '+number(b.retired)+' kg | Sobrante neto '+number(b.corePaper)+' kg | Devolver '+number(b.left)+' kg');if(b.retired>0){text('Motivo: '+((b.problems||[]).join('; ')||'Sin indicar'));text('Áreas: '+((b.areas||[]).join('; ')||'Sin indicar'));}});
- heading('ENTREGAR AL ALMACÉN: '+number(r.saldo)+' kg');
- text('Pesos netos de papel, sin cartón. Lonjas y sobrante neto se descuentan una sola vez.',false,9);
- text('Resumen generado al abrir Forms. Este PDF no acredita el envío del formulario.',false,9);
- return doc.output('arraybuffer');
+ return window.CimagrafReportPDF.render(window.CimagrafArchive.reportHTML(r,created));
 }
 function filename(j){
  const ops=j.snapshot.result.sourceOps.map(o=>String(o.id).replace(/[^a-zA-Z0-9_-]/g,'_')).join('_').slice(0,100)||'SIN_OP';

@@ -148,23 +148,7 @@ header{margin-bottom:14px}
  body.printing-summary{background:#fff;color:#111;margin:0}
  body.printing-summary>:not(#print-summary){display:none!important}
  body.printing-summary>#print-summary{display:block!important;font-family:Arial,sans-serif;font-size:10pt;line-height:1.35}
- .print-heading{margin:0 0 14px;border-bottom:2px solid #222;padding-bottom:10px}
- .print-heading p{margin:3px 0;font-size:9pt}
- .print-heading h1{font-size:19pt;margin:5px 0}
- .print-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:10pt;margin-bottom:15px}
- #print-summary h2{font-size:12pt;margin:16px 0 7px;break-after:avoid}
- #print-summary .multi-table-wrap{overflow:visible;margin:0 0 7px}
- #print-summary .multi-table{min-width:0;width:100%;border-collapse:collapse;font-size:9pt;table-layout:fixed}
- #print-summary .multi-table th,#print-summary .multi-table td{border:1px solid #bbb;padding:6px;text-align:left;color:#111;overflow-wrap:anywhere}
- #print-summary .multi-table th{background:#eee;white-space:normal;font-weight:bold}
- #print-summary .multi-table td.num{text-align:right;white-space:normal}
- #print-summary .multi-table tbody td:first-child{text-align:left}
- #print-summary .multi-table thead{display:table-header-group}
- #print-summary .multi-table tr{break-inside:avoid}
- .print-note{font-size:8pt;color:#444;margin:7px 0}
- .print-total{border:2px solid #222;border-radius:5px;padding:10px;margin:15px 0 8px;font-size:11pt;display:flex;justify-content:space-between;align-items:center;gap:10px;break-inside:avoid}
- .print-total strong{font-size:20pt;white-space:nowrap}
- .print-review{border:1px solid #777;padding:8px;font-weight:bold;font-size:9pt;break-inside:avoid}
+
 }
 
 /* 4.6: identidad Cimagraf integrada en pantalla e impresión. */
@@ -174,7 +158,7 @@ header{margin-bottom:14px}
 .brand-title h1{font-size:30px}
 .brand-title .intro{font-size:15px;margin-top:7px}
 @media(max-width:650px){.brand-header{gap:10px;grid-template-columns:1fr}.brand-logo{width:145px;grid-column:1;grid-row:1}.brand-title{grid-column:1;grid-row:2}.brand-title h1{font-size:26px}}
-@media print{.print-logo{float:right;width:150px;height:auto;margin:0 0 10px 16px;background:transparent;mix-blend-mode:normal}.print-heading:after{content:'';display:block;clear:both}}
+
 
 /* 4.7: sobrante con tara, cifras de retiro y datos de material destacados. */
 .multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(5,minmax(0,1fr))}
@@ -191,12 +175,7 @@ header{margin-bottom:14px}
 .mini-roll-values .mini-removed b{color:#a57013}
 @media(max-width:1120px) and (min-width:901px){.multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.multi-editor .multi-bobbins .multi-remove{grid-row:5}}
 @media(max-width:580px){.multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.multi-editor .multi-bobbins .multi-remove{grid-row:5}}
-@media print{
- .print-material-strip{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;padding:10px;border:2px solid #333;margin:12px 0 8px;break-inside:avoid}
- .print-material-strip span{display:block;font-size:8pt;color:#555}
- .print-material-strip strong{display:block;font-size:13pt;margin-top:3px}
- .print-width-detail{font-size:9pt;margin:5px 0 12px;break-inside:avoid}
-}
+
 
 .mini-roll-values>span{display:flex;flex-direction:column;justify-content:space-between;gap:2px}
 

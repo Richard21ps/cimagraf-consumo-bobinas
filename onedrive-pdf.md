@@ -1,4 +1,4 @@
-# PDF directo a OneDrive — v4.12.2
+# PDF directo a OneDrive — v4.13.0
 
 Se usa Microsoft Graph con autenticación delegada, sin Power Automate,
 servidor propio ni secreto de cliente. La aplicación y el inquilino son los
@@ -48,7 +48,7 @@ se limita a la misma pestaña/sesión del navegador. Cerrar la sesión o borrar
 sus datos puede eliminar el trabajo pendiente, que todavía no es un archivo
 archivado en OneDrive.
 
-Las bibliotecas MSAL Browser 5.27.0 y jsPDF 4.2.1 se cargan bajo demanda desde
+Las bibliotecas MSAL Browser 5.27.0 y html2pdf.js 0.14.0 (bundle) se cargan bajo demanda desde
 jsDelivr con versiones fijadas y SHA-384. Los tokens se administran mediante
 MSAL con caché de sesión, no se incorporan al código ni se registran en logs.
 
@@ -61,10 +61,26 @@ MSAL con caché de sesión, no se incorporan al código ni se registran en logs.
 - La carga real necesita completar el inicio de sesión y confirmar el permiso
   de edición en la carpeta. No se envían respuestas de prueba a Forms.
 
-## Destino común activado — v4.12.2
+## Destino común activado — v4.13.0
 
 La ruta owner/path tiene prioridad sobre configuraciones locales anteriores.
 El apartado para introducir vínculos queda oculto y el destino común aparece
 junto al estado del PDF. Las pruebas cubren un navegador sin configuración,
 una configuración local distinta y una denegación de permisos. La primera carga
 real con esta ruta debe comprobarse con una cuenta autorizada.
+
+## Plantilla única de resumen — v4.13.0
+
+La impresión y el archivo usan buildPrintSummary, expuesto mediante reportHTML.
+report-summary.css define su diseño común. report-pdf.js convierte ese HTML en
+PDF A4 con margen de 12 mm, imágenes decodificadas y escala de captura 2.
+Las filas y el total se protegen contra cortes. El PDF usa imágenes por página
+para conservar el aspecto del documento; el texto no se exporta como texto
+seleccionable. Los saltos de página pueden variar respecto del diálogo de
+impresión según el navegador y sus opciones de impresión.
+
+La pantalla tests/pdf-layout.html genera datos ficticios y permite revisar la
+plantilla y su PDF, con una página o 45 movimientos, sin autenticar usuarios,
+escribir archivos en OneDrive ni enviar Forms. Las pruebas de la carga mock
+verifican que se pasa exactamente el HTML compartido al conversor, el A4,
+los márgenes, la protección de filas y el retorno en memoria.

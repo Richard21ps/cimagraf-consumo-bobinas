@@ -17,7 +17,8 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.12.2">
+<link rel="stylesheet" href="compact-v40.css?v=4.13.0">
+<link rel="stylesheet" href="report-summary.css?v=4.13.0">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +333,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.12.2</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.13.0</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -443,7 +444,7 @@
     </div>
   </div>
 
-  <section id="print-summary" class="print-summary" aria-label="Resumen para imprimir"></section>
+  <section id="print-summary" class="print-summary cimagraf-report" aria-label="Resumen para imprimir"></section>
 
   <script>
     (() => {
@@ -1318,6 +1319,7 @@ materialModalObserver.observe(sharedMaterialModal,{attributes:true,attributeFilt
 updateCatalog();
 redraw();mode(true);scheduleAuto();
 window.CimagrafArchive={
+ reportHTML:(r,created)=>buildPrintSummary(r,new Date(created).toLocaleString('es-PE',{timeZone:'America/Lima',dateStyle:'short',timeStyle:'short'})),
  snapshot:()=>JSON.parse(JSON.stringify({result,ops,rolls,formsUrl:$('forms-external').href,group:$('multi-group').value,paper:$('multi-paper').value,gsm:$('multi-gsm').value})),
  restore:s=>{ops=s.ops;rolls=s.rolls;$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();},
  resume:s=>{
@@ -1342,8 +1344,9 @@ window.CimagrafArchive={
  <a id="cloud-last-pdf" target="_blank" rel="noopener noreferrer" hidden>Ver último PDF guardado ↗</a>
 
 </section>
-<script src="cloud-destination.js?v=4.12.2"></script>
-<script src="cloud-pdf.js?v=4.12.2"></script>
+<script src="report-pdf.js?v=4.13.0"></script>
+<script src="cloud-destination.js?v=4.13.0"></script>
+<script src="cloud-pdf.js?v=4.13.0"></script>
 </body>
 </html>
 
