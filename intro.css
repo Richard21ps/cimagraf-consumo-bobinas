@@ -1,0 +1,69 @@
+/* Bienvenida independiente del cálculo y de la plantilla del PDF. */
+@font-face {
+  font-family: "Cimagraf Scholar";
+  src: local("Scholar"), local("Scholar Regular");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.welcome-intro[hidden] { display: none !important; }
+.welcome-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #172b3a;
+  opacity: 1;
+  transition: opacity 220ms ease;
+}
+.welcome-intro.is-leaving { opacity: 0; pointer-events: none; }
+.welcome-intro-content { text-align: center; padding: 24px; }
+.welcome-intro-mark {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+}
+.welcome-intro-mark img { display: block; height: 70px; width: auto; max-width: none; }
+.welcome-intro-reveal { overflow: hidden; padding: 0 8px; }
+.welcome-intro-name {
+  font-family: "Cimagraf Scholar", Georgia, "Times New Roman", serif;
+  font-size: clamp(48px, 10vw, 76px);
+  font-weight: 400;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
+  margin: 0;
+  animation: cimagraf-slide-up 850ms cubic-bezier(.2,.7,.2,1) both;
+}
+.welcome-intro-area {
+  font: 600 15px/1.5 Arial, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #145b83;
+  margin: 16px 0 4px;
+  animation: cimagraf-intro-appear 600ms 220ms both;
+}
+.welcome-intro-caption { font: 14px/1.5 Arial, sans-serif; color: #627381; margin: 0; }
+#welcome-intro-skip {
+  font: 14px/1.5 Arial, sans-serif;
+  color: #145b83;
+  background: transparent;
+  border: 1px solid #d8e0e6;
+  border-radius: 8px;
+  padding: 6px 18px;
+  margin-top: 26px;
+  cursor: pointer;
+}
+#welcome-intro-skip:focus-visible { outline: 3px solid #145b83; outline-offset: 3px; }
+@keyframes cimagraf-slide-up {
+  from { transform: translateY(105%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes cimagraf-intro-appear { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .welcome-intro { display: none !important; }
+  .welcome-intro * { animation: none !important; }
+}
+@media print { .welcome-intro { display: none !important; } }
