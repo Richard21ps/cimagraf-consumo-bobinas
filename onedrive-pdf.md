@@ -1,4 +1,4 @@
-# PDF directo a OneDrive — v4.11.0
+# PDF directo a OneDrive — v4.12.0
 
 Se usa Microsoft Graph con autenticación delegada, sin Power Automate,
 servidor propio ni secreto de cliente. La aplicación y el inquilino son los
@@ -11,22 +11,29 @@ La configuración de permisos por sí sola no equivale al consentimiento.
 
 ## Operación
 
-1. Enviar el formulario integrado y esperar su confirmación.
-2. Pulsar «Ya envié · Guardar PDF». Esta es una confirmación manual: la app
-   no puede comprobar el envío de Forms ni obtener su Response ID.
-3. La primera vez en cada equipo, pegar el vínculo de la carpeta de OneDrive
-   de Cimagraf en el apartado que se abre dentro de la ventana de Forms.
-4. Iniciar sesión si Microsoft lo solicita. Se usa la misma pestaña; antes
-   de salir se conserva el trabajo pendiente en sessionStorage.
-5. Solo al confirmar Graph el identificador y tamaño del archivo se limpia
-   la calculadora. El vínculo del último PDF queda disponible en pantalla.
+1. Pulsar «Enviar a Forms»: abre el formulario e inicia el guardado del PDF.
+2. Configurar la carpeta una sola vez por equipo e iniciar sesión si hace falta.
+   El trabajo y el vínculo precargado de Forms se conservan durante el retorno.
+3. La confirmación de Graph marca el PDF guardado; NO borra el trabajo ni
+   certifica que Forms recibió la respuesta.
+4. Completar Forms y esperar su confirmación. Pulsar «Ya envié · Siguiente
+   grupo» para limpiar únicamente después de guardar el PDF.
+
+Nombre: OP_<OP1>_<OP2>_<fecha y hora Lima>_<id corto>.pdf. Las OP son la parte
+principal; fecha e identificador evitan reemplazar otro trabajo con la misma OP.
+El resumen del grupo sigue siendo un solo PDF, con todas las OP y bobinas.
+
+Si el iframe redirige a login.microsoftonline.com, Microsoft impide cargar esa
+pantalla de autenticación dentro del marco. Revisar la configuración de Forms
+«Cualquier persona puede responder». El enlace alternativo precargado permanece
+visible, sin alterar permisos del formulario ni enviar respuestas de prueba.
 
 La carpeta se resuelve mediante /shares/{shareId}/driveItem y sus identificadores
 se guardan en localStorage del equipo. El vínculo compartido no se publica
 ni se incorpora al repositorio. Mientras se inicia sesión queda únicamente
 en sessionStorage; se retira después del guardado correcto.
 
-El nombre usa grupo, fecha y UUID del registro. Los reintentos del mismo
+El nombre usa las OP, fecha/hora y un identificador del registro. Los reintentos del mismo
 registro escriben el mismo archivo; un nuevo registro obtiene otro UUID.
 Esto no deduplica respuestas duplicadas enviadas por separado a Forms.
 

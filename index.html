@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.11.1">
+<link rel="stylesheet" href="compact-v40.css?v=4.12.0">
   <style>
     :root {
       color-scheme: light;
@@ -332,7 +332,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.11.1</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.12.0</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -1295,10 +1295,9 @@ $('multi-register').addEventListener('click',()=>{
  $('forms-next').textContent='Ya envié · Siguiente grupo';
  pendingOpIndex=0;
  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
- // Forms no debe inicializarse dentro de un marco oculto o sin tamaño.
- requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  if($('forms-modal').classList.contains('open')&&$('forms-external').href===external)$('forms-frame').src=embeddedUrl;
- }));
+ // El diálogo ya está visible; medirlo antes de navegar el iframe.
+ void $('forms-modal').offsetHeight;
+ $('forms-frame').src=embeddedUrl;
 });
 // Catálogo de materiales compartido por ambos modos mediante almacenamiento local.
 const materialCatalogKey='consumo-bobina-materiales-v1';
@@ -1319,8 +1318,17 @@ materialModalObserver.observe(sharedMaterialModal,{attributes:true,attributeFilt
 updateCatalog();
 redraw();mode(true);scheduleAuto();
 window.CimagrafArchive={
- snapshot:()=>JSON.parse(JSON.stringify({result,ops,rolls,group:$('multi-group').value,paper:$('multi-paper').value,gsm:$('multi-gsm').value})),
+ snapshot:()=>JSON.parse(JSON.stringify({result,ops,rolls,formsUrl:$('forms-external').href,group:$('multi-group').value,paper:$('multi-paper').value,gsm:$('multi-gsm').value})),
  restore:s=>{ops=s.ops;rolls=s.rolls;$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();},
+ resume:s=>{
+  if(!s.formsUrl)return;
+  const url=new URL(s.formsUrl);if(url.origin!=='https://forms.cloud.microsoft')return;
+  $('forms-external').href=url.href;url.searchParams.set('embed','true');
+  $('forms-modal').classList.add('open');document.body.classList.add('forms-open');
+  $('forms-frame').hidden=false;$('forms-frame').src=url.href;
+  $('forms-op-label').textContent='Grupo: '+s.group+' · '+s.ops.length+' OP';
+  pendingOpIndex=0;
+ },
  reset:resetMultiAfterConfirmation
 };
 })();
@@ -1328,12 +1336,12 @@ window.CimagrafArchive={
   
 <section class="cloud-pdf-panel" aria-label="Archivo de resúmenes PDF">
  <strong>Resúmenes en OneDrive</strong>
- <p id="cloud-pdf-status" role="status" aria-live="polite">Después de enviar Forms, pulsa «Ya envié · Guardar PDF». Microsoft puede solicitar iniciar sesión.</p>
+ <p id="cloud-pdf-status" role="status" aria-live="polite">Al pulsar «Enviar a Forms», el PDF se guarda automáticamente por OP. Microsoft puede solicitar iniciar sesión la primera vez.</p>
  <button class="multi-button" id="cloud-retry" type="button" hidden>Reintentar guardar PDF</button>
  <a id="cloud-last-pdf" target="_blank" rel="noopener noreferrer" hidden>Ver último PDF guardado ↗</a>
 
 </section>
-<script src="cloud-pdf.js?v=4.11.1"></script>
+<script src="cloud-pdf.js?v=4.12.0"></script>
 </body>
 </html>
 

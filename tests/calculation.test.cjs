@@ -111,7 +111,7 @@ test('Precarga Forms: botón e iframe conservan los datos de una y varias OP',()
  for(const meters of [[1000],[400,600]]){
   const r=calculate(meters,[[200,1000,10]]);r.loads[0].problems=['MATERIAL DAÑADO'];r.loads[0].areas=['Almacén','Planta digital'];r.group='GRUPO PRUEBA';r.type=meters.length>1?'Varias OP / una bobina':'Una OP / una bobina';const elements={};const frames=[];let click;
   const c={result:r,URL,requestAnimationFrame:fn=>frames.push(fn),document:{body:{classList:{add(){}}}},$:id=>elements[id]??(elements[id]={setAttribute(){},classList:{contains:()=>Boolean(elements[id]?.open),add(){elements[id].open=true;}},addEventListener:(event,fn)=>{if(id==='multi-register')click=fn;}})};
-  vm.createContext(c);vm.runInContext(defs+formatting+packets+listener,c);click();assert.equal(elements['forms-frame'].src,'about:blank');while(frames.length)frames.shift()();
+  vm.createContext(c);vm.runInContext(defs+formatting+packets+listener,c);click();assert.notEqual(elements['forms-frame'].src,'about:blank');while(frames.length)frames.shift()();
   const external=new URL(elements['forms-external'].href),embedded=new URL(elements['forms-frame'].src);assert.equal(elements['forms-frame'].hidden,false);
   assert.equal(external.searchParams.get('r790012348e2543d18936c9ae9ddb82e7'),'GRUPO PRUEBA');
   assert.equal(external.searchParams.get('r1a6fb6883bc444629eea97caf2ece32c'),r.sourceOps.map(o=>o.id).join(', '));
