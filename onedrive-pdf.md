@@ -55,3 +55,16 @@ MSAL con caché de sesión, no se incorporan al código ni se registran en logs.
 - PDF real generado con jsPDF y logo, texto y render revisados.
 - La carga real necesita completar el inicio de sesión y confirmar el permiso
   de edición en la carpeta. No se envían respuestas de prueba a Forms.
+
+## Destino común — preparación v4.12.1
+
+cloud-destination.js admite driveId y folderId comunes para todos los equipos.
+Si ambos están definidos, prevalecen sobre el destino local, la carga no pide
+vínculo y el apartado de configuración por equipo se oculta. La autenticación
+y los permisos de edición siguen siendo necesarios.
+
+El destino común sigue pendiente de recibir los identificadores reales. Para
+obtenerlos, en el navegador donde ya se guardó un PDF abrir «Administración de
+la carpeta de PDF» y «Mostrar identificadores de la carpeta conectada».
+Enviar únicamente ese JSON al mantenedor para completar cloud-destination.js.
+No publicar el vínculo compartido ni tokens. Los ID no conceden acceso.

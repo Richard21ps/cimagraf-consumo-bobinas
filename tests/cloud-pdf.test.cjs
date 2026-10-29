@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');const vm=require('node:vm');
 const code=fs.readFileSync(require('node:path').join(__dirname,'../cloud-pdf.js'),'utf8');
 function fixture({fail=false,pending=null}={}){
- const elements={},listeners=new Map();const el=id=>elements[id]??=( {value:'',classList:{toggle(){},add(){},contains(){return true;}},addEventListener:(event,fn)=>listeners.set(id+event,fn),focus(){},hidden:false,disabled:false});
+ const elements={},listeners=new Map();const el=id=>elements[id]??=( {value:'',classList:{toggle(){},add(){},contains(){return true;}},addEventListener:(event,fn)=>listeners.set(id+event,fn),focus(){},select(){},hidden:false,disabled:false});
  const session=new Map(pending?[['cimagraf-pdf-pending-v1',JSON.stringify(pending)]]:[]),local=new Map([['cimagraf-pdf-folder-v1',JSON.stringify({drive:'drive',id:'folder'})]]);
  const storage=m=>({getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)});
  let resets=0,restores=0;const calls=[],printed=[];
@@ -10,7 +10,7 @@ function fixture({fail=false,pending=null}={}){
  class Auth{async initialize(){}async handleRedirectPromise(){}getActiveAccount(){return {username:'test'};}async acquireTokenSilent(){return {accessToken:'test-token'};}}
  class Doc{setFont(){}setFontSize(){}splitTextToSize(v){return [v];}text(v){printed.push(v);}setTextColor(){}addPage(){}output(){return new ArrayBuffer(123);}}
  const context={window:{msal:{PublicClientApplication:Auth},jspdf:{jsPDF:Doc},CimagrafArchive:{snapshot:()=>({result:r}),restore:()=>restores++,resume:()=>{},reset:()=>resets++}},document:{body:{classList:{add(){}}},getElementById:el,querySelector:()=>null,addEventListener(){},head:{append(){throw new Error('Unexpected remote dependency');}}},msal:{PublicClientApplication:Auth},jspdf:{jsPDF:Doc},sessionStorage:storage(session),localStorage:storage(local),URL,Intl,Date,ArrayBuffer,encodeURIComponent,unescape,btoa:s=>Buffer.from(s,'binary').toString('base64'),location:{hash:'',search:''},crypto:require('node:crypto').webcrypto,fetch:async(url,options)=>{calls.push({url,options});return {ok:!fail,status:fail?403:200,json:async()=>fail?{error:{code:'accessDenied'}}:{id:'uploaded',size:123,webUrl:'https://grupocimagraf-my.sharepoint.com/pdf'}};}};
- vm.createContext(context);vm.runInContext(code.replace(/\}\)\(\);\s*$/, 'window.testCloud={save,finish,folderLink,shareId,filename,pdf,setJob:j=>job=j};})();'),context);
+ vm.createContext(context);vm.runInContext(code.replace(/\}\)\(\);\s*$/, 'window.testCloud={save,finish,configuredDestination,folderLink,shareId,filename,pdf,setJob:j=>job=j};})();'),context);
  return {context,el,session,local,listeners,calls,printed,r,api:context.window.testCloud,get resets(){return resets;},get restores(){return restores;}};
 }
 (async()=>{
@@ -22,6 +22,9 @@ function fixture({fail=false,pending=null}={}){
  f=fixture({fail:true});j={...j,saved:false,snapshot:{result:f.r}};f.api.setJob(j);await f.api.save();assert.equal(f.resets,0);assert.equal(f.el('multi-root').inert,true);assert.ok(f.session.has('cimagraf-pdf-pending-v1'));await f.api.save();assert.equal(f.calls[0].url,f.calls[1].url);assert.equal(f.el('forms-next').disabled,false);
  f=fixture({pending:j});assert.equal(f.restores,1);assert.equal(f.el('multi-root').inert,true);assert.equal(f.el('cloud-retry').hidden,false);
  f=fixture();f.local.clear();f.api.setJob(j);await f.api.save();assert.equal(f.calls.length,0);assert.equal(f.resets,0);assert.equal(f.el('cloud-folder-setup').open,true);
+ f=fixture();f.context.window.CimagrafPDFDestination={driveId:'shared-drive',folderId:'shared-folder'};f.local.clear();assert.equal(f.api.configuredDestination().drive,'shared-drive');f.api.setJob({...j,saved:false,snapshot:{result:f.r}});await f.api.save();assert.ok(f.calls[0].url.includes('/drives/shared-drive/items/shared-folder:'));assert.equal(f.calls.length,1);
+ f=fixture();f.local.set('cimagraf-pdf-folder-v1','invalid');assert.equal(f.api.configuredDestination(),null);
+ f=fixture();f.listeners.get('cloud-folder-exportclick')();assert.deepEqual(JSON.parse(f.el('cloud-folder-identifiers').value),{driveId:'drive',folderId:'folder'});
  f=fixture();f.listeners.get('multi-registerclick')();for(let i=0;i<10;i++)await new Promise(resolve=>setImmediate(resolve));assert.equal(f.calls.length,1);assert.equal(f.resets,0);assert.equal(JSON.parse(f.session.get('cimagraf-pdf-pending-v1')).saved,true);
  console.log('PDF: permisos, destino, contenido, carga, reintento, recuperación y conservación de datos correctos.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
