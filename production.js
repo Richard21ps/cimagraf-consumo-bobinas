@@ -38,8 +38,8 @@ function render(){
  $('machine-connection-note').hidden=connected()||!!config.production||legacy;
  if(!legacy){$('multi-group').value=id();$('multi-group').readOnly=true;$('multi-group').placeholder='Se genera al asignar la máquina';}
  if(legacy)status('Termina el registro anterior antes de configurar la máquina.');
- else if(!machine)status('Selecciona la máquina de esta PC una sola vez en Configurar equipo.');
- else status(config.production?(draft?.sent?'ID registrado. Reabrir Forms conserva el mismo número.':'El ID se confirma al pulsar Enviar a Forms.'):'Modo de pruebas: estos IDs no consumen la numeración de producción.');
+ else if(!machine)status('Elige la máquina de esta PC.');
+ else status(config.production?(draft?.sent?'ID registrado; se conserva al reabrir.':'ID confirmado al enviar.'):'No consume IDs de producción.');
  window.CimagrafArchive.refresh();
 }
 function newGroup(){

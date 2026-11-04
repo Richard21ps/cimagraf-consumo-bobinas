@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
 <link rel="stylesheet" href="compact-v40.css?v=4.15.0">
 <link rel="stylesheet" href="report-summary.css?v=4.15.2">
-<link rel="stylesheet" href="production.css?v=4.16.0">
+<link rel="stylesheet" href="production.css?v=4.16.1">
 <script src="machine-form.js?v=4.16.0"></script>
 <link rel="stylesheet" href="intro.css?v=4.14.1">
   <style>
@@ -346,16 +346,17 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.16.0</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.16.1</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
-        <details id="machine-setup"><summary>Configurar equipo</summary><div class="machine-setup-fields">
+        <p id="machine-status" role="status" aria-live="polite">Elige la máquina de esta PC.</p>
+        <details id="machine-setup"><summary>Configurar equipo</summary><div class="machine-settings"><div class="machine-setup-fields">
           <label>Máquina de esta PC<select id="machine-select"><option value="">Seleccionar máquina</option><option value="kirin-1c">Kirin 1C</option><option value="kirin-4c">Kirin 4C</option></select></label>
           <button id="machine-start" type="button" disabled>Iniciar producción</button>
-        </div><p id="machine-connection-note">Producción disponible después de conectar Máquina e ID de registro en Forms.</p>
+        </div><p id="machine-connection-note">Falta conectar Máquina e ID con Forms para activar producción.</p>
         <div id="machine-start-confirm" class="machine-start-confirm" hidden><p>Activar registros reales para esta máquina. Si ya tiene registros, continúa su numeración; nunca vuelve a 1.</p><button id="machine-start-confirm-button" type="button">Activar esta máquina</button> <button id="machine-start-cancel" type="button">Seguir en pruebas</button></div>
-        </details><p id="machine-status" role="status" aria-live="polite">Asigna la máquina de esta PC una sola vez.</p>
+        </div></details>
       </section>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -1428,7 +1429,7 @@ window.CimagrafArchive={
 <script src="cloud-destination.js?v=4.13.0"></script>
 <script src="machine-registry.js?v=4.16.0"></script>
 <script src="cloud-pdf.js?v=4.16.0"></script>
-<script src="production.js?v=4.16.0"></script>
+<script src="production.js?v=4.16.1"></script>
 </body>
 </html>
 

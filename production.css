@@ -1,7 +1,20 @@
-.machine-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:8px 0 12px;padding:10px 12px;background:#f4f7fa;border:1px solid #dbe4eb;border-radius:9px;font-size:13px}
-.machine-toolbar strong{color:#153c56}.machine-mode{font-size:10px;font-weight:800;letter-spacing:.06em;color:#795e24;background:#fff3d8;padding:4px 7px;border-radius:5px}.machine-mode.is-production{color:#285d46;background:#e3f2e9}
-.machine-toolbar details{margin-left:auto}.machine-toolbar summary{cursor:pointer;font-size:12px;color:#45647b}.machine-setup-fields{display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding-top:8px}.machine-setup-fields label{font-size:12px}.machine-setup-fields select{display:block;max-width:180px;min-height:36px;margin-top:4px;border:1px solid #bdcdd7;border-radius:7px;padding:6px;background:white}
-.machine-toolbar button{min-height:36px;padding:6px 10px;border:1px solid #b8ccd8;border-radius:7px;color:#174e70;background:white;font-weight:700;cursor:pointer}.machine-toolbar button:disabled{opacity:.55;cursor:default}
-.machine-toolbar p{flex-basis:100%;margin:0;font-size:12px;color:#526b7d}.machine-toolbar .machine-error{color:#a32d2d}.machine-start-confirm{padding:8px 0;max-width:420px}.machine-start-confirm p{margin-bottom:8px}
+/* Barra compacta; las opciones se muestran solo al desplegar Configurar equipo. */
+#multi-root .machine-toolbar{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-height:40px;box-sizing:border-box;margin:8px 0 12px;padding:7px 10px;background:#f6f8fa;border:1px solid #dce5eb;border-radius:8px;font-size:12px;line-height:1.35}
+#multi-root .machine-toolbar strong{color:#153c56;font-size:13px;white-space:nowrap}
+#multi-root .machine-mode{font-size:9px;font-weight:800;letter-spacing:.05em;color:#795e24;background:#fff3d8;padding:3px 6px;border-radius:4px;white-space:nowrap}
+#multi-root .machine-mode.is-production{color:#285d46;background:#e3f2e9}
+#multi-root .machine-toolbar>p{flex:1 1 190px;margin:0;font-size:11px;color:#627788;line-height:1.35}
+#multi-root .machine-toolbar details{position:relative;flex:0 0 auto;margin-left:auto;align-self:center}
+#multi-root .machine-toolbar summary{padding:3px 0;cursor:pointer;font-size:11px;color:#45647b;white-space:nowrap}
+#multi-root .machine-settings{position:absolute;right:0;top:calc(100% + 8px);z-index:20;width:310px;max-width:calc(100vw - 68px);box-sizing:border-box;padding:12px;background:#fff;border:1px solid #cfdae3;border-radius:9px;box-shadow:0 5px 16px #18334412}
+#multi-root .machine-setup-fields{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
+#multi-root .machine-setup-fields label{flex:1 1 120px;margin:0;font-size:11px;font-weight:650;color:#35556a}
+#multi-root .machine-setup-fields select{display:block;width:100%;min-height:32px;height:32px;box-sizing:border-box;margin:4px 0 0;border:1px solid #bdcdd7;border-radius:6px;padding:5px 7px;background:white;font-family:inherit;font-size:12px;line-height:1.3;font-weight:600}
+#multi-root .machine-toolbar button{width:auto;min-height:32px;box-sizing:border-box;padding:6px 9px;border:1px solid #b8ccd8;border-radius:6px;color:#174e70;background:white;font-family:inherit;font-size:11px;line-height:1.3;font-weight:700;cursor:pointer}
+#multi-root .machine-toolbar button:disabled{opacity:.55;cursor:default}
+#multi-root .machine-settings p{margin:8px 0 0;font-size:11px;color:#627788;line-height:1.4}
+#multi-root .machine-toolbar .machine-error{color:#a32d2d}
+#multi-root .machine-start-confirm{margin-top:9px;padding-top:9px;border-top:1px solid #e4ebef}
+#multi-root .machine-start-confirm p{margin:0 0 8px}
 #multi-group[readonly]{background:#f3f7fa;color:#244e69;font-weight:700;cursor:default}
-@media(max-width:600px){.machine-toolbar details{margin-left:0;width:100%}}
+@media(max-width:600px){#multi-root .machine-toolbar>p{flex-basis:100%;order:3}#multi-root .machine-toolbar details{position:static}#multi-root .machine-settings{right:8px;top:calc(100% + 4px);max-width:calc(100% - 16px)}}
