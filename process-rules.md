@@ -92,3 +92,10 @@ No se modifica el motor de cálculo ni los saldos: las filas solo muestran
 las instantáneas de los movimientos. Las pruebas de impresión comprueban
 la cadena 500 → 380 → 280, retiros únicos, bobinas agotadas, anchos distintos,
 instantáneas anteriores y ausencia de mutación de los resultados originales.
+
+## Paradas vacías — 4.15.3
+
+El campo Paradas vacío se interpreta como 0 durante la captura y en el motor.
+Al salir del campo se muestra automáticamente 0. Los valores negativos,
+fraccionarios y las entradas numéricas incompletas siguen siendo inválidos.
+Los libros de set up y los demás campos mantienen sus validaciones.

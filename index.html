@@ -344,7 +344,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.15.2</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.15.3</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <div class="multi-layout"><div class="multi-editor">
       <div class="multi-block">
@@ -935,9 +935,15 @@ root.addEventListener('input',e=>{
  const t=e.target, type=t.dataset.op!==undefined?'op':t.dataset.roll!==undefined?'roll':null;
  if(type){
   const idx=Number(t.dataset[type]);(type==='op'?ops:rolls)[idx][t.dataset.field]=t.type==='checkbox'?t.checked:t.value;
+  if(type==='op'&&t.dataset.field==='stops')ops[idx].stops=t.validity.badInput?NaN:(t.value===''?'0':t.value);
   if(type==='roll'&&t.dataset.field==='scrap')syncWithdrawalControls(idx);
  }
  markDirty();scheduleAuto();
+});
+root.addEventListener('focusout',e=>{
+ const t=e.target;
+ if(t.dataset.op===undefined||t.dataset.field!=='stops'||t.value!==''||t.validity.badInput)return;
+ t.value='0';ops[Number(t.dataset.op)].stops='0';markDirty();scheduleAuto();
 });
 root.addEventListener('change',e=>{
  const panel=e.target.closest('.roll-problems');
@@ -1040,7 +1046,7 @@ function validate(){
   o.id=o.id.trim();
   const b=numeric(o.books),c=numeric(o.copies),a=numeric(o.advance);
   if(!o.id||!Number.isInteger(b)||b<=0||!Number.isInteger(c)||c<=0||!Number.isFinite(a)||a<=0)throw Error('Completa las OP con libros, copias y avance válidos.');
-  const setup=numeric(o.setupBooks??0),stops=numeric(o.stops??0);
+  const setup=numeric(o.setupBooks??0),stops=Number(o.stops??0);
   if(!Number.isSafeInteger(setup)||setup<0||!Number.isSafeInteger(stops)||stops<0)throw Error('Indica libros de set up y paradas enteras, mayores o iguales a cero, para '+o.id+'.');
   if(o.calibration!=null&&typeof o.calibration!=='boolean')throw Error('Revisa la calibración de '+o.id+'.');
   if(/[~^|,\r\n]/.test(o.id))throw Error('El número de OP no puede contener separadores especiales.');
@@ -1059,7 +1065,7 @@ function validate(){
   const productionMeters=numeric(o.books)*numeric(o.copies)*numeric(o.advance)/1000;
   const setupMeters=numeric(o.setupBooks??0)*(numeric(o.copies)*numeric(o.advance)/1000+20);
   const calibrationMeters=o.calibration?16:0;
-  const stopMeters=numeric(o.stops??0)*(numeric(o.copies)*numeric(o.advance)/1000+20);
+  const stopMeters=Number(o.stops??0)*(numeric(o.copies)*numeric(o.advance)/1000+20);
   const spliceMeters=20*(1+(oi===ops.length-1?spliceCount-ops.length:0));
   const plan={setupMeters,calibrationMeters,spliceMeters,productionMeters,stopMeters};
   const meters=Object.values(plan).reduce((a,n)=>a+n,0);
