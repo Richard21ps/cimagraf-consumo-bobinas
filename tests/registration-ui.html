@@ -1,0 +1,53 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Prueba aislada de máquinas e IDs</title>
+<style>body{font:14px Arial;margin:0;color:#183344}header{padding:10px;background:#eaf3f7}button{padding:8px;margin:4px}iframe{width:100%;height:1200px;border:0}#state{font-weight:bold}</style>
+<header><strong>PRUEBA AISLADA · MÁQUINAS Y NUMERACIÓN</strong><p>Servicios y almacenamiento simulados. No inicia sesión, no envía respuestas ni escribe en OneDrive.</p>
+<button id="seed" disabled>Cargar datos ficticios</button><button id="reload">Recargar esta PC</button><button id="new-pc">Simular otra PC</button><p id="state">Cargando…</p></header>
+<iframe id="app" title="Calculadora aislada"></iframe>
+<script>
+const app=document.getElementById('app'),state=document.getElementById('state');
+const memory=()=>{const map=new Map();return {getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k)};};
+window.localMemory=memory();window.sessionMemory=memory();
+const folders=new Map(),records=new Map();let serial=0,pdfs=0;
+const response=(status,data)=>({ok:status>=200&&status<300,status,json:async()=>data});
+window.fakeGraph=async(url,options={})=>{
+ const path=new URL(url).pathname.slice('/v1.0'.length),query=new URL(url).search;
+ if(options.method==='POST'){
+  const data=JSON.parse(options.body),key=path.slice(0,-9)+':/'+encodeURIComponent(data.name);
+  if(folders.has(key))return response(409,{});
+  const item={id:'folder-'+(++serial),name:data.name,folder:{}};folders.set(key,item);return response(201,item);
+ }
+ if(path.endsWith('/children'))return response(200,{value:[...records.keys()].filter(k=>k.startsWith(path.slice(0,-9)+':/')).map(k=>({name:k.split(':/')[1]}))});
+ if(path.endsWith(':/content')&&options.headers['Content-Type']==='application/pdf'){
+  pdfs++;state.textContent='PDF simulados: '+pdfs+' · Registros reales simulados: '+records.size;return response(201,{id:'pdf-'+pdfs,size:123});
+ }
+ if(path.endsWith(':/content')){
+  if(options.method==='PUT'){
+   if(!query.includes('conflictBehavior=fail'))throw Error('Reserva sin protección');
+   if(records.has(path))return response(409,{});records.set(path,JSON.parse(options.body));return response(201,{id:'record'});
+  }
+  return records.has(path)?response(200,records.get(path)):response(404,{});
+ }
+ return folders.has(path)?response(200,folders.get(path)):response(404,{});
+};
+const mock=`<script>
+Object.defineProperty(window,'sessionStorage',{value:parent.sessionMemory});Object.defineProperty(window,'localStorage',{value:parent.localMemory});
+window.msal={PublicClientApplication:class{async initialize(){}async handleRedirectPromise(){}getActiveAccount(){return {username:'SIMULADO'};}async acquireTokenSilent(){return {accessToken:'SIMULADO'};}}};
+window.CimagrafPDFDestination={driveId:'SIMULADO',folderId:'SIMULADO'};
+window.CimagrafMachineForm={machine:'r'+'a'.repeat(32),recordId:'r'+'b'.repeat(32)};
+window.CimagrafReportPDF={render:async()=>new ArrayBuffer(123)};
+window.fetch=(...args)=>parent.fakeGraph(...args);
+<\/script>`;
+let source='';
+function load(){document.getElementById('seed').disabled=true;app.srcdoc=source;}
+app.onload=()=>{if(app.contentWindow.CimagrafProduction){document.getElementById('seed').disabled=false;state.textContent='Lista · PDF simulados: '+pdfs+' · Reservas: '+records.size;}};
+document.getElementById('reload').onclick=load;
+document.getElementById('new-pc').onclick=()=>{window.localMemory=memory();window.sessionMemory=memory();load();};
+document.getElementById('seed').onclick=()=>{
+ const d=app.contentDocument,fields={'[data-op="0"][data-field="id"]':'OP-PRUEBA','[data-op="0"][data-field="books"]':'1000','[data-op="0"][data-field="copies"]':'20','[data-op="0"][data-field="advance"]':'240','[data-roll="0"][data-field="width"]':'480','[data-roll="0"][data-field="kg"]':'400'};
+ for(const [selector,value]of Object.entries(fields)){const el=d.querySelector(selector);el.value=value;el.dispatchEvent(new app.contentWindow.Event('input',{bubbles:true}));}
+};
+fetch('../index.html',{cache:'no-store'}).then(r=>r.text()).then(html=>{
+ const base=new URL('../',location.href).href;
+ source=html.replace('<head>','<head><base href="'+base+'"><meta http-equiv="Content-Security-Policy" content="frame-src \'none\'">').replace(/<script src="cloud-pdf\.js\?[^\"]+"><\/script>/,mock+'$&');load();
+}).catch(e=>state.textContent=e.message);
+</script></html>

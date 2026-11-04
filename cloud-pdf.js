@@ -7,17 +7,21 @@ const REDIRECT='https://richard21ps.github.io/cimagraf-consumo-bobinas/';
 const PENDING='cimagraf-pdf-pending-v1',TARGET='cimagraf-pdf-folder-v1';
 const scopes=['Files.ReadWrite'];
 const $=id=>document.getElementById(id);
-let auth,job,busy=false,editing=false;
+let auth,authLoading,job,busy=false,editing=false;
 const status=$('cloud-pdf-status');
 function report(text,error=false){status.textContent=text;status.classList.toggle('cloud-error',error);$('forms-cloud-status').textContent=text;$('forms-cloud-status').classList.toggle('cloud-error',error);}
 function script(src,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve();const el=document.createElement('script');el.src=src;el.integrity='sha384-dzOMecW+tQeM+pH4bitTcEtSsfZE54pSeogsBeGqCoTt2TnO/Gkuo9xuaQdUNcNg';el.crossOrigin='anonymous';el.onload=resolve;el.onerror=()=>{el.remove();reject(new Error('No se pudo cargar la conexión. Revisa Internet e inténtalo otra vez.'));};document.head.append(el);});}
 async function initAuth(){
  if(auth)return auth;
+ if(authLoading)return authLoading;
+ authLoading=(async()=>{
  await script('https://cdn.jsdelivr.net/npm/@azure/msal-browser@5.27.0/lib/msal-browser.min.js','msal');
  const instance=new msal.PublicClientApplication({auth:{clientId:CLIENT,authority:'https://login.microsoftonline.com/'+TENANT,redirectUri:REDIRECT,navigateToLoginRequestUrl:false},cache:{cacheLocation:'sessionStorage'}});
  await instance.initialize();
  const response=await instance.handleRedirectPromise();if(response?.account)instance.setActiveAccount(response.account);
  auth=instance;return instance;
+ })();
+ try{return await authLoading;}finally{authLoading=null;}
 }
 async function token(){
  const a=await initAuth(),account=a.getActiveAccount()||a.getAllAccounts()[0];
@@ -29,6 +33,7 @@ async function token(){
 async function graph(path,access,options={}){
  const response=await fetch('https://graph.microsoft.com/v1.0'+path,{...options,headers:{Authorization:'Bearer '+access,...options.headers}});
  if(!response.ok){const error=await response.json().catch(()=>({}));const code=error.error?.code;
+  if([404,409,412].includes(response.status)){const failure=new Error(response.status===404?'No se encuentra el elemento en OneDrive.':'El número ya está reservado. Reintenta.');failure.status=response.status;throw failure;}
   if(response.status===403)throw new Error('La cuenta no tiene permiso para guardar en esta carpeta. Solicita acceso de edición.');
   if(response.status===401)throw new Error('La sesión de Microsoft venció. Vuelve a intentar el guardado.');
   if(response.status===404)throw new Error('No se encuentra la carpeta configurada. Revisa el vínculo.');
@@ -129,5 +134,7 @@ if((window.CimagrafPDFDestination?.driveId&&window.CimagrafPDFDestination?.folde
 $('cloud-change-folder').addEventListener('click',()=>{localStorage.removeItem(TARGET);$('cloud-folder-setup').open=true;report('Pega el vínculo de la carpeta y reintenta guardar.');});
 try{const link=sessionStorage.getItem('cimagraf-pdf-folder-link');if(link)$('cloud-folder-url').value=link;}catch(_){}
 recover();
+// Comparte la sesión ya existente; no añade permisos ni almacena tokens en la configuración.
+window.CimagrafCloud={connect:async()=>{const access=await token();if(!access)return null;return {destination:await target(access),request:(path,options)=>graph(path,access,options)};}};
 if(job&&(location.hash.includes('code=')||location.search.includes('code=')||location.hash.includes('error='))){initAuth().then(save).catch(e=>report('No se completó el inicio de sesión: '+e.message,true));}
 })();
