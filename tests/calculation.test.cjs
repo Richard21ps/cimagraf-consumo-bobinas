@@ -7,7 +7,10 @@ const start = html.indexOf('function validate(){', html.indexOf('const GROUP_FOR
 const source = html.slice(start, html.indexOf('\nfunction table(', start));
 const removalSource=html.slice(html.indexOf('function coreTareFor('),start);
 function calculate(meters, bobbins, paper='Otro papel', gsm=70) {
-  const context = {ops: meters.map((m,i)=>({id:'OP'+i,books:m,copies:1,advance:1000})),
+  // Estos escenarios fijan el METRAJE TOTAL para aislar la regresión de masa y
+  // asignación. Las pruebas process.test.cjs verifican producción y extras por separado.
+  const splices=Math.max(meters.length,bobbins.length);
+  const context = {ops: meters.map((m,i)=>({id:'OP'+i,books:m-20*(1+(i===meters.length-1?splices-meters.length:0)),copies:1,advance:1000,setupCopies:0,calibration:false,stops:0})),
     rolls: bobbins.map(([kg,width,scrap=0,coreGross=0,coreTare=''],i)=>({id:'Bobina '+(i+1),kg,width,scrap,coreGross,coreTare})),
     $: id=>({value:id==='multi-gsm'?String(gsm):paper}), numeric:Number,
     nf:String};
@@ -37,7 +40,7 @@ const renderSource=html.slice(renderStart,html.indexOf('\nfunction show(){',rend
 const numberFormatSource=html.match(/const nf=x=>[^;]+;/)[0];
 function render(r){const targets={};const rolls=r?r.loads:[{}];const context={$:id=>id==='multi-paper'?{value:'Otro papel'}:targets[id]??(targets[id]={innerHTML:''}),rolls,EPS:1e-8,numeric:x=>x===''?NaN:Number(x),escapeHtml:s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'),r};vm.createContext(context);vm.runInContext(numberFormatSource+removalSource+renderSource+';renderRollUsage(r)',context);return Object.values(targets).map(t=>t.innerHTML).join('');}
 
-test('Gráfico: saldos reales de las tres bobinas',()=>{const output=render(calculate([3000],[[75,1000,5],[45,500,10],[200,700,10]]));assert.equal((output.match(/usage-empty/g)||[]).length,2);assert.match(output,/141[.]0 <small>kg/);assert.match(output,/lonjas y sobrante neto 10[.]0 kg/);assert.match(output,/Saldo/);assert.match(output,/Producción/);});
+test('Gráfico: saldos reales de las tres bobinas',()=>{const output=render(calculate([3000],[[75,1000,5],[45,500,10],[200,700,10]]));assert.equal((output.match(/usage-empty/g)||[]).length,2);assert.match(output,/141[.]0 <small>kg/);assert.match(output,/lonjas, sobrante neto y proceso 10[.]0 kg/);assert.match(output,/Saldo/);assert.match(output,/Producción/);});
 test('Gráfico: bobina sin utilizar y saldo pequeño sin bloqueo',()=>{const output=render(calculate([1000],[[179,1000,10],[300,500]]));assert.doesNotMatch(output,/Envío bloqueado|REVISAR/);assert.match(output,/Disponible/);assert.match(output,/300[.]0 <small>kg/);assert.match(output,/No suma a la devolución/);});
 test('Gráfico: datos pendientes no muestran saldos anteriores',()=>assert.match(render(null),/Por calcular/));
 test('Sintaxis de ambos scripts',()=>{for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);});
@@ -71,7 +74,7 @@ test('Envío habilitado con saldos cero, inferiores a 100 y mayores',()=>{
 test('Sin mensajes ni controles de devolución mínima en cálculo, gráfica o impresión',()=>{assert.doesNotMatch(html,/MIN_RETURN_PER_BOBINA|returnViolations|100 kg|Envío bloqueado: cada bobina/);const output=printReport(calculate([1000],[[179,1000,10]]));assert.match(output,/TOTAL A ENTREGAR AL ALMACÉN <strong>99[.]0 kg/);assert.doesNotMatch(output,/print-review/);});
 test('Logo PNG integrado e idéntico en calculadora e impresión',()=>{const logo=html.match(/class="brand-logo" src="(data:image\/png;base64,[^"]+)"/)[1];const printed=printReport(calculate([1000],[[179,1000,10]]));assert.ok(printed.includes('class="print-logo" src="'+logo+'"'));assert.equal(Buffer.from(logo.split(',')[1],'base64').subarray(1,4).toString(),'PNG');});
 
-test('Sobrante con tuco: resta solo papel y suma retiro una vez',()=>{const r=calculate([1000],[[200,1000,10,25,5]]);near(r.loads[0].corePaper,20);near(r.totalScrap,30);near(r.saldo,100);near(r.loads[0].initial,r.loads[0].used+r.loads[0].scrap+r.loads[0].left);assert.match(render(r),/Papel separado/);assert.match(render(r),/30[.]0 <small>kg/);});
+test('Sobrante con tuco: resta solo papel y suma retiro una vez',()=>{const r=calculate([1000],[[200,1000,10,25,5]]);near(r.loads[0].corePaper,20);near(r.totalScrap,30);near(r.saldo,100);near(r.loads[0].initial,r.loads[0].used+r.loads[0].scrap+r.loads[0].left);assert.match(render(r),/Descuentos/);assert.match(render(r),/31[.]4 <small>kg/);});
 test('Sobrante sin tara: saldo pendiente, nunca se inventa el cartón',()=>{assert.throws(()=>calculate([1000],[[200,1000,10,25,'']]),/Saldo pendiente/);const targets={};const c={rolls:[{id:'Bobina 1',scrap:10,coreGross:25,coreTare:''}],r:null,$:id=>id==='multi-paper'?{value:'Otro papel'}:targets[id]??(targets[id]={innerHTML:''}),numeric:x=>x===''?NaN:Number(x),escapeHtml:String,EPS:1e-8};vm.createContext(c);vm.runInContext(numberFormatSource+removalSource+renderSource+';renderRollUsage(r)',c);const output=targets['multi-roll-usage'].innerHTML;assert.match(output,/FALTA TARA/);assert.match(output,/35[.]0 <small>kg/);assert.match(output,/incluye cartón/);assert.match(output,/Saldo <b>— kg/);});
 test('Tara no puede superar sobrante y suma no supera peso disponible',()=>{assert.throws(()=>calculate([1000],[[200,1000,10,25,26]]),/tuco vacío/);assert.throws(()=>calculate([1000],[[100,1000,50,80,5]]),/no pueden superar/);});
 test('Sobrantes y anchos distintos conservan metraje y masa',()=>{const r=calculate([600,1400],[[80,1000,5,10,5],[200,500,10,20,5]]);near(r.loads[0].left,0);near(r.loads[1].left,140);near(r.total,105);near(r.totalScrap,35);for(const b of r.usedRolls)near(b.initial,b.used+b.scrap+b.left);});
