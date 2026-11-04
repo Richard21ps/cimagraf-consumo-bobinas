@@ -283,16 +283,8 @@ header{margin-bottom:14px}
 @media(max-width:760px){#multi-root #multi-op-list .op-process-groups{grid-template-columns:repeat(2,minmax(0,1fr))}#multi-root #multi-op-list .op-group-info{grid-column:1 / -1}}
 @media(max-width:430px){#multi-root #multi-op-list .op-process-groups{grid-template-columns:minmax(0,1fr)}#multi-root #multi-op-list .op-group-info{grid-column:auto}}
 
-/* 4.17.1: campos de material y bobina ajustados al dato, sin estirarlos a toda la fila. */
-#multi-root .material-grid{display:flex;flex-wrap:wrap;align-items:end;gap:9px 12px}
-#multi-root .material-grid>label{flex:0 1 225px;max-width:100%}
-#multi-root .material-grid>div{flex:0 1 250px;max-width:100%;min-width:0}
-#multi-root .material-grid>label:last-child{flex-basis:110px}
+/* 4.17.2: anchos de la cuadrícula original con controles de altura reducida. */
 #multi-root .material-grid label,#multi-root .multi-bobbins .multi-row-fields label{font-size:11px;line-height:1.35}
 #multi-root .material-grid input,#multi-root .material-grid select,#multi-root .multi-bobbins .multi-row-fields input,#multi-root .multi-bobbins .multi-row-fields select{height:34px;min-height:34px;box-sizing:border-box;width:100%;min-width:0;font-size:13px;padding:5px 8px;border-radius:7px;margin-top:4px}
 #multi-root .material-grid .add-material{height:34px;min-height:34px;padding:5px 9px;font-size:12px;margin-top:4px;border-radius:7px}
-#multi-root .multi-bobbins .multi-row-fields{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
-#multi-root .multi-bobbins .multi-row-fields>label{flex:0 1 105px;max-width:100%}
-#multi-root .multi-bobbins .multi-row-fields>label:first-child{flex-basis:130px}
 #multi-root .multi-bobbins .multi-remove{min-height:32px;padding:5px 8px;font-size:11px}
-@media(max-width:430px){#multi-root .material-grid>label,#multi-root .material-grid>div{flex-basis:100%}#multi-root .material-grid>label:last-child{flex-basis:110px}#multi-root .multi-bobbins .multi-row-fields>label{flex-basis:calc(50% - 4px)}#multi-root .multi-bobbins .multi-row-fields>label:first-child{flex-basis:calc(50% - 4px)}}
