@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.15.0">
+<link rel="stylesheet" href="compact-v40.css?v=4.17.0">
 <link rel="stylesheet" href="report-summary.css?v=4.15.2">
 <link rel="stylesheet" href="production.css?v=4.16.1">
 <script src="machine-form.js?v=4.16.2"></script>
@@ -346,7 +346,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.16.3</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.17.0</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -370,7 +370,7 @@
       </div>
       <div class="multi-block">
         <h3>2 · Órdenes de producción</h3>
-        <p class="multi-muted">Registra libros de set up y de corrida. Las copias por libro son comunes. Marca calibración solo si la hubo e indica las paradas.</p>
+        <p class="multi-muted">Completa los datos de la OP, luego set up y corrida. Marca calibración solo si la hubo.</p>
         <div id="multi-op-list"></div>
         <button class="multi-button" id="multi-add-op" type="button">+ Agregar OP</button>
       </div>
@@ -932,14 +932,17 @@ function refreshCoreTareNotes(){
 
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
- $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row op-process-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields">'
+ $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row op-process-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields op-process-groups"><fieldset class="op-phase op-phase-info"><legend>Datos de OP</legend><div class="op-phase-fields">'
   +field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')
-  +field('Libros · set up',o.setupBooks??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="setupBooks"')
-  +field('Libros · corrida',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')
   +field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')
   +field('Avance (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')
+  +'</div></fieldset><fieldset class="op-phase op-phase-setup"><legend>Set up</legend><div class="op-phase-fields">'
+  +field('Libros · set up',o.setupBooks??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="setupBooks"')
+  +'<label class="op-calibration" title="Agrega 16 m a esta OP"><span>Calibración</span><span class="calibration-check"><input type="checkbox" data-op="'+i+'" data-field="calibration" aria-label="Calibración OP '+(i+1)+'" '+(o.calibration?'checked':'')+'><span>Sí</span></span></label>'
+  +'</div></fieldset><fieldset class="op-phase op-phase-run"><legend>Corrida</legend><div class="op-phase-fields">'
+  +field('Libros · corrida',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')
   +field('Paradas',o.stops??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="stops"')
-  +'<label class="op-calibration" title="Agrega 16 m a esta OP"><span>Calibración</span><span class="calibration-check"><input type="checkbox" data-op="'+i+'" data-field="calibration" aria-label="Calibración OP '+(i+1)+'" '+(o.calibration?'checked':'')+'><span>Sí</span></span></label></div></div>').join('');
+  +'</div></fieldset></div></div>').join('');
  $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Ancho de bobina (mm)',o.width,'type="number" min="0" step="any" data-roll="'+i+'" data-field="width" placeholder="Ej.: 700"')+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Lonjas (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0" title="Peso de las lonjas y del papel separado al inicio o durante el trabajo, sin contar el sobrante junto al tuco."')+field('Sobrante de tuco (kg)',o.coreGross??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="coreGross" placeholder="0" title="Peso del papel que queda junto al tuco, incluyendo el tubo de cartón."')+'</div><p class="removal-help">Lonjas: lonjas y papel separado al inicio o durante el trabajo. No incluyas aquí el sobrante del tuco.</p>'+problemControls(o,i)+coreTareControls(o,i)+'</div>').join('');
  refreshCoreTareNotes();renderRollUsage(result);
 }

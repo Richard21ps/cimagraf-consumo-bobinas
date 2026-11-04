@@ -263,12 +263,20 @@ header{margin-bottom:14px}
 #forms-reload{min-height:34px;font-size:12px;padding:6px 10px}
 @media(max-width:600px){#forms-modal .forms-open-options .forms-external{flex:1 0 100%;box-sizing:border-box}}
 
-/* 4.15: parámetros por OP con controles cortos y calibración independiente. */
-#multi-root #multi-op-list .multi-row-fields{grid-template-columns:minmax(95px,1.2fr) repeat(5,minmax(65px,1fr)) 86px;gap:8px;align-items:end}
+/* 4.17: tres grupos compactos por OP, con los mismos campos y reglas. */
+#multi-root #multi-op-list .op-process-groups{grid-template-columns:minmax(0,3fr) minmax(0,2fr) minmax(0,2fr);gap:8px;align-items:stretch}
+#multi-root #multi-op-list .op-process-row{background:#fff;align-items:end}
+#multi-root #multi-op-list .op-phase{min-width:0;margin:0;padding:5px 8px 8px;border:1px solid #dae3eb;border-radius:8px;background:#f5f8fb}
+#multi-root #multi-op-list .op-phase legend{padding:0 4px;font-size:11px;font-weight:800;line-height:1.3;color:#34576f}
+#multi-root #multi-op-list .op-phase-setup{background:#faf7ef;border-color:#e6ddc8}
+#multi-root #multi-op-list .op-phase-setup legend{color:#7b653c}
+#multi-root #multi-op-list .op-phase-run{background:#f1f7f3;border-color:#d4e4d9}
+#multi-root #multi-op-list .op-phase-run legend{color:#3a6950}
+#multi-root #multi-op-list .op-phase-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:7px}
+#multi-root #multi-op-list .op-phase-info .op-phase-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
 #multi-root #multi-op-list input{min-width:0;width:100%;box-sizing:border-box;font-size:14px;padding:7px;min-height:38px}
-#multi-root #multi-op-list label{line-height:1.3;min-width:0}
+#multi-root #multi-op-list label{line-height:1.3;min-width:0;font-size:11px}
 #multi-root #multi-op-list .calibration-check{display:flex;align-items:center;gap:7px;min-height:38px;margin-top:5px;padding:0 8px;border:1px solid #c4d4df;border-radius:7px;background:#fff;box-sizing:border-box;cursor:pointer;font-size:13px}
 #multi-root #multi-op-list .calibration-check input{appearance:auto;width:16px;height:16px;min-height:16px;padding:0;margin:0;accent-color:#145b83;flex:0 0 16px}
-@media(min-width:901px) and (max-width:1170px){#multi-root #multi-op-list .multi-row-fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:760px){#multi-root #multi-op-list .multi-row-fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:480px){#multi-root #multi-op-list .multi-row-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){#multi-root #multi-op-list .op-process-groups{grid-template-columns:repeat(2,minmax(0,1fr))}#multi-root #multi-op-list .op-phase-info{grid-column:1 / -1}}
+@media(max-width:430px){#multi-root #multi-op-list .op-process-groups{grid-template-columns:minmax(0,1fr)}#multi-root #multi-op-list .op-phase-info{grid-column:auto}}
