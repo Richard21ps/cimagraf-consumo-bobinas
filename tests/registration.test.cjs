@@ -43,8 +43,8 @@ function ui({local=storage(),session=storage(),linked=false,valid=true,central=s
  await test('Contadores independientes y recuperación desde otra PC',async()=>{
   const s=server(),r=R.create({request:s.request,saveAttempt(){}});
   const a=await r.open({drive:'d',id:'pdf'},'kirin-1c'),b=await r.open({drive:'d',id:'pdf'},'kirin-4c');
-  assert.equal((await r.reserve(a,'kirin-1c',{id:'a'})).recordId,'KIRIN 1C-0001');
-  assert.equal((await r.reserve(b,'kirin-4c',{id:'b'})).recordId,'KIRIN 4C-0001');
+  assert.equal((await r.reserve(a,'kirin-1c',{id:'a'})).recordId,'KIRIN 1C - 01');
+  assert.equal((await r.reserve(b,'kirin-4c',{id:'b'})).recordId,'KIRIN 4C - 01');
   const pc2=R.create({request:s.request,saveAttempt(){}});assert.equal(await pc2.next(await pc2.open({drive:'d',id:'pdf'},'kirin-1c')),2);
  });
  await test('Dos reservas simultáneas de la misma máquina nunca duplican el ID',async()=>{
@@ -63,24 +63,31 @@ function ui({local=storage(),session=storage(),linked=false,valid=true,central=s
   const bad=R.create({saveAttempt(){},request:async()=>({value:[],'@odata.nextLink':'https://evil.example/'})});await assert.rejects(()=>bad.next('/drives/d/items/i'),/no válida/);
  });
  await test('Asignación recordada; pruebas no reservan IDs de producción',async()=>{
-  const f=ui();assert.equal(f.api.ready(),false);f.choose('kirin-1c');assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 1C-0001');assert.equal(f.el('machine-start').disabled,true);
+  const f=ui();assert.equal(f.api.ready(),false);f.choose('kirin-1c');assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 1C - 01');assert.equal(f.el('machine-start').disabled,true);
   const reload=ui({local:f.local,session:f.session});assert.equal(reload.api.metadata().machine,'Kirin 1C');
   f.click();f.click();await f.settle();assert.equal(f.opened,1);assert.equal(f.connections,0);assert.equal(f.central.records.size,0);
-  f.el('forms-modal').open=false;f.click();await f.settle();assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 1C-0001');
-  f.api.reset();assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 1C-0002');
+  f.el('forms-modal').open=false;f.click();await f.settle();assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 1C - 01');
+  f.api.reset();assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 1C - 02');
  });
- await test('Datos inválidos no consumen número ni abren Forms',async()=>{const f=ui({valid:false});f.choose('kirin-4c');f.click();await f.settle();assert.equal(f.opened,0);assert.equal(f.connections,0);assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 4C-0001');});
+ await test('Datos inválidos no consumen número ni abren Forms',async()=>{const f=ui({valid:false});f.choose('kirin-4c');f.click();await f.settle();assert.equal(f.opened,0);assert.equal(f.connections,0);assert.equal(f.el('multi-group').value,'PRUEBA · KIRIN 4C - 01');});
  await test('Producción pendiente del enlace Forms no se puede activar',async()=>{const f=ui();f.choose('kirin-1c');await f.activate();assert.equal(f.connections,0);assert.match(f.el('machine-status').textContent,/conecta/);});
  await test('Activación sin gastar el 1; botón desaparece; envío y reintento cuentan una vez',async()=>{
-  const f=ui({linked:true});f.choose('kirin-4c');await f.activate();assert.equal(f.el('machine-start').hidden,true);assert.equal(f.el('multi-group').value,'KIRIN 4C-0001');assert.equal(f.central.records.size,0);
+  const f=ui({linked:true});f.choose('kirin-4c');await f.activate();assert.equal(f.el('machine-start').hidden,true);assert.equal(f.el('multi-group').value,'KIRIN 4C - 01');assert.equal(f.central.records.size,0);
   f.click();await f.settle();assert.equal(f.opened,1);assert.equal(f.central.records.size,1);
-  f.el('forms-modal').open=false;f.click();await f.settle();assert.equal(f.central.records.size,1);assert.equal(f.el('multi-group').value,'KIRIN 4C-0001');
-  f.api.reset();assert.equal(f.el('multi-group').value,'KIRIN 4C-0002');
+  f.el('forms-modal').open=false;f.click();await f.settle();assert.equal(f.central.records.size,1);assert.equal(f.el('multi-group').value,'KIRIN 4C - 01');
+  f.api.reset();assert.equal(f.el('multi-group').value,'KIRIN 4C - 02');
   const reload=ui({linked:true,local:f.local,session:f.session,central:f.central});assert.equal(reload.el('machine-start').hidden,true);assert.equal(reload.el('machine-select').disabled,true);
  });
  await test('Volver a activar desde un navegador nuevo continúa, nunca reinicia',async()=>{
   const central=server(),first=ui({linked:true,central});first.choose('kirin-1c');await first.activate();first.click();await first.settle();
-  const second=ui({linked:true,central});second.choose('kirin-1c');await second.activate();assert.equal(second.el('multi-group').value,'KIRIN 1C-0002');
+  const second=ui({linked:true,central});second.choose('kirin-1c');await second.activate();assert.equal(second.el('multi-group').value,'KIRIN 1C - 02');
+ });
+ await test('Un envío pendiente mantiene su ID anterior; el siguiente usa el formato corto',async()=>{
+  const first=ui({linked:true});first.choose('kirin-1c');await first.activate();first.click();await first.settle();
+  first.session.setItem('cimagraf-pdf-pending-v1',JSON.stringify({snapshot:{result:{machine:'Kirin 1C',machineKey:'kirin-1c',recordId:'KIRIN 1C-0001'}}}));
+  const recovered=ui({linked:true,central:first.central,local:first.local,session:first.session});
+  assert.equal(recovered.api.metadata().recordId,'KIRIN 1C-0001');
+  recovered.api.reset();assert.equal(recovered.api.metadata().recordId,'KIRIN 1C - 02');assert.equal(first.central.records.size,1);
  });
  console.log(count+' pruebas de asignación y numeración correctas.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

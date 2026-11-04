@@ -3,7 +3,7 @@
 (function(scope){
 'use strict';
 const machines={'kirin-1c':'Kirin 1C','kirin-4c':'Kirin 4C'};
-const recordId=(machine,number)=>machines[machine].toUpperCase()+'-'+String(number).padStart(4,'0');
+const recordId=(machine,number)=>machines[machine].toUpperCase()+' - '+String(number).padStart(2,'0');
 function create({request,saveAttempt}){
  async function folder(parent,name){
   const path=parent+':/'+encodeURIComponent(name);

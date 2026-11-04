@@ -11,7 +11,7 @@ for(const machine of ['Kirin 1C','Kirin 4C'])for(const mode of ['test','producti
  const el=id=>nodes[id]??={value:id==='multi-paper'?'Bond':id==='multi-gsm'?'90':'',classList:{contains:()=>false,add(){}},setAttribute(){},addEventListener(){}};
  const c={window:{},URL,nf,numeric:Number,ops:[{id:'OP-DE-PRUEBA',books:1000,copies:20,advance:240,setupBooks:0,calibration:false,stops:0}],rolls:[{id:'Bobina 1',kg:400,width:480,scrap:0,coreGross:0,coreTare:0}],$:el,document:{body:{classList:{add(){}}}}};
  vm.createContext(c);vm.runInContext(config+engine+';var result=validate();',c);
- const id=(mode==='test'?'PRUEBA · ':'')+machine.toUpperCase()+'-0001';
+ const id=(mode==='test'?'PRUEBA · ':'')+machine.toUpperCase()+' - 01';
  Object.assign(c.result,{machine,runMode:mode,recordId:id,group:id,type:'Una OP / una bobina'});
  vm.runInContext(defs+format+packets+prepare+';prepareGroupForms();',c);
  const external=new URL(el('forms-external').href),embedded=new URL(el('forms-frame').src);

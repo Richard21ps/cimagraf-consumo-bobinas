@@ -10,6 +10,8 @@ if(!machines[config.machine])config={};
 draft=parse(sessionStorage,DRAFT);
 if(!draft||!machines[draft.machine]||typeof draft.id!=='string')draft=null;
 const pending=parse(sessionStorage,'cimagraf-pdf-pending-v1');
+// Un grupo ya enviado conserva el texto de su ID y su PDF al cambiar el formato.
+if(draft?.sent&&pending?.snapshot?.result?.machineKey===draft.machine&&typeof pending.snapshot.result.recordId==='string')draft.recordId=pending.snapshot.result.recordId;
 legacy=!!pending&&!pending.snapshot?.result?.machine;
 if(draft)config.machine=draft.machine;
 const connected=()=>['machine','recordId'].every(k=>/^r[a-z0-9]{32}$/.test(window.CimagrafMachineForm?.[k]||''));
@@ -21,7 +23,7 @@ function makeDraft(){
 }
 function id(){
  if(!draft)return '';
- return (draft.mode==='test'?'PRUEBA · ':'')+window.CimagrafRegistry.recordId(draft.machine,draft.number);
+ return draft.recordId||(draft.mode==='test'?'PRUEBA · ':'')+window.CimagrafRegistry.recordId(draft.machine,draft.number);
 }
 function metadata(){return legacy?{}:{machine:machines[draft?.machine||config.machine]||'',machineKey:draft?.machine||config.machine||'',runMode:draft?.mode||'test',recordId:id()};}
 function status(message,error=false){$('machine-status').textContent=message;$('machine-status').classList.toggle('machine-error',error);}

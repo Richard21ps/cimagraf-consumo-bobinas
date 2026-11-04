@@ -6,9 +6,11 @@ Mismo enlace en las dos PC. En **Configurar equipo**, elegir Kirin 1C o Kirin 4C
 
 Por defecto sigue en **PRUEBAS**. Sus IDs llevan `PRUEBA ·` y no gastan números de producción. Los registros de prueba siguen usando el Forms y el archivo PDF existentes; no constituyen otro formulario.
 
-Desde v4.16.2 están conectados los campos Máquina e ID de registro del enlace suministrado por el propietario. **Iniciar producción** se habilita al asignar la PC y muestra una confirmación dentro de la calculadora. Al activar, el estado pasa de PRUEBAS a PRODUCCIÓN y el botón desaparece. Cada máquina lleva su secuencia: `KIRIN 1C-0001`, `KIRIN 4C-0001`, etc. La publicación no activa ninguna máquina ni reserva números reales.
+Desde v4.16.2 están conectados los campos Máquina e ID de registro del enlace suministrado por el propietario. **Iniciar producción** se habilita al asignar la PC y muestra una confirmación dentro de la calculadora. Al activar, el estado pasa de PRUEBAS a PRODUCCIÓN y el botón desaparece. Cada máquina lleva su secuencia: `KIRIN 1C - 01`, `KIRIN 4C - 01`, etc. La publicación no activa ninguna máquina ni reserva números reales.
 
 El número mostrado antes de enviar es provisional. Se reserva al pulsar **Enviar a Forms**, después de validar los datos. Cambios o reintentos del mismo grupo conservan el ID; **Ya envié · Siguiente grupo** prepara otro. El registro dentro de Forms todavía requiere pulsar Enviar y comprobar su confirmación.
+
+Desde v4.16.3, el formato visible es `KIRIN 1C - 01` o `KIRIN 4C - 01`; sigue 02, 03… 99, 100. No cambia el número reservado ni los nombres de los archivos centrales. Un envío pendiente de una versión anterior conserva su ID original hasta terminar.
 
 ## Conectar el mismo Forms
 
