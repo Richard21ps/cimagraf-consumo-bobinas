@@ -6,7 +6,7 @@ Mismo enlace en las dos PC. En **Configurar equipo**, elegir Kirin 1C o Kirin 4C
 
 Por defecto sigue en **PRUEBAS**. Sus IDs llevan `PRUEBA ·` y no gastan números de producción. Los registros de prueba siguen usando el Forms y el archivo PDF existentes; no constituyen otro formulario.
 
-La activación de producción queda pendiente hasta conectar los dos campos nuevos de Forms. Después se habilita **Iniciar producción**; muestra una confirmación dentro de la calculadora. Al activar, el botón desaparece. Cada máquina lleva su secuencia: `KIRIN 1C-0001`, `KIRIN 4C-0001`, etc.
+Desde v4.16.2 están conectados los campos Máquina e ID de registro del enlace suministrado por el propietario. **Iniciar producción** se habilita al asignar la PC y muestra una confirmación dentro de la calculadora. Al activar, el estado pasa de PRUEBAS a PRODUCCIÓN y el botón desaparece. Cada máquina lleva su secuencia: `KIRIN 1C-0001`, `KIRIN 4C-0001`, etc. La publicación no activa ninguna máquina ni reserva números reales.
 
 El número mostrado antes de enviar es provisional. Se reserva al pulsar **Enviar a Forms**, después de validar los datos. Cambios o reintentos del mismo grupo conservan el ID; **Ya envié · Siguiente grupo** prepara otro. El registro dentro de Forms todavía requiere pulsar Enviar y comprobar su confirmación.
 
@@ -19,7 +19,7 @@ Crear estas preguntas **Texto**, respuesta corta, sin restricción numérica:
 
 Durante la transición, dejarlas opcionales para conservar la compatibilidad con las calculadoras que todavía no hayan recargado. No modificar preguntas ni respuestas previas.
 
-Generar un enlace con respuestas predefinidas colocando `Kirin 1C` en Máquina y `KIRIN 1C-0001` en ID de registro. Copiar el enlace completo para extraer sus dos claves `r...` y completar `machine-form.js`. Las dos columnas se incorporan a la tabla de respuestas del mismo Forms; no se escribe directamente en el Excel.
+Las claves configuradas en `machine-form.js` son `rf61ceca70fda4a82ab4b2ec79e62e708` (Máquina) y `r170d3c85f72f4039b76d820bf026821b` (ID de registro). La calculadora sustituye los ejemplos del vínculo por la máquina y el ID del grupo actual. Si se recrean las preguntas, será necesario actualizar sus claves. Las dos columnas pertenecen al mismo Forms; no se escribe directamente en el Excel.
 
 ## Persistencia central
 
