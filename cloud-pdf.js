@@ -76,7 +76,7 @@ function filename(j){
 function shortFilename(j){
  const clean=value=>String(value??'').replace(/["*:<>?\/\\|#%\u0000-\u001f]/g,'-').trim().replace(/[. ]+$/g,'');
  const r=j.snapshot.result;
- const ops=Array.from(r.sourceOps.map(o=>clean(o.id)||'SIN_OP').join(' + ')).slice(0,140).join('').replace(/[. ]+$/g,'');
+ const ops=Array.from(r.sourceOps.map(o=>clean(o.id)||'SIN_OP').join(j.opSeparator==='／'?' ／ ':' + ')).slice(0,140).join('').replace(/[. ]+$/g,'');
  const machine=clean(r.machine)||'Máquina sin indicar';
  return ops+' - '+Array.from(machine).slice(0,40).join('')+'.pdf';
 }
@@ -136,7 +136,7 @@ async function save(){
  finally{busy=false;$('forms-next').textContent='Ya envié · Siguiente grupo';$('forms-next').disabled=false;$('cloud-retry').disabled=false;$('forms-back').disabled=false;}
 }
 $('forms-back').addEventListener('click',backToEditor);
-$('multi-register').addEventListener('click',()=>{if(!$('forms-modal').classList.contains('open'))return;editing=false;job={id:crypto.randomUUID(),created:new Date().toISOString(),archiveFormat:2,snapshot:window.CimagrafArchive.snapshot()};$('cloud-last-pdf').hidden=true;remember();$('forms-next').textContent='Guardando PDF…';save();});
+$('multi-register').addEventListener('click',()=>{if(!$('forms-modal').classList.contains('open'))return;editing=false;job={id:crypto.randomUUID(),created:new Date().toISOString(),archiveFormat:2,opSeparator:'／',snapshot:window.CimagrafArchive.snapshot()};$('cloud-last-pdf').hidden=true;remember();$('forms-next').textContent='Guardando PDF…';save();});
 document.addEventListener('click',e=>{
  if(e.target.closest('#multi-register')&&job){
   if(busy){e.preventDefault();e.stopImmediatePropagation();report('El PDF sigue guardándose. Puedes editar; espera a que termine antes de volver a registrar.');return;}

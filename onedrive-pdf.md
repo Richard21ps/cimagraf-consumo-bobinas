@@ -1,4 +1,4 @@
-# PDF directo a OneDrive — v4.18.0
+# PDF directo a OneDrive — v4.18.1
 
 Se usa Microsoft Graph con autenticación delegada, sin Power Automate,
 servidor propio ni secreto de cliente. La aplicación y el inquilino son los
@@ -21,7 +21,8 @@ La configuración de permisos por sí sola no equivale al consentimiento.
    grupo» para limpiar únicamente después de guardar el PDF.
 
 Nombre nuevo: `<OP> - <Máquina>.pdf`; por ejemplo, `D1232 - Kirin 1C.pdf`.
-Con varias OP: `D1232 + D1233 - Kirin 4C.pdf`. El enlace visible muestra ese
+Con varias OP: `D1232 ／ D1233 - Kirin 4C.pdf`. Se usa la barra Unicode U+FF0F
+para distinguirla del carácter ASCII `/`, reservado a las rutas. El enlace visible muestra ese
 nombre, sin fechas ni identificadores adicionales. El resumen del grupo sigue
 siendo un solo PDF, con todas las OP y bobinas.
 
@@ -32,6 +33,9 @@ máquina conservan ambos PDF con el mismo nombre. La carpeta se crea con conflic
 de creación. La ruta confirmada se conserva antes de cargar el PDF. No se cambian
 archivos históricos. Los guardados pendientes anteriores a v4.18.0 retoman su
 ruta y nombre originales para no duplicarse.
+
+El separador se conserva en cada trabajo pendiente. Los registros creados en
+v4.18.0 retoman `+`; los nuevos usan `／` tanto en OneDrive como en el enlace.
 
 Si el iframe redirige a login.microsoftonline.com, Microsoft impide cargar esa
 pantalla de autenticación dentro del marco. Revisar la configuración de Forms

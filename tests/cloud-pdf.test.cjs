@@ -89,6 +89,13 @@ function fixture({fail=false,pending=null}={}){
  for(const call of f.calls.filter(c=>c.options.method==='POST'))assert.equal(JSON.parse(call.options.body)['@microsoft.graph.conflictBehavior'],'fail');
  const multi={...j,snapshot:{result:{...f.r,machine:'Kirin 4C',sourceOps:[{id:'D1232'},{id:'D1233'}]}}};
  assert.equal(f.api.filename(multi),'D1232 + D1233 - Kirin 4C.pdf');
+ const separated={...multi,opSeparator:'／'};assert.equal(f.api.filename(separated),'D1232 ／ D1233 - Kirin 4C.pdf');
+ // El trabajo nuevo guarda la barra visual en el archivo y en el enlace; el anterior conserva +.
+ const slashFixture=fixture();slashFixture.r.sourceOps.push({...slashFixture.r.sourceOps[0],id:'OP2'});
+ slashFixture.listeners.get('multi-registerclick')();await settle();
+ assert.equal(uploads(slashFixture).length,1);
+ assert.ok(uploads(slashFixture)[0].url.endsWith(encodeURIComponent('OP1 ／ OP2 - Kirin 1C.pdf')+':/content'));
+ assert.equal(slashFixture.el('cloud-last-pdf').textContent,'OP1 ／ OP2 - Kirin 1C.pdf');
  const unsafe={...j,snapshot:{result:{...f.r,sourceOps:[{id:'D/123:4?'}]}}};assert.doesNotMatch(f.api.filename(unsafe),/[\\/:?]/);
  // Si falla la carga, se retoma la misma carpeta y el mismo nombre, sin crear otro registro.
  f=fixture();j={id:'reintento',archiveFormat:2,created:'2026-11-04T20:00:00Z',snapshot:{result:f.r}};
