@@ -58,7 +58,7 @@ kg de corrida, kg de proceso y versión de las reglas (2).
 Las preguntas de lonjas/sobrante conservan exclusivamente los pesos introducidos.
 
 No se cambian preguntas ni respuestas de Microsoft Forms ni archivos Excel.
-Los PDF anteriores se imprimen con sus parámetros y valores originales.
+Las instantáneas anteriores se pueden imprimir conservando sus valores originales.
 Al volver a editar un registro de la versión 4.15.0, los libros de set up
 quedan pendientes de completar: no se convierten las antiguas copias a libros.
 Un registro corregido con reglas nuevas no reutiliza un PDF con reglas anteriores.
@@ -70,3 +70,25 @@ reglas de empalme, anchos distintos, material insuficiente, saldo cero, taras
 y detalle de Forms. Los escenarios históricos de `tests/calculation.test.cjs`
 fijan el metraje total incluido el empalme para verificar asignación y masa;
 las pruebas nuevas verifican cada componente del metraje.
+
+## Resumen compacto y saldos secuenciales — 4.15.2
+
+La impresión y el PDF automático comparten una tabla con OP, bobina,
+saldo inicial, consumo de corrida, descuentos y saldo al cierre.
+Los descuentos agrupan proceso, lonjas y sobrante neto de papel.
+El cierre real del movimiento anterior es la apertura del siguiente de
+la misma bobina; el peso inicial original no se repite como apertura.
+Lonjas y sobrante se incluyen únicamente en la primera fila de la bobina.
+Una bobina totalmente retirada sin pasar por máquina muestra OP «—»,
+consumo cero y el retiro correspondiente.
+
+El material, gramaje y ancho aparecen en la cabecera. No se imprimen
+parámetros de entrada ni tablas de metraje, ni se repiten anchos en las tablas.
+Al pie se muestran los saldos finales por bobina y el total a entregar.
+Los motivos y áreas se mantienen en los registros de cálculo y Forms;
+se omiten del resumen compacto.
+
+No se modifica el motor de cálculo ni los saldos: las filas solo muestran
+las instantáneas de los movimientos. Las pruebas de impresión comprueban
+la cadena 500 → 380 → 280, retiros únicos, bobinas agotadas, anchos distintos,
+instantáneas anteriores y ausencia de mutación de los resultados originales.

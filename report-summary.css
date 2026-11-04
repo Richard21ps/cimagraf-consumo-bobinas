@@ -24,3 +24,5 @@
 .cimagraf-report .print-material-strip span{display:block;font-size:8pt;color:#555}
 .cimagraf-report .print-material-strip strong{display:block;font-size:13pt;margin-top:3px}
 .cimagraf-report .print-width-detail{font-size:9pt;margin:5px 0 12px;break-inside:avoid}
+.cimagraf-report .print-flow td:nth-child(3){background:#f1f5f8}
+.cimagraf-report .print-flow td:last-child{background:#edf6ef;font-weight:bold}
