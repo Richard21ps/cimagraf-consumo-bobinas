@@ -67,9 +67,35 @@ async function pdf(r,created){
  return window.CimagrafReportPDF.render(window.CimagrafArchive.reportHTML(r,created));
 }
 function filename(j){
+ if(j.archiveFormat===2)return shortFilename(j);
+ // Retomar un guardado anterior con su ruta original evita crear otro archivo.
  const ops=j.snapshot.result.sourceOps.map(o=>String(o.id).replace(/[^a-zA-Z0-9_-]/g,'_')).join('_').slice(0,100)||'SIN_OP';
  const date=new Date(j.created).toLocaleString('sv-SE',{timeZone:'America/Lima'}).replace(/[^0-9]/g,'');
  return 'OP_'+ops+'_'+date+'_'+j.id.slice(0,8)+'.pdf';
+}
+function shortFilename(j){
+ const clean=value=>String(value??'').replace(/["*:<>?\/\\|#%\u0000-\u001f]/g,'-').trim().replace(/[. ]+$/g,'');
+ const r=j.snapshot.result;
+ const ops=Array.from(r.sourceOps.map(o=>clean(o.id)||'SIN_OP').join(' + ')).slice(0,140).join('').replace(/[. ]+$/g,'');
+ const machine=clean(r.machine)||'Máquina sin indicar';
+ return ops+' - '+Array.from(machine).slice(0,40).join('')+'.pdf';
+}
+function showPdfLink(url,j){
+ const link=$('cloud-last-pdf');
+ try{const u=new URL(url);if(u.protocol!=='https:'||!u.hostname.endsWith('.sharepoint.com'))return;link.href=u.href;link.textContent=shortFilename(j);link.hidden=false;}catch(_){}
+}
+async function archiveFolder(folder,access,j){
+ if(j.archiveFormat!==2)return folder;
+ const existing=j.archiveFolder;
+ if(existing?.drive===folder.drive&&existing?.parent===folder.id&&typeof existing.id==='string'&&existing.id)return existing;
+ const parent='/drives/'+encodeURIComponent(folder.drive)+'/items/'+encodeURIComponent(folder.id);
+ const name='Registro '+String(j.id).replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,64);
+ let item;
+ try{item=await graph(parent+'/children',access,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,folder:{},'@microsoft.graph.conflictBehavior':'fail'})});}
+ catch(e){if(e.status!==409)throw e;item=await graph(parent+':/'+encodeURIComponent(name),access);}
+ if(!item.id||!item.folder||(item.name&&item.name!==name))throw new Error('No se confirmó la carpeta del registro. Reintenta guardar el PDF.');
+ j.archiveFolder={drive:folder.drive,id:item.id,parent:folder.id};remember();
+ return j.archiveFolder;
 }
 function finish(){
  if(busy){report('Espera a que termine el guardado del PDF.');return;}
@@ -88,7 +114,7 @@ function backToEditor(){
  report(busy?'Puedes corregir los datos. El PDF anterior sigue guardándose; espera a que termine antes de volver a registrar.':'Puedes corregir los datos y volver a pulsar «Enviar a Forms». Si ya enviaste Forms, no lo envíes otra vez.');
  $('multi-group').focus({preventScroll:true});
 }
-function recover(){try{const saved=JSON.parse(sessionStorage.getItem(PENDING)||'null');if(saved?.snapshot?.result&&saved.id&&saved.created){job=saved;$('multi-root').inert=true;window.CimagrafArchive.restore(saved.snapshot);window.CimagrafArchive.resume(saved.snapshot);report(saved.saved?'PDF guardado. Completa Forms y confirma su envío para continuar.':'Hay un PDF pendiente. Usa «Reintentar guardar PDF»; no envíes Forms otra vez si ya lo enviaste.');$('cloud-retry').hidden=!!saved.saved;$('forms-next').textContent='Ya envié · Siguiente grupo';}}catch(_){report('No se pudo recuperar el guardado pendiente.',true);}}
+function recover(){try{const saved=JSON.parse(sessionStorage.getItem(PENDING)||'null');if(saved?.snapshot?.result&&saved.id&&saved.created){job=saved;$('multi-root').inert=true;window.CimagrafArchive.restore(saved.snapshot);window.CimagrafArchive.resume(saved.snapshot);report(saved.saved?'PDF guardado. Completa Forms y confirma su envío para continuar.':'Hay un PDF pendiente. Usa «Reintentar guardar PDF»; no envíes Forms otra vez si ya lo enviaste.');if(saved.saved&&saved.webUrl)showPdfLink(saved.webUrl,saved);$('cloud-retry').hidden=!!saved.saved;$('forms-next').textContent='Ya envié · Siguiente grupo';}}catch(_){report('No se pudo recuperar el guardado pendiente.',true);}}
 async function save(){
  if(busy||!job||job.saved)return;
  busy=true;$('forms-next').disabled=true;$('cloud-retry').disabled=true;
@@ -99,18 +125,18 @@ async function save(){
   if(!configured&&$('cloud-folder-url').value.trim())sessionStorage.setItem('cimagraf-pdf-folder-link',folderLink($('cloud-folder-url').value.trim()));
   remember();report('Conectando con Microsoft…');
   const access=await token();if(!access)return;
-  const folder=await target(access);report('Generando y guardando PDF…');
+  const folder=await archiveFolder(await target(access),access,job);report('Generando y guardando PDF…');
   const bytes=await pdf(job.snapshot.result,job.created);
   const item=await graph('/drives/'+encodeURIComponent(folder.drive)+'/items/'+encodeURIComponent(folder.id)+':/'+encodeURIComponent(filename(job))+':/content',access,{method:'PUT',headers:{'Content-Type':'application/pdf'},body:bytes});
   if(!item.id||Number(item.size)!==bytes.byteLength)throw new Error('OneDrive no confirmó el archivo completo. Reintenta el guardado.');
-  job.saved=true;remember();sessionStorage.removeItem('cimagraf-pdf-folder-link');
-  const link=$('cloud-last-pdf');if(item.webUrl){const u=new URL(item.webUrl);if(u.protocol==='https:'&&u.hostname.endsWith('.sharepoint.com')){link.href=u.href;link.hidden=false;}}
+  job.saved=true;job.webUrl=item.webUrl||'';remember();sessionStorage.removeItem('cimagraf-pdf-folder-link');
+  showPdfLink(job.webUrl,job);
   $('cloud-retry').hidden=true;report('PDF guardado en OneDrive. Completa Forms y espera su confirmación antes de pasar al siguiente grupo.');
  }catch(e){report(e.message||'No se pudo guardar el PDF. Los datos se conservan.',true);$('cloud-retry').hidden=false;}
  finally{busy=false;$('forms-next').textContent='Ya envié · Siguiente grupo';$('forms-next').disabled=false;$('cloud-retry').disabled=false;$('forms-back').disabled=false;}
 }
 $('forms-back').addEventListener('click',backToEditor);
-$('multi-register').addEventListener('click',()=>{if(!$('forms-modal').classList.contains('open'))return;editing=false;job={id:crypto.randomUUID(),created:new Date().toISOString(),snapshot:window.CimagrafArchive.snapshot()};remember();$('forms-next').textContent='Guardando PDF…';save();});
+$('multi-register').addEventListener('click',()=>{if(!$('forms-modal').classList.contains('open'))return;editing=false;job={id:crypto.randomUUID(),created:new Date().toISOString(),archiveFormat:2,snapshot:window.CimagrafArchive.snapshot()};$('cloud-last-pdf').hidden=true;remember();$('forms-next').textContent='Guardando PDF…';save();});
 document.addEventListener('click',e=>{
  if(e.target.closest('#multi-register')&&job){
   if(busy){e.preventDefault();e.stopImmediatePropagation();report('El PDF sigue guardándose. Puedes editar; espera a que termine antes de volver a registrar.');return;}

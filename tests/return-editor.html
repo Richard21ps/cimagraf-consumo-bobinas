@@ -24,7 +24,8 @@ Object.defineProperty(window,'sessionStorage',{value:memory()});Object.definePro
 window.msal={PublicClientApplication:class {async initialize(){}async handleRedirectPromise(){}getActiveAccount(){return {username:'prueba'};}async acquireTokenSilent(){return {accessToken:'SIMULADO'};}}};
 window.CimagrafPDFDestination={driveId:'SIMULADO',folderId:'SIMULADO'};
 window.CimagrafReportPDF={render:async()=>new ArrayBuffer(123)};
-window.fetch=async()=>{
+window.fetch=async(url,options={})=>{
+ if(options.method==='POST'){const data=JSON.parse(options.body);return {ok:true,status:201,json:async()=>({id:'folder-'+data.name,name:data.name,folder:{}})};}
  if(parent.document.getElementById('slow').checked)await new Promise(resolve=>{parent.finishTestUpload=resolve;});
  parent.testUploaded();return {ok:true,json:async()=>({id:'SIMULADO',size:123})};
 };

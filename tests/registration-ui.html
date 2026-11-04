@@ -18,7 +18,7 @@ window.fakeGraph=async(url,options={})=>{
  }
  if(path.endsWith('/children'))return response(200,{value:[...records.keys()].filter(k=>k.startsWith(path.slice(0,-9)+':/')).map(k=>({name:k.split(':/')[1]}))});
  if(path.endsWith(':/content')&&options.headers['Content-Type']==='application/pdf'){
-  pdfs++;state.textContent='PDF simulados: '+pdfs+' · Registros reales simulados: '+records.size;return response(201,{id:'pdf-'+pdfs,size:123});
+  pdfs++;state.textContent='PDF simulados: '+pdfs+' · Registros reales simulados: '+records.size;return response(201,{id:'pdf-'+pdfs,size:123,webUrl:'https://grupocimagraf-my.sharepoint.com/pdf-simulado'});
  }
  if(path.endsWith(':/content')){
   if(options.method==='PUT'){
