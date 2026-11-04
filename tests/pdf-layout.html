@@ -1,14 +1,14 @@
 <!doctype html><html lang="es"><meta charset="utf-8"><title>Prueba visual PDF CIMAGRAF</title>
-<link rel="stylesheet" href="../report-summary.css?v=4.15.0">
+<link rel="stylesheet" href="../report-summary.css?v=4.15.1">
 <style>body{font-family:Arial;background:#e6e9ec;margin:20px}button{padding:12px}#source{background:#fff;width:186mm;padding:12mm;box-sizing:content-box;margin:16px auto}#app{position:absolute;left:-10000px;width:1200px;height:800px}#result{width:100%;height:900px;border:0}#state{padding:12px;background:white}</style>
 <h1>Prueba visual con datos ficticios</h1><p>No guarda en OneDrive ni envía respuestas a Forms.</p>
-<button id="render" disabled>Generar PDF de prueba</button><button id="many" disabled>Probar varias páginas</button><p id="state">Cargando plantilla…</p><a id="download" hidden download="cimagraf-prueba.pdf">Descargar PDF de prueba</a><iframe id="result" title="PDF generado" hidden></iframe><div id="source"></div><iframe id="app" src="../index.html?v=4.15.0" title="Calculadora para recuperar plantilla"></iframe>
+<button id="render" disabled>Generar PDF de prueba</button><button id="many" disabled>Probar varias páginas</button><p id="state">Cargando plantilla…</p><a id="download" hidden download="cimagraf-prueba.pdf">Descargar PDF de prueba</a><iframe id="result" title="PDF generado" hidden></iframe><div id="source"></div><iframe id="app" src="../index.html?v=4.15.1" title="Calculadora para recuperar plantilla"></iframe>
 <script src="../report-pdf.js"></script><script>
 let r;
 const app=document.getElementById('app'),state=document.getElementById('state');let url;
 app.onload=()=>{
  const w=app.contentWindow,d=app.contentDocument;
- const fields={'#multi-group':'PRUEBA VISUAL','[data-op="0"][data-field="id"]':'OP01','[data-op="0"][data-field="books"]':'100','[data-op="0"][data-field="copies"]':'30','[data-op="0"][data-field="advance"]':'240','[data-op="0"][data-field="setupCopies"]':'10','[data-op="0"][data-field="stops"]':'2','[data-roll="0"][data-field="width"]':'480','[data-roll="0"][data-field="kg"]':'200'};
+ const fields={'#multi-group':'PRUEBA VISUAL','[data-op="0"][data-field="id"]':'OP01','[data-op="0"][data-field="books"]':'100','[data-op="0"][data-field="copies"]':'30','[data-op="0"][data-field="advance"]':'240','[data-op="0"][data-field="setupBooks"]':'10','[data-op="0"][data-field="stops"]':'2','[data-roll="0"][data-field="width"]':'480','[data-roll="0"][data-field="kg"]':'200'};
  for(const [selector,value] of Object.entries(fields)){const el=d.querySelector(selector);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));}
  const calibration=d.querySelector('[data-field="calibration"]');calibration.checked=true;calibration.dispatchEvent(new w.Event('input',{bubbles:true}));
  queueMicrotask(()=>{r=w.CimagrafArchive.snapshot().result;document.getElementById('render').disabled=!r;document.getElementById('many').disabled=!r;state.textContent=r?'Plantilla lista con cálculo real de set up, calibración, paradas y empalmes.':'No se pudo preparar el ejemplo.';});

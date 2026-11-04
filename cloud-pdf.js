@@ -74,6 +74,7 @@ function finish(){
 }
 function remember(){$('multi-root').inert=!editing;sessionStorage.setItem(PENDING,JSON.stringify(job));}
 function sameInputs(a,b){
+ if((a.result?.processRules||0)!==(b.result?.processRules||0))return false;
  const data=(key,value)=>['problemsOpen','problemAdding','areaAdding'].includes(key)?undefined:value;
  return ['ops','rolls','group','paper','gsm'].every(key=>JSON.stringify(a[key],data)===JSON.stringify(b[key],data));
 }

@@ -56,6 +56,11 @@ function fixture({fail=false,pending=null}={}){
  f.draft.ops[0].id='CORREGIDA';event=registerEvent();f.listeners.get('documentclick')(event);assert.equal(event.prevented,true);
  releaseUpload();await settle();assert.equal(f.el('multi-root').inert,false);
  assert.equal(JSON.parse(f.session.get('cimagraf-pdf-pending-v1')).snapshot.ops[0].id,'OP1');
+ // Un cambio de versión de cálculo no puede reutilizar un PDF con reglas anteriores.
+ f=fixture();f.listeners.get('multi-registerclick')();await settle();
+ f.listeners.get('forms-backclick')();f.draft.result.processRules=2;
+ event=registerEvent();f.listeners.get('documentclick')(event);assert.equal(event.prevented,undefined);
+ f.listeners.get('multi-registerclick')();await settle();assert.equal(f.calls.length,2);
  // Recuperación real del editor: sus arrays no pueden mutar el resumen archivado.
  const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
  const restoreBody=html.match(/ restore:s=>\{([\s\S]*?)\},\n resume:/)[1];
@@ -63,5 +68,10 @@ function fixture({fail=false,pending=null}={}){
  const restoreContext={s:saved,$:()=>({}),updateGrams(){},redraw(){},show(){}};vm.createContext(restoreContext);
  vm.runInContext(restoreBody+';ops[0].id="EDITADA";rolls[0].kg=500;',restoreContext);
  assert.equal(saved.ops[0].id,'OP1');assert.equal(saved.rolls[0].kg,400);
+ // No convertir antiguas copias de set up a libros: son unidades diferentes.
+ restoreContext.s={...saved,ops:[{id:'OP1',setupCopies:10}]};
+ vm.runInContext(restoreBody,restoreContext);
+ assert.equal(vm.runInContext('ops[0].setupBooks',restoreContext),'');
+
  console.log('PDF: guardado, recuperación, retorno editable, cambios, carga lenta y reapertura sin duplicados correctos.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

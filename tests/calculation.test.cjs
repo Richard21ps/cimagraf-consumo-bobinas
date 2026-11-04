@@ -10,7 +10,7 @@ function calculate(meters, bobbins, paper='Otro papel', gsm=70) {
   // Estos escenarios fijan el METRAJE TOTAL para aislar la regresión de masa y
   // asignación. Las pruebas process.test.cjs verifican producción y extras por separado.
   const splices=Math.max(meters.length,bobbins.length);
-  const context = {ops: meters.map((m,i)=>({id:'OP'+i,books:m-20*(1+(i===meters.length-1?splices-meters.length:0)),copies:1,advance:1000,setupCopies:0,calibration:false,stops:0})),
+  const context = {ops: meters.map((m,i)=>({id:'OP'+i,books:m-20*(1+(i===meters.length-1?splices-meters.length:0)),copies:1,advance:1000,setupBooks:0,calibration:false,stops:0})),
     rolls: bobbins.map(([kg,width,scrap=0,coreGross=0,coreTare=''],i)=>({id:'Bobina '+(i+1),kg,width,scrap,coreGross,coreTare})),
     $: id=>({value:id==='multi-gsm'?String(gsm):paper}), numeric:Number,
     nf:String};
