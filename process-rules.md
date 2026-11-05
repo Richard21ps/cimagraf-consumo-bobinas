@@ -1,6 +1,6 @@
-# Reglas de proceso — 4.15.1
+# Reglas de proceso — 4.19.1
 
-Corrección confirmada por el usuario el 4 de noviembre de 2026. Los parámetros son por OP:
+Corrección confirmada por el usuario el 4 de noviembre de 2026. La calibración se corrigió a 26 m el 5 de noviembre de 2026. Los parámetros son por OP:
 
 - Libros de set up: entero >= 0 (valor inicial 0).
 - Libros de corrida: entero > 0; conserva el campo interno `books` de Forms/Excel.
@@ -12,7 +12,7 @@ Metros por OP:
 
 - Corrida = libros de corrida × copias por libro × avance en mm / 1000.
 - Set up = libros de set up × (copias por libro × avance en mm / 1000 + 20).
-- Calibración = 16 m por OP si está marcada, de lo contrario 0 m. Es independiente de los libros de set up.
+- Calibración = 26 m por OP si está marcada, de lo contrario 0 m. Es independiente de los libros de set up.
 - Paradas = cantidad de paradas × (copias por libro × avance en mm / 1000 + 20).
 - Empalmes del grupo = 20 × máximo(cantidad de OP, cantidad de bobinas registradas).
 
@@ -40,12 +40,12 @@ calibración marcada, 2 paradas y una bobina:
 
 - Corrida: 100 × 30 × 240 / 1000 = 720 m.
 - Set up: 10 × (30 × 240 / 1000 + 20) = 272 m.
-- Calibración: 16 m.
+- Calibración: 26 m.
 - Paradas: 2 × (30 × 240 / 1000 + 20) = 54,4 m.
 - Empalme: 20 m.
 
-Total: 1082,4 m. Con ancho 1000 mm, gramaje 100 g/m² y 200 kg iniciales,
-sin lonjas ni sobrante: consumo 108,24 kg y devolución 91,76 kg.
+Total: 1092,4 m. Con ancho 1000 mm, gramaje 100 g/m² y 200 kg iniciales,
+sin lonjas ni sobrante: consumo 109,24 kg y devolución 90,76 kg.
 
 ## Forms y compatibilidad
 

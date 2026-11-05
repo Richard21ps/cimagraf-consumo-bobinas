@@ -346,7 +346,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.19.0</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.19.1</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -942,7 +942,7 @@ function redraw(){
   +field('Avance (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')
   +'</div></fieldset></div><div class="op-phase-group op-group-setup"><h4 class="op-phase-title" id="op-phase-setup-'+i+'">Set up</h4><fieldset class="op-phase op-phase-setup" aria-labelledby="op-phase-setup-'+i+'"><div class="op-phase-fields">'
   +field('Libros · set up',o.setupBooks??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="setupBooks"')
-  +'<label class="op-calibration" title="Agrega 16 m a esta OP"><span>Calibración</span><span class="calibration-check"><input type="checkbox" data-op="'+i+'" data-field="calibration" aria-label="Calibración OP '+(i+1)+'" '+(o.calibration?'checked':'')+'><span>Sí</span></span></label>'
+  +'<label class="op-calibration" title="Agrega 26 m a esta OP"><span>Calibración</span><span class="calibration-check"><input type="checkbox" data-op="'+i+'" data-field="calibration" aria-label="Calibración OP '+(i+1)+'" '+(o.calibration?'checked':'')+'><span>Sí</span></span></label>'
   +'</div></fieldset></div><div class="op-phase-group op-group-run"><h4 class="op-phase-title" id="op-phase-run-'+i+'">Corrida</h4><fieldset class="op-phase op-phase-run" aria-labelledby="op-phase-run-'+i+'"><div class="op-phase-fields">'
   +field('Libros · corrida',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')
   +field('Paradas',o.stops??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="stops"')
@@ -1127,7 +1127,7 @@ function validate(){
  for(const [oi,o] of ops.entries()){
   const productionMeters=numeric(o.books)*numeric(o.copies)*numeric(o.advance)/1000;
   const setupMeters=numeric(o.setupBooks??0)*(numeric(o.copies)*numeric(o.advance)/1000+20);
-  const calibrationMeters=o.calibration?16:0;
+  const calibrationMeters=o.calibration?26:0;
   const stopMeters=Number(o.stops??0)*(numeric(o.copies)*numeric(o.advance)/1000+20);
   const spliceMeters=20*(1+(oi===ops.length-1?spliceCount-ops.length:0));
   const plan={setupMeters,calibrationMeters,spliceMeters,productionMeters,stopMeters};
