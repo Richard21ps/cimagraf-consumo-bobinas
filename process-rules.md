@@ -99,3 +99,13 @@ El campo Paradas vacío se interpreta como 0 durante la captura y en el motor.
 Al salir del campo se muestra automáticamente 0. Los valores negativos,
 fraccionarios y las entradas numéricas incompletas siguen siendo inválidos.
 Los libros de set up y los demás campos mantienen sus validaciones.
+
+## Ancho común del grupo — 4.19.0
+
+Para nuevos registros, el ancho se elige junto al gramaje y se aplica a todas
+las bobinas, incluidas las que se agreguen después. El catálogo inicia con
+480, 640 y 660 mm; permite añadir anchos positivos, sin duplicados y ordenados
+numéricamente. Los anchos añadidos se guardan en este navegador.
+Cambiar el ancho recalcula kg y tara proporcional sin redondear los valores internos.
+Los pendientes antiguos con varios anchos se recuperan sin modificar sus bobinas;
+solo se unifican si el operador selecciona expresamente un ancho común.

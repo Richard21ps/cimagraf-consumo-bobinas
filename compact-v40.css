@@ -161,7 +161,7 @@ header{margin-bottom:14px}
 
 
 /* 4.7: sobrante con tara, cifras de retiro y datos de material destacados. */
-.multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(5,minmax(0,1fr))}
+.multi-editor .multi-bobbins .multi-row-fields{grid-template-columns:repeat(4,minmax(0,1fr))}
 .removal-help{grid-column:1 / -1;grid-row:2;margin:0;font-size:11px;color:#627381;line-height:1.4}
 .core-tare{grid-column:1 / -1;grid-row:3;border:1px solid #dfc394;border-radius:7px;padding:7px 10px;background:#fffaf0}
 .core-tare[hidden]{display:none!important}
@@ -288,3 +288,18 @@ header{margin-bottom:14px}
 #multi-root .material-grid input,#multi-root .material-grid select,#multi-root .multi-bobbins .multi-row-fields input,#multi-root .multi-bobbins .multi-row-fields select{height:34px;min-height:34px;box-sizing:border-box;width:100%;min-width:0;font-size:13px;padding:5px 8px;border-radius:7px;margin-top:4px}
 #multi-root .material-grid .add-material{height:34px;min-height:34px;padding:5px 9px;font-size:12px;margin-top:4px;border-radius:7px}
 #multi-root .multi-bobbins .multi-remove{min-height:32px;padding:5px 8px;font-size:11px}
+
+/* 4.19: un ancho común junto al gramaje; catálogos compactos y ampliables. */
+#multi-root .material-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.65fr) minmax(0,1fr);gap:9px;align-items:start}
+#multi-root .material-grid>div,#multi-root .material-grid>label{min-width:0}
+#multi-root .multi-width-picker{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px}
+#multi-root .material-grid .add-material{min-width:0;white-space:nowrap;padding:5px 7px;font-size:11px}
+#multi-root .material-width-entry{position:relative}
+#multi-root .width-add-panel{position:absolute;right:0;top:100%;z-index:10;width:230px;max-width:calc(100vw - 60px);box-sizing:border-box;padding:12px;margin-top:7px;background:#fff;border:1px solid #bdcfdc;border-radius:9px;box-shadow:0 5px 18px #193c5126}
+#multi-root .width-add-panel[hidden],#multi-root #width-error[hidden],#multi-root #width-legacy-note[hidden]{display:none}
+#multi-root .width-add-panel>div{display:flex;gap:7px;margin-top:9px}
+#multi-root .width-add-panel .multi-button{min-height:30px;padding:5px 9px;font-size:12px}
+#multi-root #width-error{margin:8px 0 0;font-size:12px;color:#942d2d}
+@media(max-width:1120px) and (min-width:901px){#multi-root .material-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){#multi-root .material-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){#multi-root .material-grid{grid-template-columns:minmax(0,1fr)}}

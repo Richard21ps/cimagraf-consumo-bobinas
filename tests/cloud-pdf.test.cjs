@@ -66,7 +66,7 @@ function fixture({fail=false,pending=null}={}){
  const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
  const restoreBody=html.match(/ restore:s=>\{([\s\S]*?)\},\n resume:/)[1];
  const saved={ops:[{id:'OP1'}],rolls:[{kg:400}],group:'01',paper:'Bond',gsm:90};
- const restoreContext={s:saved,$:()=>({}),updateGrams(){},redraw(){},show(){}};vm.createContext(restoreContext);
+ const restoreContext={s:saved,$:()=>({}),updateGrams(){},restoreWidthSelection(){},redraw(){},show(){}};vm.createContext(restoreContext);
  vm.runInContext(restoreBody+';ops[0].id="EDITADA";rolls[0].kg=500;',restoreContext);
  assert.equal(saved.ops[0].id,'OP1');assert.equal(saved.rolls[0].kg,400);
  // No convertir antiguas copias de set up a libros: son unidades diferentes.
