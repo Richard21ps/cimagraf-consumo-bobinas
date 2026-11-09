@@ -4,9 +4,9 @@ const start=html.indexOf('function coreTareFor('),end=html.indexOf('\nfunction t
 const engine=html.slice(start,end);
 const base={id:'OP1',books:100,copies:30,advance:240,setupBooks:10,calibration:true,stops:2};
 const roll=(kg=200,width=1000,scrap=0,coreGross=0)=>({id:'Bobina 1',kg,width,scrap,coreGross,coreTare:1});
-function calculate(ops=[base],rolls=[roll()],paper='Otro papel',gsm=100){
- const c={ops:structuredClone(ops),rolls:rolls.map((r,i)=>({...r,id:'Bobina '+(i+1)})),numeric:x=>x===''?NaN:Number(x),nf:String,$:id=>({value:id==='multi-gsm'?String(gsm):paper})};
- vm.createContext(c);return vm.runInContext(engine+';validate()',c);
+function calculate(ops=[base],rolls=[roll()],paper='Otro papel',gsm=100,machineKey='kirin-1c'){
+ const c={machineKey,ops:structuredClone(ops),rolls:rolls.map((r,i)=>({...r,id:'Bobina '+(i+1)})),numeric:x=>x===''?NaN:Number(x),nf:String,$:id=>({value:id==='multi-gsm'?String(gsm):paper})};
+ vm.createContext(c);return vm.runInContext(engine+';validate(machineKey)',c);
 }
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 let count=0;function test(name,fn){fn();count++;console.log('OK '+name);}
@@ -39,5 +39,12 @@ test('Bond 75 y ancho 660: calibración marcada descuenta 26 m = 1,287 kg',()=>{
  const a=calculate([op],[roll(400,660)],'Bond',75),b=calculate([{...op,calibration:false}],[roll(400,660)],'Bond',75);
  near(a.sums[0].calibrationMeters,26);near(b.saldo-a.saldo,1.287);near(a.saldo,172.003);near(b.saldo,173.29);
  const multi=calculate([{...op,id:'A'},{...op,id:'B',calibration:false}],[roll(800,660)],'Bond',75);near(multi.sums[0].calibrationMeters,26);near(multi.sums[1].calibrationMeters,0);
+});
+test('Kirin 4C: 13 m de blanco en set up, calibración y paradas; empalme de 20 m',()=>{
+ const a=calculate([base],[roll()],'Otro papel',100,'kirin-1c'),b=calculate([base],[roll()],'Otro papel',100,'kirin-4c');
+ const s=b.sums[0];near(s.productionMeters,720);near(s.setupMeters,202);near(s.calibrationMeters,19);near(s.stopMeters,40.4);near(s.spliceMeters,20);
+ near(s.metros,1001.4);near(b.saldo,99.86);near(a.saldo,90.76);assert.equal(b.processRules,3);
+ const idle={...base,setupBooks:0,calibration:false,stops:0};
+ near(calculate([idle,idle,idle].map((o,i)=>({...o,id:'OP'+i})),[roll(300),roll(300)],'Otro papel',100,'kirin-4c').spliceMeters,60);
 });
 console.log(count+' pruebas de proceso correctas.');

@@ -1,4 +1,4 @@
-# Reglas de proceso — 4.19.1
+# Reglas de proceso — 4.19.2
 
 Corrección confirmada por el usuario el 4 de noviembre de 2026. La calibración se corrigió a 26 m el 5 de noviembre de 2026. Los parámetros son por OP:
 
@@ -8,12 +8,15 @@ Corrección confirmada por el usuario el 4 de noviembre de 2026. La calibración
 - Calibración: checkbox independiente, desmarcado inicialmente.
 - Paradas: entero >= 0 (valor inicial 0).
 
+Pase en blanco por máquina: Kirin 1C = 20 m; Kirin 4C = 13 m.
+Al cambiar la máquina en el selector se vuelve a calcular con la regla correspondiente.
+
 Metros por OP:
 
 - Corrida = libros de corrida × copias por libro × avance en mm / 1000.
-- Set up = libros de set up × (copias por libro × avance en mm / 1000 + 20).
-- Calibración = 26 m por OP si está marcada, de lo contrario 0 m. Es independiente de los libros de set up.
-- Paradas = cantidad de paradas × (copias por libro × avance en mm / 1000 + 20).
+- Set up = libros de set up × (copias por libro × avance en mm / 1000 + pase en blanco).
+- Calibración = 6 m de encuadre + pase en blanco (26 m en Kirin 1C y 19 m en Kirin 4C) por OP si está marcada, de lo contrario 0 m. Es independiente de los libros de set up.
+- Paradas = cantidad de paradas × (copias por libro × avance en mm / 1000 + pase en blanco).
 - Empalmes del grupo = 20 × máximo(cantidad de OP, cantidad de bobinas registradas).
 
 Cada OP recibe una unidad de empalme de 20 m. Si hay más bobinas que OP,
@@ -33,7 +36,7 @@ Los kg de cartón siguen excluidos según las taras ya configuradas.
 El amarillo del gráfico suma lonjas + sobrante neto + proceso; el azul muestra
 la corrida. La impresión y el PDF comparten las tablas ampliadas.
 
-## Ejemplo de control
+## Ejemplo de control — Kirin 1C
 
 100 libros de corrida, 10 libros de set up, 30 copias por libro, avance 240 mm,
 calibración marcada, 2 paradas y una bobina:
@@ -54,7 +57,7 @@ paquete `CIMAGRAF_OPS_V2`. Metros y kg por OP incluyen todos los consumos.
 Las columnas adicionales, desde la décima, contienen:
 libros de set up, calibración (0/1), paradas, metros de corrida,
 metros de set up, metros de calibración, metros de paradas, metros de empalmes,
-kg de corrida, kg de proceso y versión de las reglas (2).
+kg de corrida, kg de proceso y versión de las reglas (2 para Kirin 1C; 3 para Kirin 4C con 13 m de blanco).
 Las preguntas de lonjas/sobrante conservan exclusivamente los pesos introducidos.
 
 No se cambian preguntas ni respuestas de Microsoft Forms ni archivos Excel.

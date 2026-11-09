@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const html = readFileSync(require('node:path').join(__dirname, '../index.html'), 'utf8');
 // Ejecuta la función de producción, sin mantener una copia del motor.
-const start = html.indexOf('function validate(){', html.indexOf('const GROUP_FORM_KEYS'));
+const start = html.indexOf('function validate(', html.indexOf('const GROUP_FORM_KEYS'));
 const source = html.slice(start, html.indexOf('\nfunction table(', start));
 const removalSource=html.slice(html.indexOf('function coreTareFor('),start);
 function calculate(meters, bobbins, paper='Otro papel', gsm=70) {

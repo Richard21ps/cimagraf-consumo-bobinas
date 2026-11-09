@@ -346,7 +346,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.19.1</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.19.2</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -942,7 +942,7 @@ function redraw(){
   +field('Avance (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')
   +'</div></fieldset></div><div class="op-phase-group op-group-setup"><h4 class="op-phase-title" id="op-phase-setup-'+i+'">Set up</h4><fieldset class="op-phase op-phase-setup" aria-labelledby="op-phase-setup-'+i+'"><div class="op-phase-fields">'
   +field('Libros · set up',o.setupBooks??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="setupBooks"')
-  +'<label class="op-calibration" title="Agrega 26 m a esta OP"><span>Calibración</span><span class="calibration-check"><input type="checkbox" data-op="'+i+'" data-field="calibration" aria-label="Calibración OP '+(i+1)+'" '+(o.calibration?'checked':'')+'><span>Sí</span></span></label>'
+  +'<label class="op-calibration" title="Agrega la calibración de la máquina seleccionada a esta OP"><span>Calibración</span><span class="calibration-check"><input type="checkbox" data-op="'+i+'" data-field="calibration" aria-label="Calibración OP '+(i+1)+'" '+(o.calibration?'checked':'')+'><span>Sí</span></span></label>'
   +'</div></fieldset></div><div class="op-phase-group op-group-run"><h4 class="op-phase-title" id="op-phase-run-'+i+'">Corrida</h4><fieldset class="op-phase op-phase-run" aria-labelledby="op-phase-run-'+i+'"><div class="op-phase-fields">'
   +field('Libros · corrida',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')
   +field('Paradas',o.stops??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="stops"')
@@ -1090,7 +1090,8 @@ function bobbinRemoval(r,allowUnknown=false){
  const corePaper=gross-tare;
  return {retired,gross,tare,corePaper,total:retired+corePaper,pending:false};
 }
-function validate(){
+function validate(machineKey=''){
+ const whitePassMeters=machineKey==='kirin-4c'?13:20;
  const gsm=numeric($('multi-gsm').value),paper=$('multi-paper').value.trim();
  if(!paper||!Number.isFinite(gsm)||gsm<=0)throw Error('Selecciona un papel y gramaje válidos.');
  const rollIds=new Set(),opIds=new Set();
@@ -1126,9 +1127,9 @@ function validate(){
  let ri=0,consumedTotal=0;
  for(const [oi,o] of ops.entries()){
   const productionMeters=numeric(o.books)*numeric(o.copies)*numeric(o.advance)/1000;
-  const setupMeters=numeric(o.setupBooks??0)*(numeric(o.copies)*numeric(o.advance)/1000+20);
-  const calibrationMeters=o.calibration?26:0;
-  const stopMeters=Number(o.stops??0)*(numeric(o.copies)*numeric(o.advance)/1000+20);
+  const setupMeters=numeric(o.setupBooks??0)*(numeric(o.copies)*numeric(o.advance)/1000+whitePassMeters);
+  const calibrationMeters=o.calibration?6+whitePassMeters:0;
+  const stopMeters=Number(o.stops??0)*(numeric(o.copies)*numeric(o.advance)/1000+whitePassMeters);
   const spliceMeters=20*(1+(oi===ops.length-1?spliceCount-ops.length:0));
   const plan={setupMeters,calibrationMeters,spliceMeters,productionMeters,stopMeters};
   const meters=Object.values(plan).reduce((a,n)=>a+n,0);
@@ -1164,7 +1165,7 @@ function validate(){
  const saldo=usedRolls.reduce((a,r)=>a+r.left,0);
  const saldoMetros=usedRolls.reduce((a,r)=>a+r.left/r.rate,0);
  return {paper,gsm,details,sums,loads,usedRolls,total:consumedTotal,totalScrap,saldo,saldoMetros,
-   processRules:2,spliceCount,spliceMeters:spliceCount*20,
+   processRules:whitePassMeters===13?3:2,whitePassMeters,spliceCount,spliceMeters:spliceCount*20,
    totalProductive:usedRolls.reduce((a,r)=>a+r.productiveKg,0),totalProcess:usedRolls.reduce((a,r)=>a+r.processKg,0),
    sourceOps:ops.map(o=>({id:o.id,books:Number(o.books),copies:Number(o.copies),advance:Number(o.advance),setupBooks:Number(o.setupBooks??0),calibration:!!o.calibration,stops:Number(o.stops??0)}))};
 }
@@ -1195,10 +1196,11 @@ function renderRollUsage(r){
 
 function show(){
  try{
-  const r=validate();
+  const identity=window.CimagrafProduction?.metadata()||restoredIdentity||{};
+  const r=validate(identity.machineKey);
   const group=$('multi-group').value.trim();
   const type=ops.length>1?(rolls.length>1?'Varias OP / varias bobinas':'Varias OP / una bobina'):(rolls.length>1?'Una OP / varias bobinas':'Una OP / una bobina');
-  result={...r,...(window.CimagrafProduction?.metadata()||restoredIdentity||{}),group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;$('multi-breakdown-hint').hidden=true;
+  result={...r,...identity,group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;$('multi-breakdown-hint').hidden=true;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
   $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
@@ -1206,7 +1208,7 @@ function show(){
   renderRollUsage(r);
   $('multi-policy-warning').hidden=true;
   $('multi-delivery-status').textContent='Saldo después de producción, set up, calibración, paradas, empalmes, lonjas y sobrante neto.';
-  $('multi-process-note').textContent='Empalmes: '+r.spliceCount+' × 20 m = '+nf(r.spliceMeters)+' m. Se toma la mayor cantidad entre OP y bobinas registradas; el exceso sobre las OP se asigna a la última OP.';
+  $('multi-process-note').textContent='Pase en blanco: '+r.whitePassMeters+' m para set up, calibración y paradas. Empalmes: '+r.spliceCount+' × 20 m = '+nf(r.spliceMeters)+' m. Se toma la mayor cantidad entre OP y bobinas registradas; el exceso sobre las OP se asigna a la última OP.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Producción (m)','Set up (m)','Calibración (m)','Paradas (m)','Empalmes (m)','Total (kg)'],r.sums.map(x=>[x.op,nf(x.productionMeters),nf(x.setupMeters),nf(x.calibrationMeters),nf(x.stopMeters),nf(x.spliceMeters),nf(x.kg)]));
   $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Lonjas (kg)','Sobrante con tuco (kg)','Tuco vacío (kg)','Sobrante de papel (kg)','Producción (kg)','Proceso (kg)','Devolver (kg)','Estado'],r.loads.map(x=>[x.id,nf(x.width),nf(x.initial),nf(x.retired),nf(x.coreGross),nf(x.coreTare),nf(x.corePaper),nf(x.productiveKg),nf(x.processKg),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':'Con saldo']));
