@@ -94,9 +94,34 @@ function fixture({fail=false,pending=null}={}){
  const slashFixture=fixture();slashFixture.r.sourceOps.push({...slashFixture.r.sourceOps[0],id:'OP2'});
  slashFixture.listeners.get('multi-registerclick')();await settle();
  assert.equal(uploads(slashFixture).length,1);
- assert.ok(uploads(slashFixture)[0].url.endsWith(encodeURIComponent('OP1 ／ OP2 - Kirin 1C.pdf')+':/content'));
+ const slashUpload=new URL(uploads(slashFixture)[0].url);
+ assert.equal(decodeURIComponent(slashUpload.pathname),'/v1.0/drives/drive/items/folder:/OP1 ／ OP2 - Kirin 1C.pdf:/content');
+ assert.equal(slashUpload.searchParams.get('@microsoft.graph.conflictBehavior'),'rename');
+ assert.equal(slashFixture.calls.some(c=>c.options.method==='POST'),false);
  assert.equal(slashFixture.el('cloud-last-pdf').textContent,'OP1 ／ OP2 - Kirin 1C.pdf');
  const unsafe={...j,snapshot:{result:{...f.r,sourceOps:[{id:'D/123:4?'}]}}};assert.doesNotMatch(f.api.filename(unsafe),/[\\/:?]/);
+ // Mismo nombre: la carga directa pide renombrar y el enlace conserva el nombre confirmado.
+ f=fixture();const directFetch=f.context.fetch;
+ f.context.fetch=async(url,options)=>{
+  const res=await directFetch(url,options);
+  const name=uploads(f).length===1?'OP1 - Kirin 1C.pdf':'OP1 - Kirin 1C (1).pdf';
+  const item=await res.json();
+  return {...res,json:async()=>({...item,name})};
+ };
+ for(let i=0;i<2;i++){
+  f.listeners.get('multi-registerclick')();await settle();
+  const name=i===0?'OP1 - Kirin 1C.pdf':'OP1 - Kirin 1C (1).pdf';
+  assert.equal(f.el('cloud-last-pdf').textContent,name);
+  const saved=JSON.parse(f.session.get('cimagraf-pdf-pending-v1'));
+  assert.equal(saved.savedName,name);
+  assert.equal(fixture({pending:saved}).el('cloud-last-pdf').textContent,name);
+ }
+ assert.equal(f.calls.length,2);
+ for(const call of uploads(f)){
+  const u=new URL(call.url);
+  assert.equal(decodeURIComponent(u.pathname),'/v1.0/drives/drive/items/folder:/OP1 - Kirin 1C.pdf:/content');
+  assert.equal(u.searchParams.get('@microsoft.graph.conflictBehavior'),'rename');
+ }
  // Si falla la carga, se retoma la misma carpeta y el mismo nombre, sin crear otro registro.
  f=fixture();j={id:'reintento',archiveFormat:2,created:'2026-11-04T20:00:00Z',snapshot:{result:f.r}};
  let denyOnce=true;const originalUpload=f.context.fetch;

@@ -1,4 +1,4 @@
-# PDF directo a OneDrive — v4.18.1
+# PDF directo a OneDrive — v4.19.3
 
 Se usa Microsoft Graph con autenticación delegada, sin Power Automate,
 servidor propio ni secreto de cliente. La aplicación y el inquilino son los
@@ -23,16 +23,15 @@ La configuración de permisos por sí sola no equivale al consentimiento.
 Nombre nuevo: `<OP> - <Máquina>.pdf`; por ejemplo, `D1232 - Kirin 1C.pdf`.
 Con varias OP: `D1232 ／ D1233 - Kirin 4C.pdf`. Se usa la barra Unicode U+FF0F
 para distinguirla del carácter ASCII `/`, reservado a las rutas. El enlace visible muestra ese
-nombre, sin fechas ni identificadores adicionales. El resumen del grupo sigue
+nombre, sin fechas ni identificadores adicionales, salvo el sufijo de OneDrive
+si coincide con un nombre existente. El resumen del grupo sigue
 siendo un solo PDF, con todas las OP y bobinas.
 
-Por elección del propietario, cada nuevo registro se archiva en una subcarpeta
-`Registro <UUID>` dentro del destino común. Así dos trabajos de la misma OP y
-máquina conservan ambos PDF con el mismo nombre. La carpeta se crea con conflicto
-`fail`; un reintento recupera la misma carpeta, incluso si se perdió la respuesta
-de creación. La ruta confirmada se conserva antes de cargar el PDF. No se cambian
-archivos históricos. Los guardados pendientes anteriores a v4.18.0 retoman su
-ruta y nombre originales para no duplicarse.
+Los nuevos PDF se cargan directamente en REGISTRO DE PDF DIGITAL, sin crear
+una subcarpeta por registro. Si la OP y la máquina ya tienen un PDF con el mismo
+nombre, OneDrive agrega un sufijo y conserva ambos archivos. El enlace visible
+muestra el nombre confirmado por OneDrive. Las carpetas y archivos históricos
+se conservan; los guardados que ya estaban pendientes retoman su ruta original.
 
 El separador se conserva en cada trabajo pendiente. Los registros creados en
 v4.18.0 retoman `+`; los nuevos usan `／` tanto en OneDrive como en el enlace.
@@ -51,9 +50,8 @@ e identificador del archivo. No se solicita un enlace por equipo ni se crea
 una carpeta alternativa si falta acceso. Los permisos de edición siguen siendo
 necesarios; esta configuración no concede permisos ni cambia los existentes.
 
-Los reintentos del mismo registro escriben el mismo archivo en su carpeta;
-un nuevo registro obtiene otra carpeta con un UUID diferente.
-Esto no deduplica respuestas duplicadas enviadas por separado a Forms.
+La reapertura de un grupo ya guardado reutiliza el enlace al PDF confirmado.
+Esta protección no deduplica respuestas que se envíen por separado a Forms.
 
 Los errores mantienen el registro pendiente y bloquean la edición del trabajo
 hasta guardar. No reenviar Forms: usar «Reintentar guardar PDF». La recuperación
