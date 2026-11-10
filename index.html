@@ -101,6 +101,9 @@
     .delivery-meters { margin: 11px 0 0; padding-top: 11px; border-top: 1px solid #c9e4d6; color: #174934; font-size: 16px; font-weight: 700; line-height: 1.35; }
     .delivery-meters output { font-size: 22px; font-weight: 850; font-variant-numeric: tabular-nums; }
     .delivery-guidance { margin: 10px 0 0; font-size: 13px; color: #436453; line-height: 1.45; }
+    .delivery-summary.delivery-shortage { border-color: #b42318; background: #fff2f0; }
+    .delivery-shortage :is(.delivery-summary-label, .delivery-action, .delivery-weight, .delivery-meters, .delivery-guidance) { color: #a21f16; }
+    .delivery-shortage .delivery-meters { border-top-color: #efc1ba; }
     .result-group.consumption-group { background: #f0f4f7; border-color: #dae3e9; }
     .consumption-group .result-group-title { color: #475e6d; }
     .consumption-group .result-label { color: #526875; font-size: 13px; }
@@ -346,7 +349,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.19.3</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.19.4</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -384,7 +387,7 @@
         <div id="multi-roll-list"></div>
         <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
       </div>
-      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary"><h4 class="delivery-summary-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters">Equivalencia teórica: <output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance">Peso neto de papel, sin tuco. Metros equivalentes según el ancho de cada bobina.</p></section><section class="compact-bobbin-panel" aria-labelledby="compact-bobbin-title"><h4 id="compact-bobbin-title">Bobinas</h4><p class="usage-legend"><span><i class="usage-produced"></i>Producción</span><span><i class="usage-removed"></i>Descuentos</span><span><i class="usage-balance"></i>Saldo</span></p><div id="multi-roll-usage" aria-live="polite"></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
+      </div><aside class="multi-aside"><h3>Resultado de devolución</h3><section class="delivery-summary" id="multi-delivery-card"><h4 class="delivery-summary-label" id="multi-delivery-label">Saldo para devolver al almacén</h4><div class="delivery-main"><span class="delivery-action" id="multi-delivery-action">ENTREGAR</span><output class="delivery-weight" id="multi-delivery">— <span class="delivery-unit">kg</span></output></div><p class="delivery-meters"><span id="multi-delivery-meters-label">Equivalencia teórica: </span><output id="multi-delivery-meters">— m</output></p><p class="delivery-guidance" id="multi-delivery-guidance">Peso neto de papel, sin tuco. Metros equivalentes según el ancho de cada bobina.</p></section><section class="compact-bobbin-panel" aria-labelledby="compact-bobbin-title"><h4 id="compact-bobbin-title">Bobinas</h4><p class="usage-legend"><span><i class="usage-produced"></i>Producción</span><span><i class="usage-removed"></i>Descuentos</span><span><i class="usage-balance"></i>Saldo</span></p><div id="multi-roll-usage" aria-live="polite"></div></section><p class="result-status" id="multi-delivery-status">Ingresa los datos y calcula para ver el saldo.</p></aside></div>
       <p class="multi-alert" id="multi-error" role="alert" hidden></p>
       <p class="multi-alert" id="multi-policy-warning" role="status" hidden></p>
       <p class="multi-success" id="multi-success" role="status" hidden></p>
@@ -835,8 +838,7 @@ const field=(title,value,attr)=>'<label>'+title+'<input '+attr+' value="'+escape
 function escapeHtml(v){return String(v??'').replace(/[&"'<>]/g,c=>({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'}[c]));}
 function markDirty(){
  result=null;
- $('multi-delivery').innerHTML='— <span class="delivery-unit">kg</span>';
- $('multi-delivery-meters').textContent='— m';
+ renderDeliveryBalance();
  refreshCoreTareNotes();renderRollUsage(null);$('multi-policy-warning').hidden=true;
  $('multi-delivery-status').textContent='Completa los datos de producción para calcular.';
  nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
@@ -1124,7 +1126,7 @@ function validate(machineKey=''){
  const details=[],sums=[],tol=1e-9;
  // Una unidad por OP; las unidades de bobinas que exceden las OP se asignan a la última OP.
  const spliceCount=Math.max(ops.length,rolls.length);
- let ri=0,consumedTotal=0;
+ let ri=0,consumedTotal=0,missingMeters=0,firstMissingOp=null;
  for(const [oi,o] of ops.entries()){
   const productionMeters=numeric(o.books)*numeric(o.copies)*numeric(o.advance)/1000;
   const setupMeters=numeric(o.setupBooks??0)*(numeric(o.copies)*numeric(o.advance)/1000+whitePassMeters);
@@ -1141,7 +1143,7 @@ function validate(machineKey=''){
    while(pendingMeters>tol){
     if(++guard>loads.length+2)throw Error('No se pudo asignar el consumo de '+o.id+'.');
     const r=loads[ri];
-    if(!r)throw Error('Material insuficiente: a la OP '+o.id+' le falta material para producción y descuentos de proceso. Agrega otra bobina.');
+    if(!r){missingMeters+=pendingMeters;firstMissingOp??=o.id;break;}
     const takenMeters=Math.min(r.left/r.rate,pendingMeters);
     if(takenMeters<=tol){r.left=0;ri++;continue;}
     const takenKg=takenMeters*r.rate,productive=category==='productionMeters';
@@ -1159,6 +1161,14 @@ function validate(machineKey=''){
   }
   sums.push({op:o.id,kg:opKg,metros:meters,...plan,productiveKg,processKg,categoryKg});
   consumedTotal+=opKg;
+ }
+ if(missingMeters>tol){
+  // Los grupos nuevos tienen un único ancho. En un grupo anterior con anchos
+  // mixtos, la conversión a kg se estima con el ancho de la última bobina.
+  const last=loads.at(-1);
+  throw Object.assign(Error('Material insuficiente desde la OP '+firstMissingOp+'. Agrega otra bobina o corrige los datos.'),{
+   shortage:{meters:missingMeters,kg:missingMeters*last.rate,width:last.width,mixed:loads.some(b=>b.width!==last.width),loads}
+  });
  }
  const usedRolls=loads.filter(r=>r.used>tol||r.scrap>tol);
  const totalScrap=usedRolls.reduce((a,r)=>a+r.scrap,0);
@@ -1203,8 +1213,7 @@ function show(){
   result={...r,...identity,group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;$('multi-breakdown-hint').hidden=true;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
-  $('multi-delivery').innerHTML=nf(r.saldo)+' <span class="delivery-unit">kg</span>';
-  $('multi-delivery-meters').textContent=nf(r.saldoMetros,2)+' m';
+  renderDeliveryBalance(r);
   renderRollUsage(r);
   $('multi-policy-warning').hidden=true;
   $('multi-delivery-status').textContent='Saldo después de producción, set up, calibración, paradas, empalmes, lonjas y sobrante neto.';
@@ -1215,7 +1224,30 @@ function show(){
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Producción (kg)','Proceso (kg)','Metros totales','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho),nf(x.productiveKg),nf(x.processKg),nf(x.metros),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
- }catch(err){result=null;$('multi-print').disabled=true;$('print-summary').replaceChildren();$('multi-policy-warning').hidden=true;renderRollUsage(null);$('multi-success').hidden=true;$('multi-error').textContent=err.message;$('multi-error').hidden=false;$('multi-delivery-status').textContent=err.message;$('multi-breakdown-hint').hidden=false;$('multi-register').disabled=true;}
+ }catch(err){
+  result=null;
+  renderDeliveryBalance(null,err.shortage);renderRollUsage(err.shortage||null);
+  $('multi-print').disabled=true;$('multi-register').disabled=true;$('print-summary').replaceChildren();
+  $('multi-policy-warning').hidden=true;$('multi-success').hidden=true;
+  $('multi-error').textContent=err.message;$('multi-error').hidden=false;
+  $('multi-delivery-status').textContent=err.shortage?'':err.message;
+  $('multi-breakdown-hint').hidden=false;
+  $('multi-summary-status').textContent=err.shortage?'Agrega material suficiente antes de registrar.':'Completa los datos para preparar el registro.';
+ }
+}
+function renderDeliveryBalance(r=null,shortage=null){
+ const missing=!!shortage;
+ // Un faltante pequeño también debe mostrar un valor distinto de cero.
+ const amount=n=>n<0.05?new Intl.NumberFormat('es-PE',{maximumSignificantDigits:2}).format(n):nf(n);
+ $('multi-delivery-card').classList.toggle('delivery-shortage',missing);
+ $('multi-delivery-label').textContent=missing?'Saldo de material':'Saldo para devolver al almacén';
+ $('multi-delivery-action').textContent=missing?'MATERIAL INSUFICIENTE':'ENTREGAR';
+ $('multi-delivery').innerHTML=(missing?'−'+amount(shortage.kg):r?nf(r.saldo):'—')+' <span class="delivery-unit">kg</span>';
+ $('multi-delivery-meters-label').textContent=missing?'Metros faltantes: ':'Equivalencia teórica: ';
+ $('multi-delivery-meters').textContent=(missing?amount(shortage.meters):r?nf(r.saldoMetros):'—')+' m';
+ $('multi-delivery-guidance').textContent=missing
+  ?(shortage.mixed?'Kg estimados con el ancho de la última bobina ('+shortage.width+' mm).':'Agrega otra bobina para completar el trabajo.')
+  :'Peso neto de papel, sin tuco. Metros equivalentes según el ancho de cada bobina.';
 }
 function buildPrintSummary(r,stamp){
  const rows=[];

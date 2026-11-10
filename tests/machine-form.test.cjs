@@ -9,7 +9,7 @@ const engine=html.slice(html.indexOf('function coreTareFor('),html.indexOf('func
 const show=html.slice(html.indexOf('function show(){',html.indexOf('function renderRollUsage(')),html.indexOf('function buildPrintSummary('));
 for(const machine of ['Kirin 1C','Kirin 4C'])for(const mode of ['test','production']){
  const nodes={},events={},nf=String;
- const el=id=>nodes[id]??={value:id==='multi-paper'?'Bond':id==='multi-gsm'?'90':'',classList:{contains:()=>false,add(){}},setAttribute(){},addEventListener(event,fn){events[id+':'+event]=fn;},replaceChildren(){}};
+ const el=id=>nodes[id]??={value:id==='multi-paper'?'Bond':id==='multi-gsm'?'90':'',classList:{contains:()=>false,add(){},toggle(name,enabled){this[name]=enabled;}},setAttribute(){},addEventListener(event,fn){events[id+':'+event]=fn;},replaceChildren(){}};
  const id=(mode==='test'?'PRUEBA · ':'')+machine.toUpperCase()+' - 01';
  const metadata={machine,machineKey:machine==='Kirin 4C'?'kirin-4c':'kirin-1c',runMode:mode,recordId:id};
  el('multi-group').value=id;
@@ -34,9 +34,6 @@ for(const machine of ['Kirin 1C','Kirin 4C'])for(const mode of ['test','producti
   Object.assign(c,{localStorage:storage(),sessionStorage:storage(),crypto:require('node:crypto').webcrypto,queueMicrotask:fn=>fn()});
   Object.assign(c.document,{getElementById:el,addEventListener(){}});
   Object.assign(c.window,{CimagrafRegistry,addEventListener(){},CimagrafArchive:{refresh:()=>vm.runInContext('scheduleAuto()',c)}});
-  for(const node of Object.values(nodes))node.classList.toggle=()=>{};
-  // Render crea otros nodos del selector; el estilo de cada uno es independiente.
-  for(const id of ['machine-status','machine-mode'])el(id).classList.toggle=()=>{};
   vm.runInContext(scheduler,c);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../production.js'),'utf8'),c);
   for(const [key,saldo] of [['kirin-1c',188.51008],['kirin-4c',189.41728],['kirin-1c',188.51008]]){
@@ -46,5 +43,21 @@ for(const machine of ['Kirin 1C','Kirin 4C'])for(const mode of ['test','producti
    assert.match(el('multi-delivery').innerHTML,/delivery-unit/);
   }
   console.log('OK El selector recalcula el mismo trabajo al cambiar de máquina y al volver.');
+  c.rolls[0].kg=200;
+  vm.runInContext('scheduleAuto()',c);
+  assert.equal(c.result,null);
+  assert.equal(el('multi-delivery-card').classList['delivery-shortage'],true);
+  assert.equal(el('multi-delivery-action').textContent,'MATERIAL INSUFICIENTE');
+  assert.match(el('multi-delivery').innerHTML,/^−11\.48/);
+  assert.equal(el('multi-delivery-meters-label').textContent,'Metros faltantes: ');
+  assert.equal(el('multi-register').disabled,true);
+  assert.equal(el('multi-print').disabled,true);
+  c.rolls[0].kg=400;
+  vm.runInContext('scheduleAuto()',c);
+  assert.equal(el('multi-delivery-card').classList['delivery-shortage'],false);
+  assert.equal(el('multi-delivery-action').textContent,'ENTREGAR');
+  assert.ok(c.result.saldo>0);
+  console.log('OK El faltante se muestra en rojo y en negativo; corregir el material recupera el saldo normal.');
+
  }
 }

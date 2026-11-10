@@ -112,3 +112,11 @@ numéricamente. Los anchos añadidos se guardan en este navegador.
 Cambiar el ancho recalcula kg y tara proporcional sin redondear los valores internos.
 Los pendientes antiguos con varios anchos se recuperan sin modificar sus bobinas;
 solo se unifican si el operador selecciona expresamente un ancho común.
+
+## Faltante de material — 4.19.4
+
+Si se agotan las bobinas, se suman los metros pendientes de todas las OP,
+incluidos los consumos de proceso. El cuadro de saldo cambia a rojo y
+muestra los kg faltantes en negativo y los metros pendientes. Para registros
+antiguos con varios anchos, los kg se estiman con el ancho de la última bobina.
+El registro y la impresión siguen bloqueados hasta corregir el faltante.

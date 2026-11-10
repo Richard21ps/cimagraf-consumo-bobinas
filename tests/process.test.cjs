@@ -47,4 +47,18 @@ test('Kirin 4C: 13 m de blanco en set up, calibración y paradas; empalme de 20 
  const idle={...base,setupBooks:0,calibration:false,stops:0};
  near(calculate([idle,idle,idle].map((o,i)=>({...o,id:'OP'+i})),[roll(300),roll(300)],'Otro papel',100,'kirin-4c').spliceMeters,60);
 });
+test('Faltante del grupo: suma el resto de la primera OP y todas las OP siguientes',()=>{
+ const ops=[{...base,id:'A'},{...base,id:'B'}];
+ assert.throws(()=>calculate(ops,[roll(100)]),e=>{
+  assert.match(e.message,/Material insuficiente desde la OP A/);
+  near(e.shortage.meters,1184.8);near(e.shortage.kg,118.48);
+  assert.equal(e.shortage.mixed,false);
+  near(e.shortage.loads[0].left,0);
+  return true;
+ });
+ assert.throws(()=>calculate(ops,[roll(25,1000),roll(25,500)]),e=>{
+  assert.equal(e.shortage.mixed,true);assert.equal(e.shortage.width,500);
+  near(e.shortage.meters,1434.8);near(e.shortage.kg,71.74);return true;
+ });
+});
 console.log(count+' pruebas de proceso correctas.');
