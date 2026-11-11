@@ -8,15 +8,17 @@ let r;
 const app=document.getElementById('app'),state=document.getElementById('state');let url;
 app.onload=()=>{
  const w=app.contentWindow,d=app.contentDocument;
- const width=d.getElementById('multi-width');width.value='480';width.dispatchEvent(new w.Event('change',{bubbles:true}));
- const fields={'#multi-group':'PRUEBA VISUAL','[data-op="0"][data-field="id"]':'OP01','[data-op="0"][data-field="books"]':'100','[data-op="0"][data-field="copies"]':'30','[data-op="0"][data-field="advance"]':'240','[data-op="0"][data-field="setupBooks"]':'10','[data-op="0"][data-field="stops"]':'2','[data-roll="0"][data-field="kg"]':'200'};
+ const select=d.getElementById('machine-select');
+ if(!select.value){select.value='kirin-1c';select.dispatchEvent(new w.Event('change',{bubbles:true}));}
+ const width=d.getElementById('multi-width');width.value=select.value==='kirin-4c'?'469':'480';width.dispatchEvent(new w.Event('change',{bubbles:true}));
+ const fields={'#multi-group':'PRUEBA VISUAL','[data-op="0"][data-field="id"]':'OP01','[data-op="0"][data-field="books"]':'100','[data-op="0"][data-field="copies"]':'30','[data-op="0"][data-field="advance"]':'240','[data-op="0"][data-field="setupBooks"]':'10','[data-op="0"][data-field="stops"]':'2','[data-roll="0"][data-field="lot"]':'000123-A','[data-roll="0"][data-field="kg"]':'200'};
  for(const [selector,value] of Object.entries(fields)){const el=d.querySelector(selector);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));}
  const calibration=d.querySelector('[data-field="calibration"]');calibration.checked=true;calibration.dispatchEvent(new w.Event('input',{bubbles:true}));
  queueMicrotask(()=>{r=w.CimagrafArchive.snapshot().result;document.getElementById('render').disabled=!r;document.getElementById('many').disabled=!r;state.textContent=r?'Plantilla lista con cálculo real de set up, calibración, paradas y empalmes.':'No se pudo preparar el ejemplo.';});
 };
 async function generate(many){try{
  state.textContent='Generando…';let data=JSON.parse(JSON.stringify(r));
- if(many){const archive=app.contentWindow.CimagrafArchive,snapshot=archive.snapshot();snapshot.ops=Array.from({length:45},(_,i)=>({id:'OP'+(i+1),books:10,copies:30,advance:240,setupBooks:1,calibration:false,stops:1}));snapshot.rolls=[{id:'Bobina 1',kg:500,width:480,scrap:5,coreGross:0,coreTare:''}];archive.restore(snapshot);data=archive.snapshot().result;}
+ if(many){const archive=app.contentWindow.CimagrafArchive,snapshot=archive.snapshot();snapshot.ops=Array.from({length:45},(_,i)=>({id:'OP'+(i+1),books:10,copies:30,advance:240,setupBooks:1,calibration:false,stops:1}));snapshot.rolls=[{id:'Bobina 1',lot:'000123-A',kg:500,width:snapshot.rolls[0].width,scrap:5,coreGross:0,coreTare:''}];archive.restore(snapshot);data=archive.snapshot().result;}
  const html=app.contentWindow.CimagrafArchive.reportHTML(data,'2026-11-04T14:30:00Z');document.getElementById('source').innerHTML='<section class="cimagraf-report">'+html+'</section>';
  const bytes=await CimagrafReportPDF.render(html);if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
  const result=document.getElementById('result');result.src=url;result.hidden=false;const a=document.getElementById('download');a.href=url;a.hidden=false;state.textContent='PDF generado: '+bytes.byteLength+' bytes. La plantilla original está debajo.';

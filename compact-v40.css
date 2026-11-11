@@ -303,3 +303,13 @@ header{margin-bottom:14px}
 @media(max-width:1120px) and (min-width:901px){#multi-root .material-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){#multi-root .material-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:380px){#multi-root .material-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* 4.20: título automático y lote escrito en cada bobina. */
+#multi-root .multi-bobbins .multi-row{grid-template-columns:minmax(0,1fr)}
+#multi-root .multi-bobbins .multi-row-head{display:flex;grid-row:1;margin:0}
+#multi-root .multi-bobbins .multi-row-head strong{display:block}
+#multi-root .multi-bobbins .multi-row-fields{grid-row:2}
+#multi-root .multi-bobbins .removal-help{grid-row:3}
+#multi-root .multi-bobbins .roll-problems-wrap{grid-row:4}
+#multi-root .multi-bobbins .core-tare-note{grid-row:5}
+@media (min-width:581px) and (max-width:1120px){#multi-root .multi-bobbins .multi-row-fields{grid-template-columns:repeat(4,minmax(0,1fr))}}

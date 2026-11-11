@@ -25,6 +25,14 @@ test('500 kg en cada bobina: la segunda queda en 380 y la OP siguiente arranca e
 test('No repite parámetros ni anchos en las tablas',()=>{const out=print(calculate([{books:100}],[{kg:500}]));assert.doesNotMatch(out,/Parámetros por OP|Metraje y consumo|Libros|Copias|<th>Ancho/);assert.equal((out.match(/ANCHO/g)||[]).length,1);assert.equal((out.match(/1,000.0 mm/g)||[]).length,1);});
 test('Lonjas y sobrante neto solo se descuentan al abrir la bobina',()=>{const r=calculate([{books:500},{books:500}],[{kg:500,scrap:10,coreGross:6,coreTare:1}]);const data=rows(print(r));assert.equal(data[0][4],'17.0');assert.equal(data[1][4],'2.0');assert.equal(data[1][2],data[0][5]);});
 test('Bobina totalmente retirada antes de máquina conserva su movimiento y saldo cero',()=>{const r=calculate([{books:100}],[{kg:5,scrap:5},{kg:100}]);const data=rows(print(r));assert.deepEqual(data[0],['—','Bobina 1','5.0','0.0','5.0','0.0']);assert.equal(data[1][2],'100.0');assert.match(print(r),/Agotada/);});
-test('Bobinas no utilizadas no se suman al PDF; anchos distintos aparecen solo arriba',()=>{const r=calculate([{books:1000}],[{kg:50,width:1000},{kg:100,width:500},{kg:100,width:700}]);const out=print(r),data=rows(out);assert.equal(data.length,2);assert.doesNotMatch(out,/Bobina 3/);assert.match(out,/Bobina 1: <strong>1,000.0 mm/);assert.match(out,/Bobina 2: <strong>500.0 mm/);});
+test('Bobinas no utilizadas figuran con su lote y sin saldo a devolver; anchos solo arriba',()=>{const r=calculate([{books:1000}],[{kg:50,width:1000},{kg:100,width:500},{kg:100,width:700,lot:'003-C'}]);const out=print(r),data=rows(out);assert.equal(data.length,2);assert.match(out,/<td>Bobina 3<\/td><td class="num">003-C<\/td><td class="num">No utilizada<\/td><td class="num">—<\/td>/);assert.match(out,/Bobina 1: <strong>1,000.0 mm/);assert.match(out,/Bobina 2: <strong>500.0 mm/);});
 test('Instantáneas anteriores sin separación de proceso siguen siendo imprimibles',()=>{const r={paper:'Bond',gsm:90,saldo:380,usedRolls:[{id:'Bobina 1',initial:500,width:480,retired:20,corePaper:0,left:380}],details:[{op:'ANTERIOR',bobina:'Bobina 1',kg:100,saldo:380}]};assert.deepEqual(rows(print(r))[0],['ANTERIOR','Bobina 1','500.0','100.0','20.0','380.0']);});
+test('El PDF conserva el lote de cada bobina, ceros iniciales y texto seguro',()=>{
+ const r=calculate([{books:600}],[{kg:50,lot:' 000123-A '},{kg:500,lot:'007<&'}]);
+ assert.deepEqual(Array.from(r.loads,b=>b.lot),['000123-A','007<&']);
+ const out=print(r);
+ assert.match(out,/<th>Número de lote<\/th>/);
+ assert.match(out,/<td>Bobina 1<\/td><td class="num">000123-A<\/td>/);
+ assert.match(out,/<td>Bobina 2<\/td><td class="num">007&lt;&amp;<\/td>/);
+});
 console.log(count+' pruebas de secuencia e impresión correctas.');

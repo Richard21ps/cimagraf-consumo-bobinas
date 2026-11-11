@@ -26,3 +26,5 @@
 .cimagraf-report .print-width-detail{font-size:9pt;margin:5px 0 12px;break-inside:avoid}
 .cimagraf-report .print-flow td:nth-child(3){background:#f1f5f8}
 .cimagraf-report .print-flow td:last-child{background:#edf6ef;font-weight:bold}
+.cimagraf-report .print-bobbin-lots th:nth-child(2){width:34%}
+.cimagraf-report .print-bobbin-lots td:nth-child(2),.cimagraf-report .print-bobbin-lots td:nth-child(3){text-align:left}

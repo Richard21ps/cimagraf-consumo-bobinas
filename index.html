@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.19.0">
-<link rel="stylesheet" href="report-summary.css?v=4.15.2">
+<link rel="stylesheet" href="compact-v40.css?v=4.20.0">
+<link rel="stylesheet" href="report-summary.css?v=4.20.0">
 <link rel="stylesheet" href="production.css?v=4.16.1">
 <script src="machine-form.js?v=4.16.2"></script>
 <link rel="stylesheet" href="intro.css?v=4.14.1">
@@ -279,10 +279,10 @@
 
           <section class="input-section" aria-labelledby="step-bobina-title">
             <h3 class="input-section-heading" id="step-bobina-title"><span class="step-number" aria-hidden="true">4</span> Bobina y devolución</h3>
-            <p class="input-section-note">Ingresa los kg de la bobina completa. Calcularemos el peso por devolver y una equivalencia teórica en metros.</p>
+            <p class="input-section-note">Ingresa el peso inicial del papel, sin tuco. Calcularemos el peso por devolver y una equivalencia teórica en metros.</p>
             <div class="fields">
               <div class="field full">
-                <label for="roll-kg">Peso inicial de bobina</label>
+                <label for="roll-kg">Kg iniciales netos</label>
                 <input id="roll-kg" name="roll-kg" type="number" min="0" step="any" placeholder="Ej.: 50" inputmode="decimal" required>
                 <span class="hint">Ingresa el peso neto del papel recibido de almacén, sin tuco.</span>
               </div>
@@ -336,7 +336,7 @@
             </section>
             <section class="formula-step">
               <h4>3. Kilos por devolver</h4>
-              <p class="equation"><span>Kg por entregar</span><span>=</span><span>Kg iniciales − kg de papel consumidos</span></p>
+              <p class="equation"><span>Kg por entregar</span><span>=</span><span>Kg iniciales netos − kg de papel consumidos</span></p>
             </section>
             <section class="formula-step">
               <h4>4. Equivalencia teórica máxima de metros</h4>
@@ -349,7 +349,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.19.5</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.20.0</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -368,11 +368,11 @@
           <label>ID de registro<input id="multi-group" placeholder="Se genera al asignar la máquina" maxlength="60" readonly></label>
           <div><label for="multi-paper">Tipo de papel</label><div class="multi-paper-picker"><select id="multi-paper"></select><button class="add-material" id="multi-add-material" type="button">+ Agregar</button></div></div>
           <label>Gramaje (g/m²)<select id="multi-gsm"></select></label>
-          <div class="material-width-entry"><label for="multi-width">Ancho (mm)</label><div class="multi-width-picker"><select id="multi-width"></select><button class="add-material" id="multi-add-width" type="button" aria-expanded="false" aria-controls="width-form">+ Agregar</button></div>
+          <div class="material-width-entry"><label for="multi-width">Ancho (mm)</label><div class="multi-width-picker"><select id="multi-width" aria-describedby="width-machine-note" disabled></select><button class="add-material" id="multi-add-width" type="button" disabled aria-expanded="false" aria-controls="width-form">+ Agregar</button></div>
             <form id="width-form" class="width-add-panel" hidden novalidate><label for="width-new">Nuevo ancho (mm)</label><input id="width-new" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej.: 700"><div><button class="multi-button" type="submit">Guardar</button><button class="multi-button" id="width-cancel" type="button">Cancelar</button></div><p id="width-error" role="alert" hidden></p></form>
           </div>
         </div>
-        <p class="multi-muted">Papel, gramaje y ancho se aplican a todas las bobinas del grupo.</p>
+        <p class="multi-muted" id="width-machine-note">Selecciona la máquina para ver sus anchos.</p>
         <p class="multi-muted" id="width-legacy-note" hidden>Este registro anterior usa anchos distintos y se conserva tal como fue registrado. Selecciona un ancho arriba solo si deseas unificarlos.</p>
       </div>
       <div class="multi-block">
@@ -383,7 +383,7 @@
       </div>
       <div class="multi-block multi-bobbins">
         <h3>3 · Bobinas en orden de utilización</h3>
-        <p class="multi-muted">Kg iniciales: peso de papel sin tuco. Registra las lonjas retiradas y el sobrante de tuco por separado.</p>
+        <p class="multi-muted">Kg iniciales netos: peso del papel sin tuco. Ingresa las lonjas y el sobrante de bobina por separado.</p>
         <div id="multi-roll-list"></div>
         <button class="multi-button" id="multi-add-roll" type="button">+ Agregar bobina</button>
       </div>
@@ -594,7 +594,7 @@
           for (const id of ['meters','kilos']) document.getElementById(id).innerHTML = '— <span class="result-unit">' + (id === 'kilos' ? 'kg' : 'm') + '</span>';
           document.getElementById('left-kilos').innerHTML = '— <span class="delivery-unit">kg</span>';
           document.getElementById('left-meters').textContent = '— m';
-          document.getElementById('delivery-guidance').textContent = 'Completa los datos de la OP y los kg iniciales de bobina para saber cuánto entregar.';
+          document.getElementById('delivery-guidance').textContent = 'Completa los datos de la OP y los kg iniciales netos de bobina para saber cuánto entregar.';
           const missing = inputs.filter(([, value]) => !Number.isFinite(value) || value <= 0).map(([, , label]) => label);
           document.getElementById('status').textContent = missing.length
             ? 'Ingresa un valor mayor que cero en: ' + missing.join(', ') + '.'
@@ -618,11 +618,11 @@
         document.getElementById('delivery-guidance').textContent = validReturn
           ? 'Los kg a entregar son de papel, sin tuco. Los metros son una equivalencia teórica.'
           : hasStock
-            ? 'Revisa los datos: el consumo calculado supera los kg iniciales de la bobina.'
+            ? 'Revisa los datos: el consumo calculado supera los kg iniciales netos de la bobina.'
             : 'Ingresa el peso inicial del papel en kg, sin tuco, para calcular la devolución.';
         const details = formatNumber(books, 0) + ' libros · ' + formatNumber(copies, 0) + ' copias por libro · ' + material.name + ' ' + formatNumber(material.gsm) + ' g/m²';
         let status = details;
-        if (!hasStock) status += ' · Completa los kg iniciales de bobina.';
+        if (!hasStock) status += ' · Completa los kg iniciales netos de bobina.';
         else if (remainingKg < 0) status += ' · El consumo supera el peso inicial; revisa los datos.';
         else status += ' · Pesos sin tuco; metros equivalentes teóricos.';
         document.getElementById('status').textContent = status;
@@ -829,7 +829,7 @@ if(!root||!simple||!complex||!layout)return;
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
-let ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}], rolls=[{id:'Bobina 1',kg:'',width:'',scrap:'0',coreGross:'0',coreTare:''}], result=null;
+let ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}], rolls=[{id:'Bobina 1',lot:'',kg:'',width:'',scrap:'0',coreGross:'0',coreTare:''}], result=null;
 let nextOpIndex=0, confirmedOps=new Set(), pendingOpIndex=-1;
 let restoredIdentity=null;
 const nf=x=>new Intl.NumberFormat('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1}).format(x);
@@ -907,7 +907,7 @@ function reasonControls(roll,index){
 function problemControls(roll,index){
  const selected=roll.problems||[],areas=roll.areas||[];
  const status=selected.length&&areas.length?'Datos completos':'Completar datos';
- return '<div class="roll-problems-wrap"'+(Number(roll.scrap)>0?'':' hidden')+'><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">Motivo y área de las lonjas</span><span class="problem-summary-action">'+status+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo a las lonjas, no al sobrante de tuco.</p><div class="withdrawal-fields">'+reasonControls(roll,index)+areaControls(roll,index)+'</div></div></details></div>';
+ return '<div class="roll-problems-wrap"'+(Number(roll.scrap)>0?'':' hidden')+'><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">Motivo y área de las lonjas</span><span class="problem-summary-action">'+status+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo a las lonjas, no al sobrante de bobina.</p><div class="withdrawal-fields">'+reasonControls(roll,index)+areaControls(roll,index)+'</div></div></details></div>';
 }
 
 function syncWithdrawalControls(index){
@@ -928,7 +928,7 @@ function refreshCoreTareNotes(){
   const tare=coreTareFor($('multi-paper').value,roll.width);
   if(tare!==null){
    const gross=numeric(roll.coreGross),net=gross-tare;
-   note.innerHTML='Sobrante: '+nf(gross)+' kg − tuco '+tare.toFixed(3)+' kg = <strong>'+(net>=0?nf(net)+' kg de papel':'revisa el peso ingresado')+'</strong><span>Tara automática según material y ancho. No se descuenta cartón de los kg iniciales.</span>';
+   note.innerHTML='Sobrante: '+nf(gross)+' kg − tuco '+tare.toFixed(3)+' kg = <strong>'+(net>=0?nf(net)+' kg de papel':'revisa el peso ingresado')+'</strong><span>Tara automática según material y ancho. No se descuenta cartón de los kg iniciales netos.</span>';
   }else{
    // Otros materiales conservan la captura manual hasta disponer de una referencia.
    if(!note.querySelector('input'))note.innerHTML=field('Tuco vacío (kg)',roll.coreTare??'','type="number" min="0" step="any" data-roll="'+index+'" data-field="coreTare" placeholder="Tara para otro material"')+'<span>Para este material aún no hay un factor de tara. Ingresa el peso del tuco vacío.</span>';
@@ -949,7 +949,7 @@ function redraw(){
   +field('Libros · corrida',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')
   +field('Paradas',o.stops??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="stops"')
   +'</div></fieldset></div></div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row"><div class="multi-row-head"><strong>Bobina '+(i+1)+(i===0?' · Primera en uso':'')+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+'<label>Nombre de bobina<select data-roll="'+i+'" data-field="id"><option value="Bobina '+(i+1)+'">Bobina '+(i+1)+'</option></select></label>'+field('Kg iniciales',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Lonjas (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0" title="Peso de las lonjas y del papel separado al inicio o durante el trabajo, sin contar el sobrante junto al tuco."')+field('Sobrante de tuco (kg)',o.coreGross??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="coreGross" placeholder="0" title="Peso del papel que queda junto al tuco, incluyendo el tubo de cartón."')+'</div><p class="removal-help">Lonjas: lonjas y papel separado al inicio o durante el trabajo. No incluyas aquí el sobrante del tuco.</p>'+problemControls(o,i)+coreTareControls(o,i)+'</div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row" role="group" aria-labelledby="roll-title-'+i+'"><div class="multi-row-head"><strong id="roll-title-'+i+'">'+escapeHtml(o.id)+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+field('Número de lote',o.lot,'data-roll="'+i+'" data-field="lot" maxlength="60" autocomplete="off" placeholder="Ej.: 000123-A" required')+field('Kg iniciales netos',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Lonjas (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0" title="Peso de las lonjas y del papel separado al inicio o durante el trabajo, sin contar el sobrante junto al tuco."')+field('Sobrante de bobina (papel + tuco) (kg)',o.coreGross??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="coreGross" placeholder="0" title="Peso del papel que queda junto al tuco, incluyendo el tubo de cartón."')+'</div><p class="removal-help">Lonjas: lonjas y papel separado al inicio o durante el trabajo. No incluyas aquí el sobrante de bobina.</p>'+problemControls(o,i)+coreTareControls(o,i)+'</div>').join('');
  refreshCoreTareNotes();renderRollUsage(result);
 }
 root.addEventListener('input',e=>{
@@ -1023,46 +1023,75 @@ root.addEventListener('click',e=>{
  if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
 });
 $('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'});markDirty();redraw();scheduleAuto();});
-$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),kg:'',width:selectedWidth(),scrap:'0',coreGross:'0',coreTare:''});markDirty();redraw();scheduleAuto();});
-const WIDTH_CATALOG_KEY='cimagraf-widths-v1';
-function sortedWidths(values){return [...new Set([480,640,660,...(Array.isArray(values)?values:[])].map(v=>typeof v==='number'||typeof v==='string'?Number(v):NaN).filter(v=>Number.isFinite(v)&&v>0))].sort((a,b)=>a-b);}
-function readWidthCatalog(){try{return sortedWidths(JSON.parse(localStorage.getItem(WIDTH_CATALOG_KEY)||'[]'));}catch(_){return sortedWidths([]);}}
-let widthCatalog=readWidthCatalog();
-function renderWidthOptions(preferred=''){
- const select=$('multi-width'),value=String(preferred);
- const extra=Number(value)>0&&Number.isFinite(Number(value))?[Number(value)]:[];
- select.replaceChildren();select.add(new Option('Seleccionar',''));
- for(const width of sortedWidths([...widthCatalog,...extra]))select.add(new Option(String(width),String(width)));
- if(value==='__mixed__')select.add(new Option('Varios (anterior)','__mixed__'));
+$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),lot:'',kg:'',width:selectedWidth(),scrap:'0',coreGross:'0',coreTare:''});markDirty();redraw();scheduleAuto();});
+const WIDTH_CATALOG_KEY='cimagraf-widths-v2';
+const MACHINE_WIDTHS={
+ 'kirin-1c':{name:'Kirin 1C',defaults:[480,640,660]},
+ 'kirin-4c':{name:'Kirin 4C',defaults:[469]}
+};
+let widthMachine='';
+const customWidths=new Map();
+function sortedWidths(values){return [...new Set((Array.isArray(values)?values:[]).map(v=>typeof v==='number'||typeof v==='string'?Number(v):NaN).filter(v=>Number.isFinite(v)&&v>0))].sort((a,b)=>a-b);}
+function widthStorageKey(){return WIDTH_CATALOG_KEY+':'+widthMachine;}
+function readCustomWidths(){
+ if(!customWidths.has(widthMachine)){
+  let widths=[];
+  try{widths=sortedWidths(JSON.parse(localStorage.getItem(widthStorageKey())||'[]'));}catch(_){}
+  customWidths.set(widthMachine,widths);
+ }
+ return customWidths.get(widthMachine);
+}
+function availableWidths(){
+ const machine=MACHINE_WIDTHS[widthMachine];
+ return machine?sortedWidths([...machine.defaults,...readCustomWidths()]):[];
+}
+function renderWidthOptions(preferred='',restoring=false){
+ const select=$('multi-width'),value=String(preferred),machine=MACHINE_WIDTHS[widthMachine];
+ const extra=restoring&&Number(value)>0&&Number.isFinite(Number(value))?[Number(value)]:[];
+ select.replaceChildren();select.add(new Option(machine?'Seleccionar':'Selecciona la máquina',''));
+ for(const width of sortedWidths([...availableWidths(),...extra]))select.add(new Option(String(width),String(width)));
+ if(restoring&&value==='__mixed__')select.add(new Option('Varios (anterior)','__mixed__'));
  select.value=[...select.options].some(o=>o.value===value)?value:'';
- $('width-legacy-note').hidden=value!=='__mixed__';
+ select.disabled=!machine;$('multi-add-width').disabled=!machine;
+ $('width-machine-note').textContent=machine?'Anchos de '+machine.name+'. El papel, gramaje y ancho se aplican a todas las bobinas del grupo.':'Selecciona la máquina para ver sus anchos.';
+ $('width-legacy-note').hidden=select.value!=='__mixed__';
+}
+function syncWidthMachine(machineKey){
+ const next=Object.hasOwn(MACHINE_WIDTHS,machineKey)?machineKey:'';
+ if(next===widthMachine)return;
+ widthMachine=next;
+ for(const roll of rolls)roll.width='';
+ renderWidthOptions();closeWidthForm();
 }
 function selectedWidth(){const value=Number($('multi-width').value);return Number.isFinite(value)&&value>0?String(value):'';}
 function applyCommonWidth(value){
- const width=Number(value);if(!Number.isFinite(width)||width<=0)return false;
+ const width=Number(value);if(!availableWidths().includes(width))return false;
  for(const roll of rolls)roll.width=String(width);
  renderWidthOptions(String(width));markDirty();redraw();scheduleAuto();return true;
 }
 function restoreWidthSelection(){
  const widths=[...new Set(rolls.map(r=>Number(r.width)).filter(v=>Number.isFinite(v)&&v>0))];
- renderWidthOptions(widths.length>1?'__mixed__':widths.length===1&&rolls.every(r=>Number(r.width)>0)?String(widths[0]):'');
+ renderWidthOptions(widths.length>1?'__mixed__':widths.length===1&&rolls.every(r=>Number(r.width)>0)?String(widths[0]):'',true);
 }
 function closeWidthForm(){
  $('width-form').hidden=true;$('multi-add-width').setAttribute('aria-expanded','false');$('width-new').value='';$('width-error').hidden=true;
 }
 $('multi-width').addEventListener('change',()=>{
+ if(!widthMachine||$('multi-width').value==='__mixed__')return;
  if(!applyCommonWidth($('multi-width').value)){for(const roll of rolls)roll.width='';renderWidthOptions('');markDirty();redraw();scheduleAuto();}
 });
 $('multi-add-width').addEventListener('click',()=>{
+ if(!widthMachine)return;
  const open=$('width-form').hidden;$('width-form').hidden=!open;$('multi-add-width').setAttribute('aria-expanded',String(open));
  if(open){$('width-error').hidden=true;$('width-new').focus();}
 });
 $('width-cancel').addEventListener('click',()=>{closeWidthForm();$('multi-add-width').focus();});
 $('width-form').addEventListener('submit',event=>{
- event.preventDefault();const value=Number($('width-new').value);
+ event.preventDefault();if(!widthMachine)return;
+ const value=Number($('width-new').value);
  if($('width-new').validity.badInput||!Number.isFinite(value)||value<=0){$('width-error').textContent='Ingresa un ancho mayor que cero.';$('width-error').hidden=false;$('width-new').focus();return;}
- widthCatalog=sortedWidths([...widthCatalog,value]);let remembered=true;
- try{localStorage.setItem(WIDTH_CATALOG_KEY,JSON.stringify(widthCatalog));}catch(_){remembered=false;}
+ const added=sortedWidths([...readCustomWidths(),value]);customWidths.set(widthMachine,added);let remembered=true;
+ try{localStorage.setItem(widthStorageKey(),JSON.stringify(added));}catch(_){remembered=false;}
  applyCommonWidth(value);closeWidthForm();$('multi-width').focus();
  if(!remembered){$('width-error').textContent='Ancho aplicado. El navegador no pudo guardarlo para la próxima visita.';$('width-error').hidden=false;$('width-form').hidden=false;$('multi-add-width').setAttribute('aria-expanded','true');}
 });
@@ -1080,7 +1109,7 @@ function bobbinRemoval(r,allowUnknown=false){
  const retired=(r.scrap??'')===''?0:numeric(r.scrap);
  const gross=(r.coreGross??'')===''?0:numeric(r.coreGross);
  if(!Number.isFinite(retired)||retired<0)throw Error('El peso de lonjas de '+r.id+' debe ser mayor o igual a 0 kg.');
- if(!Number.isFinite(gross)||gross<0)throw Error('El sobrante de tuco de '+r.id+' debe ser mayor o igual a 0 kg.');
+ if(!Number.isFinite(gross)||gross<0)throw Error('El sobrante de bobina (papel + tuco) de '+r.id+' debe ser mayor o igual a 0 kg.');
  const automaticTare=coreTareFor($('multi-paper').value,r.width);
  const rawTare=automaticTare??(r.coreTare??'');
  if(gross>0&&rawTare===''){
@@ -1088,7 +1117,7 @@ function bobbinRemoval(r,allowUnknown=false){
   throw Error('Saldo pendiente en '+r.id+': el sobrante incluye cartón. Falta el peso del tuco vacío para calcular el papel real.');
  }
  const tare=gross>0?numeric(rawTare):0;
- if(!Number.isFinite(tare)||tare<0||tare>gross)throw Error('El sobrante con tuco de '+r.id+' debe ser igual o mayor que el peso del tuco vacío ('+Number(tare).toFixed(3)+' kg).');
+ if(!Number.isFinite(tare)||tare<0||tare>gross)throw Error('El sobrante de bobina (papel + tuco) de '+r.id+' debe ser igual o mayor que el peso del tuco vacío ('+Number(tare).toFixed(3)+' kg).');
  const corePaper=gross-tare;
  return {retired,gross,tare,corePaper,total:retired+corePaper,pending:false};
 }
@@ -1102,7 +1131,7 @@ function validate(machineKey=''){
   const kg=numeric(r.kg),width=numeric(r.width);
   const removal=bobbinRemoval(r),scrap=removal.total;
   if(Number.isFinite(kg)&&scrap>kg)throw Error('Las lonjas y el sobrante de papel de '+r.id+' no pueden superar el peso inicial.');
-  if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa los kg iniciales de todas las bobinas.');
+  if(!r.id||!Number.isFinite(kg)||kg<=0)throw Error('Completa los kg iniciales netos de todas las bobinas.');
   if(!Number.isFinite(width)||width<=0)throw Error('Indica un ancho en mm válido para '+r.id+'.');
   if(/[~^|,:\r\n]/.test(r.id))throw Error('Los identificadores de bobina no pueden contener separadores especiales.');
   if(rollIds.has(r.id.toLocaleLowerCase()))throw Error('Cada bobina debe tener un identificador único.');
@@ -1121,7 +1150,7 @@ function validate(machineKey=''){
  }
  const loads=rolls.map(r=>{
   const width=numeric(r.width),initial=numeric(r.kg),removal=bobbinRemoval(r),scrap=removal.total;
-  return {id:r.id,width,rate:width*gsm/1000000,initial,scrap,retired:removal.retired,problems:[...(r.problems||[])],areas:[...(r.areas||[])],coreGross:removal.gross,coreTare:removal.tare,corePaper:removal.corePaper,left:initial-scrap,used:0,usedMeters:0,productiveKg:0,processKg:0};
+  return {id:r.id,lot:String(r.lot??'').trim(),width,rate:width*gsm/1000000,initial,scrap,retired:removal.retired,problems:[...(r.problems||[])],areas:[...(r.areas||[])],coreGross:removal.gross,coreTare:removal.tare,corePaper:removal.corePaper,left:initial-scrap,used:0,usedMeters:0,productiveKg:0,processKg:0};
  });
  const details=[],sums=[],tol=1e-9;
  // Una unidad por OP; las unidades de bobinas que exceden las OP se asignan a la última OP.
@@ -1220,7 +1249,7 @@ function show(){
   $('multi-process-note').textContent='Pase en blanco: '+r.whitePassMeters+' m para set up, calibración y paradas. Empalmes: '+r.spliceCount+' × 20 m = '+nf(r.spliceMeters)+' m. Se toma la mayor cantidad entre OP y bobinas registradas; el exceso sobre las OP se asigna a la última OP.';
   $('multi-total').textContent=nf(r.total)+' kg';$('multi-saldo').textContent=nf(r.saldo)+' kg';$('multi-active').textContent=r.usedRolls.at(-1)?.id||'—';
   $('multi-ops-table').innerHTML=table(['OP','Producción (m)','Set up (m)','Calibración (m)','Paradas (m)','Empalmes (m)','Total (kg)'],r.sums.map(x=>[x.op,nf(x.productionMeters),nf(x.setupMeters),nf(x.calibrationMeters),nf(x.stopMeters),nf(x.spliceMeters),nf(x.kg)]));
-  $('multi-rolls-table').innerHTML=table(['Bobina','Ancho (mm)','Kg iniciales','Lonjas (kg)','Sobrante con tuco (kg)','Tuco vacío (kg)','Sobrante de papel (kg)','Producción (kg)','Proceso (kg)','Devolver (kg)','Estado'],r.loads.map(x=>[x.id,nf(x.width),nf(x.initial),nf(x.retired),nf(x.coreGross),nf(x.coreTare),nf(x.corePaper),nf(x.productiveKg),nf(x.processKg),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':'Con saldo']));
+  $('multi-rolls-table').innerHTML=table(['Bobina','Número de lote','Ancho (mm)','Kg iniciales netos','Lonjas (kg)','Sobrante de bobina (papel + tuco) (kg)','Tuco vacío (kg)','Sobrante de papel (kg)','Producción (kg)','Proceso (kg)','Devolver (kg)','Estado'],r.loads.map(x=>[x.id,x.lot||'—',nf(x.width),nf(x.initial),nf(x.retired),nf(x.coreGross),nf(x.coreTare),nf(x.corePaper),nf(x.productiveKg),nf(x.processKg),x.used<=EPS&&x.scrap<=EPS?'No usada':nf(x.left),x.used<=EPS&&x.scrap<=EPS?'No utilizada':x.left<=EPS?'Agotada':'Con saldo']));
   $('multi-trace-table').innerHTML=table(['Secuencia','OP','Bobina','Ancho (mm)','Producción (kg)','Proceso (kg)','Metros totales','Saldo después (kg)'],r.details.map(x=>[x.seq,x.op,x.bobina,nf(x.ancho),nf(x.productiveKg),nf(x.processKg),nf(x.metros),nf(x.saldo)]));
   nextOpIndex=0;confirmedOps.clear();pendingOpIndex=-1;
   refreshOpQueue();
@@ -1264,7 +1293,11 @@ function buildPrintSummary(r,stamp){
    opening=Number(move.saldo);first=false;
   }
  }
- const finalRows=r.usedRolls.map(b=>[b.id,b.left<=1e-9?'Agotada':'Con saldo',nf(b.left)]);
+ const usedIds=new Set(r.usedRolls.map(b=>b.id));
+ const finalRows=(r.loads??r.usedRolls).map(b=>{
+  const used=usedIds.has(b.id);
+  return [b.id,b.lot||'—',!used?'No utilizada':b.left<=1e-9?'Agotada':'Con saldo',used?nf(b.left):'—'];
+ });
  const widths=[...new Set(r.usedRolls.map(b=>b.width))];
  const widthLabel=widths.length===1?nf(widths[0])+' mm':'Varios anchos';
  const widthDetail=widths.length>1?'<p class="print-width-detail">'+r.usedRolls.map(b=>escapeHtml(b.id)+': <strong>'+nf(b.width)+' mm</strong>').join(' · ')+'</p>':'';
@@ -1273,12 +1306,13 @@ function buildPrintSummary(r,stamp){
   +'<div class="print-meta"><strong>'+ (r.machine?'Máquina: '+escapeHtml(r.machine)+' · ':'')+'Registro: '+escapeHtml(r.recordId||r.group||'Sin identificador')+'</strong></div>'
   +'<h2>Consumo por OP y bobina · kg</h2><section class="print-flow">'+table(['OP','Bobina','Inicio','Consumo','Descuentos','Saldo'],rows)+'</section>'
   +'<p class="print-note">Inicio − consumo − descuentos = saldo. Consumo corresponde a la corrida; descuentos incluyen proceso, lonjas y sobrante neto. La siguiente OP continúa con el saldo de esa bobina.</p>'
-  +'<h2>Devolver por bobina · kg</h2>'+table(['Bobina','Estado','Saldo final'],finalRows)
+  +'<h2>Bobinas y devolución · kg</h2><section class="print-bobbin-lots">'+table(['Bobina','Número de lote','Estado','Saldo a devolver'],finalRows)+'</section>'
   +'<div class="print-total">TOTAL A ENTREGAR AL ALMACÉN <strong>'+nf(r.saldo)+' kg</strong></div>'
   +'<p class="print-note">Pesos netos de papel, sin cartón. Lonjas y sobrante se descuentan una sola vez por bobina. Solo se suman los saldos finales para la devolución.</p>';
 }
+function missingRollLot(r){return r.loads.find(b=>!b.lot);}
 function preparePrintSummary(){
- if(!result)return false;
+ if(!result||missingRollLot(result))return false;
  const stamp=new Date().toLocaleString('es-PE',{timeZone:'America/Lima',dateStyle:'short',timeStyle:'short'});
  $('print-summary').innerHTML=buildPrintSummary(result,stamp);
  document.body.classList.add('printing-summary');return true;
@@ -1339,9 +1373,11 @@ function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros set up','Libros corrida','Copias / libro','Calibración','Paradas','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.setupBooks??0,o.books,o.copies,o.calibration?'Sí':'No',o.stops??0,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  $('multi-summary-status').textContent=result.group?'Grupo '+result.group+' calculado. Listo para enviar.':'Cálculo correcto. Asigna la máquina de esta PC para generar el ID.';
+ const missingLot=missingRollLot(result);
+ if(missingLot)$('multi-summary-status').textContent='Ingresa el número de lote de '+missingLot.id+' para imprimir o enviar.';
  if(!withdrawalFieldsConnected())$('multi-summary-status').textContent+=' Lonjas, sobrante, motivos y áreas: conexión pendiente con las preguntas nuevas de Forms.';
- $('multi-register').disabled=!result.group||!!(window.CimagrafProduction&&!window.CimagrafProduction.ready());
- $('multi-print').disabled=false;
+ $('multi-register').disabled=!!missingLot||!result.group||!!(window.CimagrafProduction&&!window.CimagrafProduction.ready());
+ $('multi-print').disabled=!!missingLot;
  $('multi-register').textContent='Enviar a Forms';
 }
 function withdrawalFormAnswers(r){
@@ -1365,7 +1401,7 @@ $('forms-back').addEventListener('click',()=>{$('forms-instructions').textConten
 function resetMultiAfterConfirmation(){
  $('multi-calculation-details').open=false;
  ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}];
- rolls=[{id:'Bobina 1',kg:'',width:'',scrap:'0',coreGross:'0',coreTare:''}];
+ rolls=[{id:'Bobina 1',lot:'',kg:'',width:'',scrap:'0',coreGross:'0',coreTare:''}];
  renderWidthOptions('');closeWidthForm();
  $('multi-group').value='';
  $('multi-paper').selectedIndex=0;
@@ -1407,6 +1443,7 @@ $('forms-inline-toggle').addEventListener('click',()=>{
 });
 function prepareGroupForms({preview=false}={}){
  if(!result){show();if(!result)return;}
+ if(missingRollLot(result))return;
  if(!result.group){$('multi-error').textContent='Ingresa el identificador del grupo antes de enviar a Forms.';$('multi-error').hidden=false;$('multi-group').focus();return;}
  if($('forms-modal').classList.contains('open'))return;
  const first=result.sourceOps[0];
@@ -1484,11 +1521,18 @@ updateCatalog();
 renderWidthOptions('');
 redraw();mode(true);scheduleAuto();
 window.CimagrafArchive={
- refresh:()=>{markDirty();scheduleAuto();},
+ refresh:()=>{syncWidthMachine(window.CimagrafProduction?.metadata().machineKey);markDirty();scheduleAuto();},
  preflight:()=>{show();return !!result&&prepareGroupForms({preview:true})===true;},
  reportHTML:(r,created)=>buildPrintSummary(r,new Date(created).toLocaleString('es-PE',{timeZone:'America/Lima',dateStyle:'short',timeStyle:'short'})),
  snapshot:()=>JSON.parse(JSON.stringify({result,ops,rolls,formsUrl:$('forms-external').href,group:$('multi-group').value,paper:$('multi-paper').value,gsm:$('multi-gsm').value,width:$('multi-width').value})),
- restore:s=>{restoredIdentity=s.result?.machine?{machine:s.result.machine,machineKey:s.result.machineKey,runMode:s.result.runMode,recordId:s.result.recordId}:null;ops=JSON.parse(JSON.stringify(s.ops)).map(o=>({...o,setupBooks:o.setupBooks??(o.setupCopies!==undefined?'':0)}));rolls=JSON.parse(JSON.stringify(s.rolls));restoreWidthSelection();$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();},
+ restore:s=>{
+  restoredIdentity=s.result?.machine?{machine:s.result.machine,machineKey:s.result.machineKey,runMode:s.result.runMode,recordId:s.result.recordId}:null;
+  ops=JSON.parse(JSON.stringify(s.ops)).map(o=>({...o,setupBooks:o.setupBooks??(o.setupCopies!==undefined?'':0)}));
+  rolls=JSON.parse(JSON.stringify(s.rolls));
+  const machineKey=restoredIdentity?.machineKey||window.CimagrafProduction?.metadata().machineKey;
+  widthMachine=Object.hasOwn(MACHINE_WIDTHS,machineKey)?machineKey:'';
+  restoreWidthSelection();$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();
+ },
  resume:s=>{
   if(!s.formsUrl)return;
   const url=new URL(s.formsUrl);if(url.origin!=='https://forms.cloud.microsoft')return;

@@ -5,6 +5,7 @@ const defs=html.slice(html.indexOf('const GROUP_FORM_KEYS ='),html.indexOf('cons
 const format=html.slice(html.indexOf('function fmt(n)'),html.indexOf('function perOpData('));
 const packets=html.slice(html.indexOf('function withdrawalFormAnswers('),html.indexOf('const originalFormsInstructions='));
 const prepare=html.slice(html.indexOf('function prepareGroupForms('),html.indexOf('// Catálogo de materiales compartido'));
+const lotCheck=html.slice(html.indexOf('function missingRollLot('),html.indexOf('function preparePrintSummary('));
 const engine=html.slice(html.indexOf('function coreTareFor('),html.indexOf('function table(',html.indexOf('function coreTareFor(')));
 const show=html.slice(html.indexOf('function show(){',html.indexOf('function renderRollUsage(')),html.indexOf('function buildPrintSummary('));
 for(const machine of ['Kirin 1C','Kirin 4C'])for(const mode of ['test','production']){
@@ -13,11 +14,11 @@ for(const machine of ['Kirin 1C','Kirin 4C'])for(const mode of ['test','producti
  const id=(mode==='test'?'PRUEBA · ':'')+machine.toUpperCase()+' - 01';
  const metadata={machine,machineKey:machine==='Kirin 4C'?'kirin-4c':'kirin-1c',runMode:mode,recordId:id};
  el('multi-group').value=id;
- const c={window:{CimagrafProduction:{metadata:()=>metadata}},URL,nf,numeric:Number,EPS:1e-8,result:null,confirmedOps:new Set(),table(){return '';},renderRollUsage(){},refreshOpQueue(){},ops:[{id:'OP-DE-PRUEBA',books:1000,copies:20,advance:240,setupBooks:1,calibration:true,stops:1}],rolls:[{id:'Bobina 1',kg:400,width:480,scrap:0,coreGross:0,coreTare:0}],$:el,document:{body:{classList:{add(){}}}}};
+ const c={window:{CimagrafProduction:{metadata:()=>metadata}},URL,nf,numeric:Number,EPS:1e-8,result:null,confirmedOps:new Set(),table(){return '';},renderRollUsage(){},refreshOpQueue(){},ops:[{id:'OP-DE-PRUEBA',books:1000,copies:20,advance:240,setupBooks:1,calibration:true,stops:1}],rolls:[{id:'Bobina 1',lot:'000123-A',kg:400,width:480,scrap:0,coreGross:0,coreTare:0}],$:el,document:{body:{classList:{add(){}}}}};
  vm.createContext(c);vm.runInContext(config+engine+show+';show();',c);
  assert.equal(c.result.machineKey,metadata.machineKey);
  assert.equal(c.result.sums[0].calibrationMeters,machine==='Kirin 4C'?19:26);
- vm.runInContext(defs+format+packets+prepare+';prepareGroupForms();',c);
+ vm.runInContext(defs+format+packets+lotCheck+prepare+";const firstLot=result.loads[0].lot; result.loads[0].lot=''; if(prepareGroupForms({preview:true}))throw Error('El lote es obligatorio'); result.loads[0].lot=firstLot; prepareGroupForms();",c);
  const external=new URL(el('forms-external').href),embedded=new URL(el('forms-frame').src);
  assert.equal(external.searchParams.get('rf61ceca70fda4a82ab4b2ec79e62e708'),machine);
  assert.equal(external.searchParams.get('r170d3c85f72f4039b76d820bf026821b'),id);

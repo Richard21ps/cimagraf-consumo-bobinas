@@ -44,8 +44,10 @@ document.getElementById('reload').onclick=load;
 document.getElementById('new-pc').onclick=()=>{window.localMemory=memory();window.sessionMemory=memory();load();};
 document.getElementById('seed').onclick=()=>{
  const d=app.contentDocument;
- const width=d.getElementById('multi-width');width.value='480';width.dispatchEvent(new app.contentWindow.Event('change',{bubbles:true}));
- const fields={'[data-op="0"][data-field="id"]':'OP-PRUEBA','[data-op="0"][data-field="books"]':'1000','[data-op="0"][data-field="copies"]':'20','[data-op="0"][data-field="advance"]':'240','[data-roll="0"][data-field="kg"]':'400'};
+ const select=d.getElementById('machine-select');
+ if(!select.value){select.value='kirin-1c';select.dispatchEvent(new app.contentWindow.Event('change',{bubbles:true}));}
+ const width=d.getElementById('multi-width');width.value=select.value==='kirin-4c'?'469':'480';width.dispatchEvent(new app.contentWindow.Event('change',{bubbles:true}));
+ const fields={'[data-op="0"][data-field="id"]':'OP-PRUEBA','[data-op="0"][data-field="books"]':'1000','[data-op="0"][data-field="copies"]':'20','[data-op="0"][data-field="advance"]':'240','[data-roll="0"][data-field="lot"]':'000123-A','[data-roll="0"][data-field="kg"]':'400'};
  for(const [selector,value]of Object.entries(fields)){const el=d.querySelector(selector);el.value=value;el.dispatchEvent(new app.contentWindow.Event('input',{bubbles:true}));}
 };
 fetch('../index.html',{cache:'no-store'}).then(r=>r.text()).then(html=>{
