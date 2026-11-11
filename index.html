@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=4.20.0">
+<link rel="stylesheet" href="compact-v40.css?v=4.20.1">
 <link rel="stylesheet" href="report-summary.css?v=4.20.0">
 <link rel="stylesheet" href="production.css?v=4.16.1">
 <script src="machine-form.js?v=4.16.2"></script>
@@ -349,7 +349,7 @@
     </div>
 
     <section class="multi-workspace" id="multi-root" hidden aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.20.0</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 4.20.1</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -366,10 +366,10 @@
         <h3>1 · Datos del material y grupo</h3>
         <div class="multi-grid material-grid">
           <label>ID de registro<input id="multi-group" placeholder="Se genera al asignar la máquina" maxlength="60" readonly></label>
-          <div><label for="multi-paper">Tipo de papel</label><div class="multi-paper-picker"><select id="multi-paper"></select><button class="add-material" id="multi-add-material" type="button">+ Agregar</button></div></div>
+          <div><label for="multi-paper">Tipo de papel</label><div class="multi-paper-picker"><select id="multi-paper"></select><button class="add-material" id="multi-add-material" type="button" aria-label="Editar papeles y gramajes">Editar</button></div></div>
           <label>Gramaje (g/m²)<select id="multi-gsm"></select></label>
-          <div class="material-width-entry"><label for="multi-width">Ancho (mm)</label><div class="multi-width-picker"><select id="multi-width" aria-describedby="width-machine-note" disabled></select><button class="add-material" id="multi-add-width" type="button" disabled aria-expanded="false" aria-controls="width-form">+ Agregar</button></div>
-            <form id="width-form" class="width-add-panel" hidden novalidate><label for="width-new">Nuevo ancho (mm)</label><input id="width-new" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej.: 700"><div><button class="multi-button" type="submit">Guardar</button><button class="multi-button" id="width-cancel" type="button">Cancelar</button></div><p id="width-error" role="alert" hidden></p></form>
+          <div class="material-width-entry"><label for="multi-width">Ancho (mm)</label><div class="multi-width-picker"><select id="multi-width" aria-describedby="width-machine-note" disabled></select><button class="add-material" id="multi-add-width" type="button" disabled aria-label="Editar anchos" aria-expanded="false" aria-controls="width-form">Editar</button></div>
+            <form id="width-form" class="width-add-panel" hidden novalidate><label for="width-new">Nuevo ancho (mm)</label><input id="width-new" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej.: 700"><div><button class="multi-button" type="submit">Guardar</button><button class="multi-button" id="width-cancel" type="button">Cancelar</button></div><p id="width-error" role="status" hidden></p><section class="catalog-manager" aria-label="Anchos agregados"><h4>Anchos agregados</h4><ul class="catalog-list" id="width-custom-list"></ul></section></form>
           </div>
         </div>
         <p class="multi-muted" id="width-machine-note">Selecciona la máquina para ver sus anchos.</p>
@@ -425,7 +425,7 @@
 
   <div class="modal-backdrop" id="material-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <form class="modal" id="material-form">
-      <h2 id="modal-title">Agregar papel o gramaje</h2>
+      <h2 id="modal-title">Papeles y gramajes</h2>
       <div class="field">
         <label for="new-name">Tipo de papel (existente o nuevo)</label>
         <input id="new-name" type="text" maxlength="40" placeholder="Ej.: Book Cream o Couche" list="material-name-suggestions" required>
@@ -438,9 +438,10 @@
       </div>
       <p class="error" id="material-error" role="alert"></p>
       <div class="modal-actions">
-        <button class="reset" id="cancel-material" type="button">Cancelar</button>
-        <button class="save-material" type="submit">Guardar papel / gramaje</button>
+        <button class="reset" id="cancel-material" type="button">Cerrar</button>
+        <button class="save-material" type="submit">Agregar papel / gramaje</button>
       </div>
+      <section class="catalog-manager" aria-label="Papeles y gramajes agregados"><h3>Papeles y gramajes agregados</h3><ul class="catalog-list" id="material-custom-list"></ul><p class="hint" id="material-catalog-status" role="status"></p></section>
     </form>
   </div>
 
@@ -513,6 +514,9 @@
       ];
       const formsBaseUrl = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
       let materials = loadMaterials();
+      let materialLauncher = document.getElementById('open-material');
+      const customMaterialList = document.getElementById('material-custom-list');
+      const catalogStatus = document.getElementById('material-catalog-status');
 
       function cleanMaterialName(name) {
         const cleaned = String(name || '').trim().replace(/\s+/g, ' ');
@@ -542,7 +546,7 @@
         try { localStorage.setItem(materialsKey, JSON.stringify(unique)); } catch (_) {}
         return unique;
       }
-      function saveMaterials() { try { localStorage.setItem(materialsKey, JSON.stringify(materials)); } catch (_) {} }
+      function saveMaterials() { try { localStorage.setItem(materialsKey, JSON.stringify(materials)); return true; } catch (_) { return false; } }
       function formatNumber(value, maxDigits = 2) { return new Intl.NumberFormat('es-PE', { maximumFractionDigits: maxDigits }).format(value); }
       function numberText(value, maxDigits = 3) {
         return Number.isFinite(value) ? String(Number(value.toFixed(maxDigits))) : '';
@@ -762,9 +766,39 @@
         saveStatus.textContent = 'Calculadora lista para una nueva OP. El envío debe haberse confirmado en Microsoft Forms.';
         window.scrollTo({ top: 0, behavior: 'instant' });
       });
-      function closeModal() { modal.classList.remove('open'); error.textContent = ''; materialForm.reset(); document.getElementById('open-material').focus(); }
-      document.getElementById('open-material').addEventListener('click', () => {
-        // Facilita registrar un segundo gramaje para el mismo papel.
+      function isDefaultMaterial(entry) {
+        return defaultMaterials.some(item => sameMaterialName(item.name, entry.name) && item.gsm === entry.gsm);
+      }
+      function renderCustomMaterials() {
+        customMaterialList.replaceChildren();
+        const added = materials.filter(entry => !isDefaultMaterial(entry)).sort((a,b) => a.name.localeCompare(b.name,'es') || a.gsm-b.gsm);
+        if (!added.length) {
+          const row = document.createElement('li'); row.textContent = 'Aún no hay opciones agregadas.'; customMaterialList.append(row);
+        }
+        for (const entry of added) {
+          const row = document.createElement('li'), label = document.createElement('span'), button = document.createElement('button');
+          label.textContent = entry.name + ' · ' + entry.gsm + ' g/m²';
+          button.type = 'button'; button.className = 'catalog-remove'; button.textContent = 'Eliminar';
+          button.setAttribute('aria-label','Eliminar ' + label.textContent);
+          button.addEventListener('click', () => {
+            const selectedName = materialSelect.value, selectedGsm = gsmSelect.value;
+            materials = materials.filter(item => item !== entry);
+            const saved = saveMaterials();
+            renderMaterials(selectedName,selectedGsm);
+            renderCustomMaterials();
+            catalogStatus.textContent = saved ? 'Opción eliminada del catálogo.' : 'Opción eliminada en esta sesión.';
+            (customMaterialList.querySelector('button') || document.getElementById('cancel-material')).focus();
+            notifyMaterials();
+          });
+          row.append(label,button); customMaterialList.append(row);
+        }
+      }
+      function notifyMaterials(added) {
+        document.dispatchEvent(new CustomEvent('cimagraf-materials-changed',{detail:added}));
+      }
+      function closeModal() { modal.classList.remove('open'); error.textContent = ''; materialForm.reset(); materialLauncher.focus(); }
+      function openMaterialCatalog(launcher, selectedName) {
+        materialLauncher = launcher;
         materialForm.reset();
         materialNameSuggestions.replaceChildren();
         for (const option of materialSelect.options) {
@@ -772,11 +806,14 @@
           suggestion.value = option.value;
           materialNameSuggestions.append(suggestion);
         }
-        document.getElementById('new-name').value = materialSelect.value;
+        document.getElementById('new-name').value = selectedName;
+        renderCustomMaterials();catalogStatus.textContent = '';
         modal.classList.add('open');
         error.textContent = '';
         document.getElementById('new-gsm').focus();
-      });
+      }
+      window.CimagrafMaterials = {entries:() => materials.slice(), open:openMaterialCatalog};
+      document.getElementById('open-material').addEventListener('click', event => openMaterialCatalog(event.currentTarget,materialSelect.value));
       document.getElementById('cancel-material').addEventListener('click', closeModal);
       modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
       document.addEventListener('keydown', event => { if (event.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
@@ -797,6 +834,7 @@
         materials.push({ name, gsm });
         saveMaterials();
         renderMaterials(name, gsm);
+        notifyMaterials(materialLauncher.id === 'multi-add-material' ? {name,gsm} : undefined);
         closeModal();
       });
       renderMaterials('Book Cream', 70);
@@ -829,7 +867,7 @@ if(!root||!simple||!complex||!layout)return;
  const GROUP_DETAIL_QUESTION_KEY = 'r5fe334ce1fbe4cd9b5cc674705401176';
  const GROUP_FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=NYKlfsjfgUKI1Oh9KVHCD2myxk9SFvpOhWyvpquzgRBURDhPME1DTE1JU01MTUNKRDROQUQwTzBUMC4u';
  const EPS=1e-8;
-let ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}], rolls=[{id:'Bobina 1',lot:'',kg:'',width:'',scrap:'0',coreGross:'0',coreTare:''}], result=null;
+let ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}], rolls=[blankRoll()], result=null;
 let nextOpIndex=0, confirmedOps=new Set(), pendingOpIndex=-1;
 let restoredIdentity=null;
 const nf=x=>new Intl.NumberFormat('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1}).format(x);
@@ -874,8 +912,9 @@ function assignProblem(roll,name){
  roll.problemsOpen=true;
 }
 const AREA_CATALOG_KEY='cimagraf-areas-papel-v1';
+const defaultAreas=['Almacén','Planta digital'];
 function loadAreaCatalog(){
- const areas=['Almacén','Planta digital'];
+ const areas=[...defaultAreas];
  try{const saved=JSON.parse(localStorage.getItem(AREA_CATALOG_KEY));if(Array.isArray(saved))for(const entry of saved){if(typeof entry!=='string')continue;const name=cleanProblem(entry);if(name&&!areas.some(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase()))areas.push(name);}}catch(_){}
  return areas;
 }
@@ -904,10 +943,15 @@ function reasonControls(roll,index){
   +'<button type="button" class="problem-new-button" data-problem-start="'+index+'"'+(adding?' hidden':'')+'>+ Agregar motivo</button></div>'
   +'<div class="reason-form problem-form"'+(adding?'':' hidden')+'><label>¿Qué pasó?<input data-problem-new="'+index+'" maxlength="80" placeholder="Escribe el motivo con tus palabras"></label><div class="problem-form-actions"><button type="button" class="problem-save-button" data-problem-add="'+index+'">Guardar motivo</button><button type="button" class="problem-cancel-button" data-problem-cancel="'+index+'">Cancelar</button></div></div><p class="reason-message problem-message" role="status"></p></section>';
 }
+function withdrawalCatalogControls(index){
+ const entries=[...problemCatalog.map(name=>['problem',name]),...areaCatalog.filter(name=>!defaultAreas.includes(name)).map(name=>['area',name])];
+ if(!entries.length)return '';
+ return '<details class="catalog-manager withdrawal-catalog"><summary>Administrar motivos y áreas agregados</summary><ul class="catalog-list">'+entries.map(([kind,name])=>'<li><span>'+escapeHtml(name)+(kind==='area'?' · Área':' · Motivo')+'</span><button type="button" class="catalog-remove" data-withdrawal-catalog="'+kind+'" data-catalog-roll="'+index+'" data-catalog-name="'+escapeHtml(name)+'" aria-label="Eliminar '+escapeHtml(name)+' del catálogo">Eliminar</button></li>').join('')+'</ul></details>';
+}
 function problemControls(roll,index){
  const selected=roll.problems||[],areas=roll.areas||[];
  const status=selected.length&&areas.length?'Datos completos':'Completar datos';
- return '<div class="roll-problems-wrap"'+(Number(roll.scrap)>0?'':' hidden')+'><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">Motivo y área de las lonjas</span><span class="problem-summary-action">'+status+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo a las lonjas, no al sobrante de bobina.</p><div class="withdrawal-fields">'+reasonControls(roll,index)+areaControls(roll,index)+'</div></div></details></div>';
+ return '<div class="roll-problems-wrap"'+(Number(roll.scrap)>0?'':' hidden')+'><details class="roll-problems" data-problems-roll="'+index+'"'+(roll.problemsOpen?' open':'')+'><summary><span class="problem-question">Motivo y área de las lonjas</span><span class="problem-summary-action">'+status+' ▾</span></summary><div class="problem-content"><p class="problem-note">Estos motivos corresponden solo a las lonjas, no al sobrante de bobina.</p><div class="withdrawal-fields">'+reasonControls(roll,index)+areaControls(roll,index)+'</div>'+withdrawalCatalogControls(index)+'</div></details></div>';
 }
 
 function syncWithdrawalControls(index){
@@ -936,6 +980,7 @@ function refreshCoreTareNotes(){
  });
 }
 
+function blankRoll(id='Bobina 1',width=''){return {id,lot:'',kg:'',width,scrap:'0',coreGross:'0',coreTare:''};}
 function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row op-process-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields op-process-groups"><div class="op-phase-group op-group-info"><h4 class="op-phase-title" id="op-phase-info-'+i+'">Datos de OP</h4><fieldset class="op-phase op-phase-info" aria-labelledby="op-phase-info-'+i+'"><div class="op-phase-fields">'
@@ -949,7 +994,7 @@ function redraw(){
   +field('Libros · corrida',o.books,'type="number" min="1" step="1" data-op="'+i+'" data-field="books"')
   +field('Paradas',o.stops??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="stops"')
   +'</div></fieldset></div></div></div>').join('');
- $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row" role="group" aria-labelledby="roll-title-'+i+'"><div class="multi-row-head"><strong id="roll-title-'+i+'">'+escapeHtml(o.id)+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button" '+(rolls.length===1?'disabled':'')+'>Quitar bobina</button></div><div class="multi-row-fields">'+field('Número de lote',o.lot,'data-roll="'+i+'" data-field="lot" maxlength="60" autocomplete="off" placeholder="Ej.: 000123-A" required')+field('Kg iniciales netos',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Lonjas (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0" title="Peso de las lonjas y del papel separado al inicio o durante el trabajo, sin contar el sobrante junto al tuco."')+field('Sobrante de bobina (papel + tuco) (kg)',o.coreGross??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="coreGross" placeholder="0" title="Peso del papel que queda junto al tuco, incluyendo el tubo de cartón."')+'</div><p class="removal-help">Lonjas: lonjas y papel separado al inicio o durante el trabajo. No incluyas aquí el sobrante de bobina.</p>'+problemControls(o,i)+coreTareControls(o,i)+'</div>').join('');
+ $('multi-roll-list').innerHTML=rolls.map((o,i)=>'<div class="multi-row" role="group" aria-labelledby="roll-title-'+i+'"><div class="multi-row-head"><strong id="roll-title-'+i+'">'+escapeHtml(o.id)+'</strong><button class="multi-remove" data-kind="roll" data-remove="'+i+'" type="button">Eliminar bobina</button></div><div class="multi-row-fields">'+field('Número de lote',o.lot,'data-roll="'+i+'" data-field="lot" maxlength="60" autocomplete="off" placeholder="Ej.: 000123-A" required')+field('Kg iniciales netos',o.kg,'type="number" min="0" step="any" data-roll="'+i+'" data-field="kg"')+field('Lonjas (kg)',o.scrap??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="scrap" placeholder="0" title="Peso de las lonjas y del papel separado al inicio o durante el trabajo, sin contar el sobrante junto al tuco."')+field('Sobrante de bobina (papel + tuco) (kg)',o.coreGross??'0','type="number" min="0" step="any" data-roll="'+i+'" data-field="coreGross" placeholder="0" title="Peso del papel que queda junto al tuco, incluyendo el tubo de cartón."')+'</div><p class="removal-help">Lonjas: lonjas y papel separado al inicio o durante el trabajo. No incluyas aquí el sobrante de bobina.</p>'+problemControls(o,i)+coreTareControls(o,i)+'</div>').join('');
  refreshCoreTareNotes();renderRollUsage(result);
 }
 root.addEventListener('input',e=>{
@@ -1019,11 +1064,35 @@ root.addEventListener('click',e=>{
  if(b.dataset.problemRemove!==undefined){
   const roll=rolls[Number(b.dataset.problemRoll)];roll.problems.splice(Number(b.dataset.problemRemove),1);updateWithdrawalMetadata();return;
  }
+ if(b.dataset.withdrawalCatalog){
+  const index=Number(b.dataset.catalogRoll),name=b.dataset.catalogName,isArea=b.dataset.withdrawalCatalog==='area';
+  if(isArea){
+   if(defaultAreas.includes(name))return;
+   areaCatalog=areaCatalog.filter(entry=>entry!==name);
+  }else problemCatalog=problemCatalog.filter(entry=>entry!==name);
+  let saved=true;try{localStorage.setItem(isArea?AREA_CATALOG_KEY:PROBLEM_CATALOG_KEY,JSON.stringify(isArea?areaCatalog:problemCatalog));}catch(_){saved=false;}
+  rolls[index].problemsOpen=true;
+  redraw();
+  const panel=root.querySelector('[data-problems-roll="'+index+'"]');
+  const message=panel.querySelector(isArea?'.area-message':'.reason-message');
+  message.textContent=saved?'Opción eliminada del catálogo. Las selecciones actuales se conservan.':'Opción eliminada en esta sesión.';
+  const catalog=panel.querySelector('.withdrawal-catalog');
+  if(catalog)catalog.open=true;
+  (catalog?.querySelector('summary')||panel.querySelector('summary')).focus();
+  return;
+ }
  const remove=b.dataset.remove;
- if(remove!==undefined){const data=b.dataset.kind==='op'?ops:rolls;if(data.length>1){data.splice(Number(remove),1);markDirty();redraw();scheduleAuto();}}
+ if(remove!==undefined){
+  const index=Number(remove),isRoll=b.dataset.kind==='roll',data=isRoll?rolls:ops;
+  if(!data[index]||(!isRoll&&data.length===1))return;
+  data.splice(index,1);
+  if(isRoll&&!data.length)data.push(blankRoll('Bobina 1',selectedWidth()));
+  markDirty();redraw();scheduleAuto();
+  if(isRoll)root.querySelector('[data-roll="'+Math.min(index,data.length-1)+'"][data-field="lot"]').focus();
+ }
 });
 $('multi-add-op').addEventListener('click',()=>{ops.push({id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'});markDirty();redraw();scheduleAuto();});
-$('multi-add-roll').addEventListener('click',()=>{rolls.push({id:'Bobina '+(rolls.length+1),lot:'',kg:'',width:selectedWidth(),scrap:'0',coreGross:'0',coreTare:''});markDirty();redraw();scheduleAuto();});
+$('multi-add-roll').addEventListener('click',()=>{rolls.push(blankRoll('Bobina '+(rolls.length+1),selectedWidth()));markDirty();redraw();scheduleAuto();});
 const WIDTH_CATALOG_KEY='cimagraf-widths-v2';
 const MACHINE_WIDTHS={
  'kirin-1c':{name:'Kirin 1C',defaults:[480,640,660]},
@@ -1041,6 +1110,10 @@ function readCustomWidths(){
  }
  return customWidths.get(widthMachine);
 }
+function extraWidths(){return widthMachine?readCustomWidths().filter(width=>!MACHINE_WIDTHS[widthMachine].defaults.includes(width)):[];}
+function renderCustomWidths(){
+ $('width-custom-list').innerHTML=extraWidths().map(width=>'<li><span>'+width+' mm</span><button class="catalog-remove" type="button" data-width-remove="'+width+'" aria-label="Eliminar ancho '+width+' mm">Eliminar</button></li>').join('')||'<li>Aún no hay anchos agregados.</li>';
+}
 function availableWidths(){
  const machine=MACHINE_WIDTHS[widthMachine];
  return machine?sortedWidths([...machine.defaults,...readCustomWidths()]):[];
@@ -1055,6 +1128,7 @@ function renderWidthOptions(preferred='',restoring=false){
  select.disabled=!machine;$('multi-add-width').disabled=!machine;
  $('width-machine-note').textContent=machine?'Anchos de '+machine.name+'. El papel, gramaje y ancho se aplican a todas las bobinas del grupo.':'Selecciona la máquina para ver sus anchos.';
  $('width-legacy-note').hidden=select.value!=='__mixed__';
+ renderCustomWidths();
 }
 function syncWidthMachine(machineKey){
  const next=Object.hasOwn(MACHINE_WIDTHS,machineKey)?machineKey:'';
@@ -1086,11 +1160,26 @@ $('multi-add-width').addEventListener('click',()=>{
  if(open){$('width-error').hidden=true;$('width-new').focus();}
 });
 $('width-cancel').addEventListener('click',()=>{closeWidthForm();$('multi-add-width').focus();});
+$('width-custom-list').addEventListener('click',event=>{
+ const button=event.target.closest('[data-width-remove]');if(!button||!widthMachine)return;
+ const width=Number(button.dataset.widthRemove);
+ if(!extraWidths().includes(width))return;
+ const remaining=readCustomWidths().filter(value=>value!==width);customWidths.set(widthMachine,remaining);
+ let saved=true;try{localStorage.setItem(widthStorageKey(),JSON.stringify(remaining));}catch(_){saved=false;}
+ const active=$('multi-width').value,removedActive=active===String(width);
+ if(removedActive){
+  for(const roll of rolls)roll.width='';
+  renderWidthOptions();markDirty();scheduleAuto();
+ }else renderWidthOptions(active,true);
+ $('width-error').textContent=!saved?'Ancho eliminado en esta sesión.':removedActive?'Ancho eliminado. Selecciona otro para este grupo.':'Ancho eliminado de esta máquina.';
+ $('width-error').hidden=false;
+ $('width-new').focus();
+});
 $('width-form').addEventListener('submit',event=>{
  event.preventDefault();if(!widthMachine)return;
  const value=Number($('width-new').value);
  if($('width-new').validity.badInput||!Number.isFinite(value)||value<=0){$('width-error').textContent='Ingresa un ancho mayor que cero.';$('width-error').hidden=false;$('width-new').focus();return;}
- const added=sortedWidths([...readCustomWidths(),value]);customWidths.set(widthMachine,added);let remembered=true;
+ const added=sortedWidths([...extraWidths(),...(MACHINE_WIDTHS[widthMachine].defaults.includes(value)?[]:[value])]);customWidths.set(widthMachine,added);let remembered=true;
  try{localStorage.setItem(widthStorageKey(),JSON.stringify(added));}catch(_){remembered=false;}
  applyCommonWidth(value);closeWidthForm();$('multi-width').focus();
  if(!remembered){$('width-error').textContent='Ancho aplicado. El navegador no pudo guardarlo para la próxima visita.';$('width-error').hidden=false;$('width-form').hidden=false;$('multi-add-width').setAttribute('aria-expanded','true');}
@@ -1401,11 +1490,10 @@ $('forms-back').addEventListener('click',()=>{$('forms-instructions').textConten
 function resetMultiAfterConfirmation(){
  $('multi-calculation-details').open=false;
  ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}];
- rolls=[{id:'Bobina 1',lot:'',kg:'',width:'',scrap:'0',coreGross:'0',coreTare:''}];
+ rolls=[blankRoll()];
  renderWidthOptions('');closeWidthForm();
  $('multi-group').value='';
- $('multi-paper').selectedIndex=0;
- updateGrams('');
+ updateCatalog({name:'Bond',gsm:90});
  redraw();
  markDirty();
  $('multi-op-registration-table').replaceChildren();
@@ -1501,23 +1589,30 @@ function prepareGroupForms({preview=false}={}){
  return true;
 }
 $('multi-register').addEventListener('click',()=>prepareGroupForms());
-// Catálogo de materiales compartido por ambos modos mediante almacenamiento local.
-const materialCatalogKey='consumo-bobina-materiales-v1';
-const materialDefaults=[{name:'Bond',gsm:90},{name:'Book Cream',gsm:70}];
-function readCatalog(){try{const p=JSON.parse(localStorage.getItem(materialCatalogKey));return Array.isArray(p)?[...p,...materialDefaults]:materialDefaults;}catch(_){return materialDefaults;}}
+// Catálogo de materiales compartido. Las opciones recuperadas de un registro anterior son temporales.
 function sortMaterialEntries(entries){
  const rank=name=>/^bond(?:\s|$)/i.test(name)?0:/^book\s*cream(?:\s|$)/i.test(name)?1:2;
  return entries.filter(e=>e&&typeof e.name==='string'&&e.name.trim()&&Number.isFinite(Number(e.gsm))&&Number(e.gsm)>0).slice().sort((a,b)=>rank(a.name)-rank(b.name)||a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true})||Number(a.gsm)-Number(b.gsm));
 }
-function updateCatalog(){const entries=sortMaterialEntries(readCatalog());const paper=$('multi-paper'),gram=$('multi-gsm');const lastPaper=paper.value||'Bond',lastGsm=gram.value||'';paper.replaceChildren();for(const e of entries){if(![...paper.options].some(o=>o.value.toLowerCase()===e.name.toLowerCase()))paper.add(new Option(e.name,e.name));}paper.value=[...paper.options].some(o=>o.value===lastPaper)?lastPaper:paper.options[0]?.value;updateGrams(lastGsm);}
-function updateGrams(preferred){const gram=$('multi-gsm');gram.replaceChildren();for(const e of sortMaterialEntries(readCatalog()).filter(e=>e.name.toLowerCase()===$('multi-paper').value.toLowerCase()).sort((a,b)=>Number(a.gsm)-Number(b.gsm))){if(![...gram.options].some(o=>o.value===String(e.gsm)))gram.add(new Option(e.gsm+' g/m²',String(e.gsm)));}if([...gram.options].some(o=>o.value===preferred))gram.value=preferred;markDirty();scheduleAuto();}
-$('multi-paper').addEventListener('change',()=>{root.querySelectorAll('[data-core-note]').forEach(note=>note.replaceChildren());updateGrams();scheduleAuto();});
+function updateCatalog({name=$('multi-paper').value,gsm=$('multi-gsm').value,restore=false}={}){
+ const paper=$('multi-paper'),entries=window.CimagrafMaterials.entries();
+ if(restore&&name&&Number(gsm)>0)entries.push({name,gsm:Number(gsm)});
+ paper.replaceChildren();paper.add(new Option('Seleccionar',''));
+ for(const e of sortMaterialEntries(entries))if(![...paper.options].some(o=>o.value.toLowerCase()===e.name.toLowerCase()))paper.add(new Option(e.name,e.name));
+ paper.value=[...paper.options].find(o=>o.value.toLowerCase()===String(name).toLowerCase())?.value||'';
+ updateGrams(gsm,{entries,exact:true});
+}
+function updateGrams(preferred,{entries=window.CimagrafMaterials.entries(),exact=false}={}){
+ const gram=$('multi-gsm');gram.replaceChildren();gram.add(new Option('Seleccionar',''));
+ for(const e of sortMaterialEntries(entries).filter(e=>e.name.toLowerCase()===$('multi-paper').value.toLowerCase()))if(![...gram.options].some(o=>o.value===String(e.gsm)))gram.add(new Option(e.gsm+' g/m²',String(e.gsm)));
+ gram.value=[...gram.options].some(o=>o.value===String(preferred))?String(preferred):exact?'':gram.options[1]?.value||'';
+ markDirty();scheduleAuto();
+}
+$('multi-paper').addEventListener('change',()=>{root.querySelectorAll('[data-core-note]').forEach(note=>note.replaceChildren());updateGrams();});
 $('multi-gsm').addEventListener('change',()=>{markDirty();scheduleAuto();});
-$('multi-add-material').addEventListener('click',()=>{$('open-material').click();});
-const sharedMaterialModal=$('material-modal');
-const materialModalObserver=new MutationObserver(()=>{if(!sharedMaterialModal.classList.contains('open'))updateCatalog();});
-materialModalObserver.observe(sharedMaterialModal,{attributes:true,attributeFilter:['class']});
-updateCatalog();
+$('multi-add-material').addEventListener('click',event=>window.CimagrafMaterials.open(event.currentTarget,$('multi-paper').value));
+document.addEventListener('cimagraf-materials-changed',event=>updateCatalog(event.detail||{}));
+updateCatalog({name:'Bond',gsm:90});
 renderWidthOptions('');
 redraw();mode(true);scheduleAuto();
 window.CimagrafArchive={
@@ -1531,7 +1626,7 @@ window.CimagrafArchive={
   rolls=JSON.parse(JSON.stringify(s.rolls));
   const machineKey=restoredIdentity?.machineKey||window.CimagrafProduction?.metadata().machineKey;
   widthMachine=Object.hasOwn(MACHINE_WIDTHS,machineKey)?machineKey:'';
-  restoreWidthSelection();$('multi-group').value=s.group;$('multi-paper').value=s.paper;updateGrams(s.gsm);redraw();show();
+  restoreWidthSelection();$('multi-group').value=s.group;updateCatalog({name:s.paper,gsm:s.gsm,restore:true});redraw();show();
  },
  resume:s=>{
   if(!s.formsUrl)return;

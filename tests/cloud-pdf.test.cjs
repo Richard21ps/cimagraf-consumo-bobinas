@@ -82,7 +82,7 @@ function fixture({fail=false,pending=null}={}){
  const restoreBody=html.match(/ restore:s=>\{([\s\S]*?)\},\n resume:/)[1];
  const restoreSource='function restore(s){'+restoreBody+'} restore(s);';
  const saved={ops:[{id:'OP1'}],rolls:[{kg:400,lot:'0001-A'}],group:'01',paper:'Bond',gsm:90};
- const restoreContext={s:saved,window:{},MACHINE_WIDTHS:{'kirin-1c':{}},$:()=>({}),updateGrams(){},restoreWidthSelection(){},redraw(){},show(){}};vm.createContext(restoreContext);
+ const restoreContext={s:saved,window:{},MACHINE_WIDTHS:{'kirin-1c':{}},$:()=>({}),updateCatalog(){},restoreWidthSelection(){},redraw(){},show(){}};vm.createContext(restoreContext);
  vm.runInContext(restoreSource+';ops[0].id="EDITADA";rolls[0].kg=500;rolls[0].lot="0002-B";',restoreContext);
  assert.equal(saved.ops[0].id,'OP1');assert.equal(saved.rolls[0].kg,400);assert.equal(saved.rolls[0].lot,'0001-A');
  // No convertir antiguas copias de set up a libros: son unidades diferentes.

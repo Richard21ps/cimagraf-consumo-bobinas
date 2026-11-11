@@ -6,8 +6,8 @@ function fixture(saved={},machine='kirin-1c'){
  const nodes={};const memory=new Map(Object.entries(saved));
  const $=id=>nodes[id]??=( {value:'',hidden:true,options:[],validity:{badInput:false},events:{},addEventListener(k,f){this.events[k]=f},replaceChildren(){this.options=[]},add(o){this.options.push(o)},setAttribute(k,v){this[k]=v},focus(){}} );
  const c={$,rolls:[{id:'A',kg:200,width:'',scrap:5,coreGross:10,coreTare:''},{id:'B',kg:200,width:'',scrap:0,coreGross:0,coreTare:''}],ops:[{id:'OP1',books:100,copies:30,advance:240,setupBooks:0,calibration:false,stops:0}],localStorage:{getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)},Option:function(text,value){Object.assign(this,{text,value})},markDirty(){},redraw(){},scheduleAuto(){},numeric:x=>x===''?NaN:Number(x),nf:String};
- $('multi-paper').value='Bond';$('multi-gsm').value='90';vm.createContext(c);vm.runInContext(helpers+'\nrenderWidthOptions(); syncWidthMachine('+JSON.stringify(machine)+');',c);
- return {c,$,memory,run:s=>vm.runInContext(s,c),fire:(id,event)=>$(id).events[event]({preventDefault(){}}),options:()=>$('multi-width').options.map(o=>o.value)};
+ $('multi-paper').value='Bond';$('multi-gsm').value='90';vm.createContext(c);vm.runInContext(html.match(/function blankRoll[^\n]+/)[0]+'\n'+helpers+'\nrenderWidthOptions(); syncWidthMachine('+JSON.stringify(machine)+');',c);
+ return {c,$,memory,run:s=>vm.runInContext(s,c),fire:(id,event,target)=>$(id).events[event]({target,preventDefault(){}}),options:()=>$('multi-width').options.map(o=>o.value)};
 }
 let n=0;function test(name,fn){fn();n++;console.log('OK '+name)}
 test('Catálogo ordenado, sin duplicados; datos guardados inválidos no afectan el formulario',()=>{
@@ -39,5 +39,18 @@ test('Cada Kirin conserva sus anchos; cambiar de máquina limpia el ancho aplica
  f.$('width-new').value='500';f.fire('width-form','submit');assert.deepEqual(f.options(),['','469','500']);
  f.run("syncWidthMachine('kirin-1c')");assert.deepEqual(f.options(),['','480','640','660']);
  assert.deepEqual(fixture(Object.fromEntries(f.memory),'kirin-4c').options(),['','469','500']);
+});
+test('Eliminar un ancho agregado conserva los de fábrica y solo limpia la selección afectada',()=>{
+ const f=fixture({'cimagraf-widths-v2:kirin-1c':'[480,600,700]','cimagraf-widths-v2:kirin-4c':'[600]'});
+ const remove=value=>f.fire('width-custom-list','click',{closest:()=>({dataset:{widthRemove:value}})});
+ f.run('applyCommonWidth(600)');remove('480');remove('700');
+ assert.deepEqual(f.options(),['','480','600','640','660']);
+ assert.equal(f.$('multi-width').value,'600');
+ assert.ok(f.c.rolls.every(r=>r.width==='600'));
+ remove('600');
+ assert.ok(f.c.rolls.every(r=>r.width===''));
+ assert.equal(f.$('multi-width').value,'');
+ assert.deepEqual(fixture(Object.fromEntries(f.memory)).options(),['','480','640','660']);
+ assert.deepEqual(fixture(Object.fromEntries(f.memory),'kirin-4c').options(),['','469','600']);
 });
 console.log(n+' pruebas de ancho común correctas.');

@@ -313,3 +313,22 @@ header{margin-bottom:14px}
 #multi-root .multi-bobbins .roll-problems-wrap{grid-row:4}
 #multi-root .multi-bobbins .core-tare-note{grid-row:5}
 @media (min-width:581px) and (max-width:1120px){#multi-root .multi-bobbins .multi-row-fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* 4.20.1: catálogos editables y espacio adicional para el número de lote. */
+#material-modal .modal{box-sizing:border-box;max-height:calc(100dvh - 36px);overflow-y:auto}
+#material-modal .modal-actions{flex-wrap:wrap}
+.catalog-manager{margin-top:10px;padding-top:8px;border-top:1px solid #dbe5ec}
+.catalog-manager h3,.catalog-manager h4{margin:0 0 6px;font-size:13px;color:#35576c}
+.catalog-list{display:grid;gap:3px;list-style:none;margin:0;padding:0 2px 0 0;max-height:145px;overflow-y:auto}
+.catalog-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;font-size:12px;color:#465c6d}
+.catalog-list span{min-width:0;overflow-wrap:anywhere}
+.catalog-remove{flex:none;min-height:28px;padding:3px 7px;border:1px solid #e6c6c6;border-radius:6px;color:#922e2e;background:#fff;font:inherit;font-size:11px;font-weight:650;cursor:pointer}
+.catalog-remove:hover{background:#fff4f4}
+.withdrawal-catalog summary{cursor:pointer;font-size:12px;color:#35576c}
+.withdrawal-catalog .catalog-list{margin-top:5px}
+#multi-root .multi-bobbins .multi-row-fields{align-items:end}
+#multi-root .multi-bobbins .multi-row-fields input[type="number"]{height:31px;min-height:31px;max-width:110px;padding:4px 7px}
+#multi-root .multi-bobbins .multi-row-fields input[data-field="scrap"]{max-width:92px}
+@media (min-width:581px){
+  #multi-root .multi-bobbins .multi-row-fields{grid-template-columns:minmax(108px,1.55fr) minmax(85px,.84fr) minmax(60px,.65fr) minmax(114px,1.1fr)}
+}

@@ -80,7 +80,7 @@ test('Tara no puede superar sobrante y suma no supera peso disponible',()=>{asse
 test('Sobrantes y anchos distintos conservan metraje y masa',()=>{const r=calculate([600,1400],[[80,1000,5,10,5],[200,500,10,20,5]]);near(r.loads[0].left,0);near(r.loads[1].left,140);near(r.total,105);near(r.totalScrap,35);for(const b of r.usedRolls)near(b.initial,b.used+b.scrap+b.left);});
 test('Impresión destaca ancho junto a material y gramaje',()=>{const r=calculate([2000],[[75,1000,5],[200,500,10]]);const output=printReport(r);assert.match(output,/print-material-strip/);assert.match(output,/ANCHO/);assert.match(output,/Varios anchos/);assert.match(output,/1,000[.]0 mm/);assert.match(output,/500[.]0 mm/);assert.doesNotMatch(output,/<th>Ancho \(mm\)<\/th>/);});
 const materialStart=html.indexOf('function sortMaterialEntries(');
-const materialSource=html.slice(materialStart,html.indexOf('function updateCatalog(){',materialStart));
+const materialSource=html.slice(materialStart,html.indexOf('function updateCatalog(',materialStart));
 test('Materiales: Bond, Book Cream y gramajes de menor a mayor',()=>{const c={entries:[{name:'Book Cream',gsm:90},{name:'Bond',gsm:120},{name:'Bond',gsm:60},{name:'Book Cream',gsm:70},{name:'Couche',gsm:150}]};vm.createContext(c);const ordered=vm.runInContext(materialSource+';sortMaterialEntries(entries)',c);assert.equal(ordered.map(e=>e.name+':'+e.gsm).join('|'),'Bond:60|Bond:120|Book Cream:70|Book Cream:90|Couche:150');});
 
 test('Tara Bond: referencia 480 mm y proporción por ancho',()=>{for(const [width,tare] of [[480,.990],[240,.495],[960,1.980]]){const r=calculate([100],[[200,width,10,25]],'Bond');near(r.loads[0].coreTare,tare);near(r.loads[0].corePaper,25-tare);near(r.saldo,200-10-25+tare-100*width*70/1e6);}});
