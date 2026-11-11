@@ -1,4 +1,4 @@
-# PDF directo a OneDrive — v4.19.3
+# PDF directo a OneDrive — v4.19.5
 
 Se usa Microsoft Graph con autenticación delegada, sin Power Automate,
 servidor propio ni secreto de cliente. La aplicación y el inquilino son los
@@ -27,11 +27,13 @@ nombre, sin fechas ni identificadores adicionales, salvo el sufijo de OneDrive
 si coincide con un nombre existente. El resumen del grupo sigue
 siendo un solo PDF, con todas las OP y bobinas.
 
-Los nuevos PDF se cargan directamente en REGISTRO DE PDF DIGITAL, sin crear
-una subcarpeta por registro. Si la OP y la máquina ya tienen un PDF con el mismo
-nombre, OneDrive agrega un sufijo y conserva ambos archivos. El enlace visible
-muestra el nombre confirmado por OneDrive. Las carpetas y archivos históricos
-se conservan; los guardados que ya estaban pendientes retoman su ruta original.
+Los PDF nuevos se guardan en **Kirin 1C** o **Kirin 4C**, dentro de
+REGISTRO DE PDF DIGITAL, según la máquina del registro. Se reutiliza la
+carpeta existente o se crea con el primer guardado. No hay carpetas por OP.
+Si existe un PDF con el mismo nombre en esa carpeta, OneDrive agrega un sufijo
+y conserva ambos. El enlace visible muestra el nombre confirmado por OneDrive.
+Los archivos históricos se conservan y los guardados pendientes retoman su
+ruta original.
 
 El separador se conserva en cada trabajo pendiente. Los registros creados en
 v4.18.0 retoman `+`; los nuevos usan `／` tanto en OneDrive como en el enlace.
