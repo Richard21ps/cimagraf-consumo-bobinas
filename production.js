@@ -20,7 +20,7 @@ function metadata(){return {machine:machines[draft?.machine||config.machine]||''
 function status(message,error=false){$('machine-status').textContent=message;$('machine-status').classList.toggle('machine-error',error);}
 function render(){
  $('machine-select').value=config.machine||'';
- $('machine-select').disabled=busy||!!draft?.sent||!!config.production;
+ $('machine-select').disabled=busy||!!draft?.sent||!!config.production||!!window.CimagrafSaveUI?.blocked();
  $('machine-name').textContent=machines[config.machine]||'Asigna esta computadora';
  $('machine-mode').textContent=config.production?'PRODUCCIÓN':'PRUEBAS';$('machine-mode').classList.toggle('is-production',!!config.production);
  $('machine-start').hidden=!!config.production;$('machine-start').disabled=busy||!draft||!!draft.sent;
@@ -47,8 +47,8 @@ function complete(){
  persist();render();
 }
 async function activate(){
- if(busy||!draft||draft.sent)return;
- busy=true;$('multi-root').inert=true;
+ if(busy||!draft||draft.sent||window.CimagrafSaveUI?.blocked())return;
+ busy=true;
  try{
   draft.action='activate';draft.snapshot=window.CimagrafArchive.snapshot();persist();
   status('Confirmando numeración en OneDrive…');
@@ -57,12 +57,12 @@ async function activate(){
   const next=await registry.next(await registry.open(cloud.destination,draft.machine));
   config.production=true;config.next=next;draft=null;makeDraft();$('machine-start-confirm').hidden=true;render();
  }catch(e){status(e.message||'No se pudo iniciar producción. Tus datos se conservan.',true);}
- finally{busy=false;$('multi-root').inert=false;$('machine-start').disabled=!draft||!!draft.sent;}
+ finally{busy=false;$('machine-start').disabled=!draft||!!draft.sent;}
 }
 window.CimagrafProduction={metadata,prepare,complete,reset,ready:()=>!!draft,state:()=>draft?JSON.parse(JSON.stringify(draft)):null};
 if(!draft)makeDraft();
 $('machine-select').addEventListener('change',()=>{
- if(busy||draft?.sent||config.production){render();return;}
+ if(busy||draft?.sent||config.production||window.CimagrafSaveUI?.blocked()){render();return;}
  const machine=$('machine-select').value;if(!machines[machine])return;
  config={machine,testNext:1};draft=null;
  try{makeDraft();render();}catch(e){status('Habilita el almacenamiento del navegador para recordar este equipo.',true);}
