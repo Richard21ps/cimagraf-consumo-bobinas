@@ -80,7 +80,16 @@ async function connect(kind='legacy',machine){
  async function createFile(parent,name,bytes,contentType){
   const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes),size=data.byteLength;
   if(!size||size>=60*1024*1024)throw Error('El archivo debe tener menos de 60 MB para este guardado.');
-  const session=await request(parent+':/'+encodeURIComponent(name)+':/createUploadSession',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item:{name,'@microsoft.graph.conflictBehavior':'fail'}})});
+  const uploadPath=parent+':/'+encodeURIComponent(name)+':/createUploadSession';
+  const sessionRequest=item=>request(uploadPath,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item})});
+  let session;
+  try{session=await sessionRequest({name,'@microsoft.graph.conflictBehavior':'fail'});}
+  catch(e){
+   // Si Microsoft rechazó la petición antes de crear la sesión, intentar el
+   // cuerpo mínimo documentado, manteniendo fail para evitar sobrescrituras.
+   if(e.status!==400||String(e.code).toLowerCase()!=='invalidrequest')throw e;
+   session=await sessionRequest({'@microsoft.graph.conflictBehavior':'fail'});
+  }
   const u=new URL(session.uploadUrl);
   if(u.protocol!=='https:'||!(/(^|\.)sharepoint\.com$|(^|\.)1drv\.com$|(^|\.)onedrive\.com$/.test(u.hostname)))throw Error('Microsoft devolvió una ubicación de carga no válida.');
   const response=await fetch(u.href,{method:'PUT',signal:AbortSignal.timeout(180000),headers:{'Content-Type':contentType,'Content-Range':'bytes 0-'+(size-1)+'/'+size},body:data});
