@@ -1,4 +1,4 @@
-# Guardados independientes · 5.1.0
+# Guardados independientes · 5.1.1
 
 El rótulo usa el formato 1: A4 vertical, una página por bobina con saldo,
 con SAP, material/gramaje, ancho, descripción opcional, OP, lote, kg y fecha.
@@ -78,6 +78,15 @@ debe comparar el diario con las filas y verificar que no hay escrituras
 activas antes de recuperar el control.
 
 ## Verificación
+
+Si Microsoft devuelve `invalidRequest` al abrir una carpeta por correo,
+solo cuando la sesión coincide con el propietario configurado se resuelve
+su propio OneDrive mediante `/me/drive` y se reintenta la misma carpeta por
+ID. No se cambia el destino a la cuenta de otro maquinista.
+Los fallos muestran un detalle plegable con el paso, estado, código,
+mensaje de Microsoft y referencia de solicitud. No guarda credenciales ni
+URL preautorizadas de carga. Un reintento exitoso oculta el detalle.
+El ajuste de conexión debe confirmarse también con una sesión real.
 
 `node --test tests/*.test.cjs`: cálculo, catálogos, saldos, taras, reglas por
 máquina, numeración, rótulos, escritura, concurrencia y respuestas perdidas.
