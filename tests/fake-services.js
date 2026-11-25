@@ -1,7 +1,10 @@
 /* SOLO PRUEBAS. Se carga exclusivamente en test-frame.js, nunca en la calculadora. */
 (function(){
 const saved=new Map(),counters={'kirin-1c':0,'kirin-4c':0};
-window.CimagrafCloud={connect:async()=>({destination:{drive:'SIMULADO',id:'SIMULADO'}})};
+window.CimagrafCloud={connect:async()=>{
+ if(parent.CimagrafDemoConnectFail?.())throw Error('Fallo de conexión simulado antes de escribir');
+ return {destination:{drive:'SIMULADO',id:'SIMULADO'}};
+}};
 const registry=window.CimagrafRegistry;
 registry.create=()=>({open:async(_,key)=>key,next:async key=>counters[key]+1,reserve:async(key,_,draft)=>{
  if(!saved.has('id-'+draft.id))saved.set('id-'+draft.id,++counters[key]);
