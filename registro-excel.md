@@ -1,4 +1,4 @@
-# Guardados independientes · 5.1.2
+# Guardados independientes · 5.1.3
 
 El rótulo usa el formato 1: A4 vertical, una página por bobina con saldo,
 con SAP, material/gramaje, ancho, descripción opcional, OP, lote, kg y fecha.
@@ -66,8 +66,18 @@ el editor se habilita automáticamente. Las correcciones quedan en el
 borrador local, incluso si aún faltan campos, y el siguiente guardado toma
 los datos actualizados conservando la clave y el ID del registro.
 Los pendientes antiguos que fallaron antes de escribir también se recuperan
-editables. Una escritura parcial o un Excel ya confirmado conserva su
-instantánea y continúa con Reintentar para evitar duplicados.
+editables. El estado de OneDrive ya no pone inerte todo el formulario, ni
+durante una solicitud ni al recuperar un pendiente. Los campos de OP,
+material, anchos y pesos siguen disponibles. Se protege únicamente el envío
+de otra operación y la asignación de máquina mientras existe un pendiente.
+
+Si ya existe una escritura parcial, PDF iniciado o Excel confirmado,
+los cambios del editor van a una copia local separada del intento enviado.
+Reintentar recupera la instantánea original sin modificarla. Al confirmarse,
+el usuario puede continuar con sus cambios como nuevo registro mediante el
+botón que lo indica explícitamente. Las correcciones se conservan al recargar
+y cuando el guardado termina desde otra pestaña. Nunca se descarta el
+pendiente ni se sobrescriben sus filas para desbloquear los campos.
 
 Los reintentos escriben en las mismas direcciones y comprueban que no haya
 otro registro. Ampliar la tabla solo agrega filas vacías, por lo que una

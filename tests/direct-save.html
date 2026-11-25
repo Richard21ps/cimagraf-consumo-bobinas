@@ -3,7 +3,7 @@
 <header><strong>PRUEBA AISLADA · DATOS FICTICIOS</strong><p>Usa los botones reales. No inicia sesión ni escribe archivos en Microsoft. El almacenamiento de la calculadora real no se modifica.</p>
 <button id="seed" disabled>Cargar ejemplo</button><label><input id="connect-fail" type="checkbox"> Fallar antes de guardar</label><label><input id="fail" type="checkbox"> Simular corte</label><label><input id="slow" type="checkbox"> Simular espera</label><button id="finish">Terminar espera</button><button id="reload">Recuperar editor</button>
 <p id="state">Cargando…</p><pre id="rows"></pre></header><iframe id="app" title="Editor aislado"></iframe>
-<script src="test-frame.js?v=5.1.2"></script><script>
+<script src="test-frame.js?v=5.1.3"></script><script>
 const app=document.getElementById('app'),state=document.getElementById('state');let finish;
 window.CimagrafDemoFail=()=>document.getElementById('fail').checked;
 window.CimagrafDemoConnectFail=()=>document.getElementById('connect-fail').checked;
