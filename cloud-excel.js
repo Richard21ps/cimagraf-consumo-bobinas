@@ -41,7 +41,7 @@ function ui(){
  const done=!!job?.saved&&!!job?.lockReleased;
  // El estado de OneDrive bloquea nuevos envíos, nunca los campos del editor.
  $('multi-root').inert=false;
- if(blocked()){$('multi-register').disabled=true;$('multi-save-pdf').disabled=true;}
+ if(blocked()){$('multi-register').disabled=true;$('multi-register-4c').disabled=true;$('multi-save-pdf').disabled=true;}
  $('machine-select').disabled=blocked()||window.CimagrafProduction.metadata().runMode==='production'||!!window.CimagrafProduction.state()?.sent;
  $('cloud-retry').hidden=!job||done||running;
  $('cloud-edit').hidden=!job;
@@ -107,7 +107,13 @@ async function start(kind,receipt=null){
   await guardedSave();
  }catch(e){message('No se pudo conservar el grupo: '+e.message,true);ui();}
 }
-$('multi-register').addEventListener('click',()=>start('excel'));
+function saveMachine(machine){
+ const selected=window.CimagrafProduction.metadata().machineKey;
+ if(selected!==machine){message('La máquina seleccionada es '+(window.CimagrafProduction.metadata().machine||'ninguna')+'. Para evitar errores, elige el botón de esa máquina.',true);return;}
+ return start('excel');
+}
+$('multi-register').addEventListener('click',()=>saveMachine('kirin-1c'));
+$('multi-register-4c').addEventListener('click',()=>saveMachine('kirin-4c'));
 $('multi-save-pdf').addEventListener('click',()=>start('pdf'));
 $('cloud-save-pdf').addEventListener('click',()=>{if(job?.saved&&job.lockReleased)return start('pdf',job);});
 $('cloud-retry').addEventListener('click',guardedSave);
