@@ -25,7 +25,7 @@ test('Un clic guarda; siguiente grupo incrementa pruebas y desbloquea el editor'
  assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 1C - 02');
 });
 test('Error antes de guardar permite corregir sin perder la asignación ni gastar ID',async()=>{
- const f=ui({failure:'auth'});f.choose('kirin-4c');await f.click('multi-register');
+ const f=ui({failure:'auth'});f.choose('kirin-4c');await f.click('multi-register-4c');
  assert.equal(f.stats().saves,0);assert.equal(f.node('cloud-edit').hidden,false);f.click('cloud-edit');assert.equal(f.node('multi-root').inert,false);
  assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 4C - 01');
 });
@@ -56,7 +56,7 @@ test('Producción: activa sin consumir un ID; guarda una vez y continúa el cont
  try{
   const f=ui();f.choose('kirin-4c');await f.click('machine-start-confirm-button');
   assert.equal(f.node('machine-start').hidden,true);assert.equal(reserves,0);assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 03');
-  await f.click('multi-register');assert.equal(reserves,1);f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 04');
+  await f.click('multi-register-4c');assert.equal(reserves,1);f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 04');
  }finally{registry.create=original;}
 });
 
@@ -67,7 +67,7 @@ test('PDF independiente no guarda Excel ni avanza el ID; conserva editor',async(
  await f.click('multi-register');assert.equal(f.stats().saves,1);
 });
 test('Excel primero, PDF después: conserva recibo de Excel y siguiente grupo',async()=>{
- const f=ui();f.choose('kirin-4c');await f.click('multi-register');await f.click('cloud-save-pdf');
+ const f=ui();f.choose('kirin-4c');await f.click('multi-register-4c');await f.click('cloud-save-pdf');
  assert.equal(f.stats().saves,1);assert.equal(f.node('cloud-next').hidden,false);assert.equal(f.node('multi-root').inert,false);
  f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 4C - 02');
 });
@@ -90,7 +90,7 @@ test('Conexión fallida desbloquea automáticamente; guardar usa los datos corre
  assert.equal(f.node('multi-root').inert,false);
 });
 test('Recargar después de corregir conserva incluso campos incompletos y deja editar',async()=>{
- const first=ui({failure:'auth'});first.choose('kirin-4c');await first.click('multi-register');
+ const first=ui({failure:'auth'});first.choose('kirin-4c');await first.click('multi-register-4c');
  first.edit(s=>{s.ops[0].id='D-PENDIENTE';s.ops[0].copies='';s.result=null;});
  const next=ui({local:first.local});
  assert.equal(next.snapshot().ops[0].id,'D-PENDIENTE');assert.equal(next.snapshot().ops[0].copies,'');
@@ -164,4 +164,10 @@ test('Terminar en otra pestaña conserva el borrador local y permite seguir rell
  f.events.storage({key:'cimagraf-excel-pending-v1',oldValue,newValue:null});
  assert.equal(f.node('multi-root').inert,false);assert.equal(f.snapshot().ops[0].id,'CAMBIO-LOCAL');
  const reloaded=ui({local:f.local,session:f.session});assert.equal(reloaded.snapshot().ops[0].id,'CAMBIO-LOCAL');assert.equal(reloaded.node('multi-root').inert,false);
+});
+
+test('Cada botón de Excel protege la máquina seleccionada',async()=>{
+ const f=ui();f.choose('kirin-4c');await f.click('multi-register');
+ assert.equal(f.stats().saves,0);assert.match(f.node('cloud-status').textContent,/máquina seleccionada/i);
+ await f.click('multi-register-4c');assert.equal(f.stats().saves,1);
 });
