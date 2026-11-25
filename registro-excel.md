@@ -25,13 +25,13 @@ sobre filas, recuperación y validación siguen vigentes para Excel:
 
 ## Libro y filas
 
-En el primer guardado se crea automáticamente, si no existe,
-**Registro_Bobinas_Cimagraf.xlsx**, utilizando la plantilla del repositorio.
+En el primer guardado se crea automáticamente, si no existe, el libro de
+la máquina indicado arriba, utilizando la plantilla del repositorio.
 
 | Hoja | Tabla | Uso |
 | --- | --- | --- |
-| Registros | RegistrosBobinas | Producción de ambas máquinas |
-| Pruebas | PruebasBobinas | Pruebas de ambas máquinas |
+| Registros | RegistrosBobinas | Producción de la máquina del libro |
+| Pruebas | PruebasBobinas | Pruebas de la máquina del libro |
 
 Una fila corresponde a un movimiento de **OP y bobina**. Una OP que usa
 varias bobinas se repite. Si varias OP comparten bobina, el cierre anterior
@@ -49,6 +49,10 @@ Motivos, áreas y enlace PDF quedan en columnas separadas. No cambiar los
 encabezados ni los nombres de tablas/hojas. Se pueden usar filtros; para
 reordenar o analizar libremente, usar una copia y mantener estable la tabla
 de captura mientras las máquinas guardan.
+
+La calibración conserva 26 m en Kirin 1C (6 + 20) y 19 m en Kirin 4C
+(6 + 13), confirmado por el propietario el 25/11/2026. Los blancos de set up
+y paradas son 20 m y 13 m respectivamente; el empalme mantiene 20 m.
 
 ## Recuperación y concurrencia
 
