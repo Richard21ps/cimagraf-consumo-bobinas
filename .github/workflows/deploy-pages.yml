@@ -16,48 +16,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     steps:
       - name: Descargar calculadora
         uses: actions/checkout@v4
-      - name: Configurar GitHub Pages
-        uses: actions/configure-pages@v5
       - name: Comprobar cálculos y registro
         run: node --test tests/*.test.cjs
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
       - name: Preparar sitio HTML
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: .
           name: github-pages-${{ github.run_attempt }}
-      - name: Confirmar disponibilidad del sitio preparado
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for intento in {1..12}; do
-            cantidad=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --jq "[.artifacts[] | select(.name == \"github-pages-${GITHUB_RUN_ATTEMPT}\")] | length")
-            if [ "$cantidad" = "1" ]; then
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "::error::GitHub no confirmó la disponibilidad del archivo del sitio."
-          exit 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url || steps.retry.outputs.page_url || steps.final.outputs.page_url }}
+    steps:
       - name: Publicar en GitHub Pages
         id: deployment
         continue-on-error: true
         uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
-      - name: Esperar propagación del artefacto si falló la publicación
+      - name: Esperar disponibilidad del artefacto
         if: steps.deployment.outcome == 'failure'
-        run: sleep 10
-      - name: Reintentar publicación con el mismo artefacto
+        run: sleep 15
+      - name: Reintentar publicación
         if: steps.deployment.outcome == 'failure'
-        id: deployment_retry
+        id: retry
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+      - name: Esperar recuperación de Pages
+        if: steps.retry.outcome == 'failure'
+        run: sleep 30
+      - name: Confirmar publicación
+        if: steps.retry.outcome == 'failure'
+        id: final
         uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
