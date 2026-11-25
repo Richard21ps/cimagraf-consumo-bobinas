@@ -1,4 +1,4 @@
-# Guardados independientes · 5.1.1
+# Guardados independientes · 5.1.2
 
 El rótulo usa el formato 1: A4 vertical, una página por bobina con saldo,
 con SAP, material/gramaje, ancho, descripción opcional, OP, lote, kg y fecha.
@@ -60,6 +60,14 @@ El navegador conserva el pendiente antes de iniciar sesión. La carpeta
 `_CONTROL_CALCULADORA` coordina la numeración y un turno único de escritura
 en Excel. `REGISTROS_EXCEL` conserva un diario inmutable con las filas
 reservadas para cada guardado.
+
+Si la conexión falla antes de reservar filas o iniciar una carga de PDF,
+el editor se habilita automáticamente. Las correcciones quedan en el
+borrador local, incluso si aún faltan campos, y el siguiente guardado toma
+los datos actualizados conservando la clave y el ID del registro.
+Los pendientes antiguos que fallaron antes de escribir también se recuperan
+editables. Una escritura parcial o un Excel ya confirmado conserva su
+instantánea y continúa con Reintentar para evitar duplicados.
 
 Los reintentos escriben en las mismas direcciones y comprueban que no haya
 otro registro. Ampliar la tabla solo agrega filas vacías, por lo que una
