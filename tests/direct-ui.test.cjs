@@ -8,7 +8,7 @@ function ui({local=storage(),session=storage(),failure='',query=''}={}){
  let snapshot={result:JSON.parse(JSON.stringify(calculate())),ops:[{id:'D13924'}],rolls:[],paper:'Bond',gsm:75,width:480,group:'PRUEBA · KIRIN 1C - 01'};
  const window={addEventListener:(name,fn)=>events[name]=fn,CimagrafRegistry:registry,
   CimagrafArchive:{refresh(){},preflight:()=>true,snapshot:()=>structuredClone(snapshot),reportHTML:()=>'<article>Rótulo</article>',restore:s=>{restores++;snapshot=structuredClone(s);},reset(){resets++;window.CimagrafProduction.reset();},print(){prints++;}},
-  CimagrafCloud:{connect:async()=>{connections++;if(fail==='auth')throw Error('Sin acceso');return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
+  CimagrafCloud:{connect:async()=>{connections++;if(fail==='auth')throw Error('Sin acceso');if(fail&&typeof fail==='object')throw fail;return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
   CimagrafReportPDF:{render:async()=>new ArrayBuffer(1)},
   CimagrafExcelStore:{create:({remember})=>({savePDF:async j=>{j.saved=true;j.lockReleased=true;j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);},save:async j=>{saves++;if(fail==='partial'){j.plan={start:2};remember(j);throw Error('Conexión interrumpida');}j.saved=true;j.lockReleased=true;j.excelUrl='https://empresa.sharepoint.com/libro';j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);}})}
  };
@@ -70,4 +70,12 @@ test('Excel primero, PDF después: conserva recibo de Excel y siguiente grupo',a
  const f=ui();f.choose('kirin-4c');await f.click('multi-register');await f.click('cloud-save-pdf');
  assert.equal(f.stats().saves,1);assert.equal(f.node('cloud-next').hidden,false);assert.equal(f.node('multi-root').inert,true);
  f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 4C - 02');
+});
+
+test('Error de Microsoft muestra detalle sin perder el grupo; el reintento exitoso lo oculta',async()=>{
+ const error=Object.assign(Error('Microsoft no confirmó la operación (invalidRequest).'),{details:{step:'Abrir la carpeta',status:400,code:'invalidRequest',microsoftMessage:'ObjectHandle is Invalid',requestId:'referencia-123'}});
+ const f=ui({failure:error});f.choose('kirin-1c');await f.click('multi-register');
+ assert.equal(f.node('cloud-error-details').hidden,false);assert.match(f.node('cloud-error-info').textContent,/ObjectHandle is Invalid/);assert.match(f.node('cloud-error-info').textContent,/referencia-123/);
+ assert.ok(f.local.getItem('cimagraf-excel-pending-v1'));assert.equal(f.node('cloud-edit').hidden,false);
+ f.fail('');await f.click('cloud-retry');assert.equal(f.node('cloud-error-details').hidden,true);assert.equal(f.node('cloud-next').hidden,false);
 });

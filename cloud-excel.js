@@ -6,7 +6,13 @@ let running=false,job;
 let lastPDF;try{lastPDF=JSON.parse(sessionStorage.getItem('cimagraf-last-independent-pdf')||'null');}catch(_){}
 try{job=JSON.parse(localStorage.getItem(KEY)||'null');}catch(_){job=null;}
 function remember(value){localStorage.setItem(KEY,JSON.stringify(value));job=value;}
-function message(text,error=false){$('cloud-status').textContent=text;$('cloud-status').classList.toggle('cloud-error',error);}
+function message(text,error=false){$('cloud-status').textContent=text;$('cloud-status').classList.toggle('cloud-error',error);if($('cloud-error-details'))$('cloud-error-details').hidden=true;}
+function errorDetails(error){
+ const d=error.details,panel=$('cloud-error-details'),info=$('cloud-error-info');
+ if(!d||!panel||!info)return;
+ info.textContent=[d.step&&'Paso: '+d.step,d.status&&'Estado: '+d.status,d.code&&'Código: '+d.code,d.microsoftMessage&&'Microsoft: '+d.microsoftMessage,d.requestId&&'Referencia: '+d.requestId].filter(Boolean).join('\n');
+ panel.hidden=false;
+}
 function link(id,url){
  const a=$(id);a.hidden=true;a.removeAttribute('href');if(!url)return;
  try{const u=new URL(url);if(u.protocol!=='https:'||!/(^|\.)sharepoint\.com$|(^|\.)onedrive\.com$|(^|\.)1drv\.com$/.test(u.hostname))return;a.href=u.href;a.hidden=false;}catch(_){}
@@ -50,6 +56,7 @@ async function save(){
  }catch(e){
   if(job){job.draft=window.CimagrafProduction.state();try{remember(job);}catch(_){}}
   message((e.message||'No se pudo confirmar el guardado.')+' Tus datos siguen aquí.',true);
+  errorDetails(e);
  }finally{running=false;ui();}
 }
 async function guardedSave(){
