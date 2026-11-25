@@ -58,3 +58,18 @@ test('La carga usa fail y no envía Authorization a la URL preautorizada; el err
   assert.equal(e.details.step,'Subir el contenido del archivo a OneDrive');assert.ok(!JSON.stringify(e.details).includes('PRIVADO'));return true;
  });assert.ok(session&&uploaded);
 });
+
+test('Una sesión rechazada con invalidRequest se reintenta sin nombre duplicado y sin sobrescribir',async()=>{
+ let sessions=0;
+ const f=client(async(url,options)=>{
+  if(url.endsWith('/createUploadSession')){const item=JSON.parse(options.body).item;sessions++;assert.equal(item['@microsoft.graph.conflictBehavior'],'fail');if(sessions===1){assert.equal(item.name,'test.pdf');return response(400,{error:{code:'invalidRequest'}});}assert.equal(item.name,undefined);return response(200,{uploadUrl:'https://empresa.sharepoint.com/upload?token=TEMP'});}
+  if(url.includes('/upload?'))return response(201,{id:'archivo',size:3});
+  return response(200,folder('control'));
+ });
+ const c=await f.connect();const file=await c.createFile('/drives/d/items/i','test.pdf',new Uint8Array([1,2,3]),'application/pdf');
+ assert.equal(file.id,'archivo');assert.equal(sessions,2);
+});
+test('No se reintenta la sesión si Microsoft no confirma un error 400',async()=>{
+ let sessions=0;const f=client(async(url)=>{if(url.endsWith('/createUploadSession')){sessions++;return response(503,{error:{code:'serviceUnavailable'}});}return response(200,folder('control'));});
+ const c=await f.connect();await assert.rejects(()=>c.createFile('/drives/d/items/i','test.pdf',new Uint8Array([1]),'application/pdf'));assert.equal(sessions,1);
+});
