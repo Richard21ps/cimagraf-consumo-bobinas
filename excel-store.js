@@ -22,8 +22,8 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
    const found=await optional(path(parent,name));if(found)return found;throw e;
   }
  }
- async function workbook(){
-  const target=cloud.workbookDestination,dir=target?itemPath(target.drive,target.id):root,name=cloud.bookName||BOOK;
+ async function workbook(job){
+  const target=cloud.workbookDestination,dir=target?itemPath(target.drive,target.id):root,name=job.naming===2?scope.CimagrafRecord.filename(job.snapshot.result,'xlsx'):(cloud.bookName||BOOK);
   let book=await optional(path(dir,name));
   if(!book){status('Preparando el Excel compartido…');book=await file(dir,name,await loadTemplate(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}
   if(!book.id||book.folder)throw Error('No se pudo identificar el Excel del registro.');return book;
@@ -70,7 +70,7 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
   let hold=!!job.plan,completed=false;
   try{
    remember(job);
-   const book=await workbook(),base=itemPath(cloud.workbookDestination?.drive||cloud.destination.drive,book.id)+'/workbook';
+   const book=await workbook(job),base=itemPath(cloud.workbookDestination?.drive||cloud.destination.drive,book.id)+'/workbook';
    const sheet=job.snapshot.result.runMode==='production'?'Registros':'Pruebas',table=sheet==='Registros'?'RegistrosBobinas':'PruebasBobinas';
    const tableBase=base+'/tables/'+table,sheetBase=base+'/worksheets/'+sheet;
    const header=await request(tableBase+'/headerRowRange');

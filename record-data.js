@@ -54,9 +54,10 @@ function labelHTML(r,created,logo=''){
    +'<p class="label-date">FECHA: '+stamp.date+'</p></div><small>Peso neto de papel calculado · '+esc(r.recordId||r.group||'')+'</small></article>';
  }).join('');
 }
-function filename(r){
+function filename(r,extension='pdf'){
  const clean=value=>String(value??'').replace(/["*:<>?\/\\|#%\u0000-\u001f]/g,'-').trim().replace(/[. ]+$/g,'');
- return Array.from(r.sourceOps.map(o=>clean(o.id)).join(' ／ ')).slice(0,130).join('')+' - '+clean(r.machine)+'.pdf';
+ const ops=Array.from([...new Set(r.sourceOps.map(o=>clean(o.id)))].join('_')).slice(0,130).join('').replace(/[. ]+$/g,'');
+ return ops+'_'+clean(r.machine).replace(/\s+/g,'').toUpperCase()+'.'+extension;
 }
 scope.CimagrafRecord={headers,numericColumns,dateParts,movements,rows,missing,labelHTML,filename};
 })(typeof window==='undefined'?module.exports:window);
