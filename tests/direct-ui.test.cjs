@@ -3,18 +3,18 @@ const {CimagrafRegistry:registry}=require('../machine-registry.js');
 const {calculate}=require('./excel-fixture.cjs');
 function storage(){const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)};}
 function ui({local=storage(),session=storage(),failure='',query='',hold=false}={}){
- const nodes={},handlers={},events={},document={getElementById:id=>node(id)};let connections=0,saves=0,resets=0,prints=0,restores=0,pdfSaves=0,lastSaved,release,fail=failure;
+ const nodes={},handlers={},events={},document={getElementById:id=>node(id)};const routes=[];let connections=0,saves=0,resets=0,prints=0,restores=0,pdfSaves=0,lastSaved,release,fail=failure;
  const node=id=>nodes[id]??={value:'',hidden:false,disabled:false,inert:false,open:false,textContent:'',classList:{toggle(){}},addEventListener:(kind,fn)=>handlers[id+':'+kind]=fn,removeAttribute(k){delete this[k];}};
  let snapshot={result:JSON.parse(JSON.stringify(calculate())),ops:[{id:'D13924'}],rolls:[],paper:'Bond',gsm:75,width:480,group:'PRUEBA · KIRIN 1C - 01'};
  const window={addEventListener:(name,fn)=>events[name]=fn,CimagrafRegistry:registry,
   CimagrafArchive:{refresh(){},preflight:()=>true,snapshot:()=>structuredClone(snapshot),reportHTML:()=>'<article>Rótulo</article>',restore:s=>{restores++;snapshot=structuredClone(s);},reset(){resets++;window.CimagrafProduction.reset();},print(){prints++;}},
-  CimagrafCloud:{connect:async()=>{connections++;if(fail==='auth')throw Error('Sin acceso');if(fail&&typeof fail==='object')throw fail;return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
+  CimagrafCloud:{connect:async(kind,machine)=>{routes.push([kind,machine]);connections++;if(fail==='auth')throw Error('Sin acceso');if(fail&&typeof fail==='object')throw fail;return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
   CimagrafReportPDF:{render:async()=>new ArrayBuffer(1)},
   CimagrafExcelStore:{create:({remember})=>({savePDF:async j=>{pdfSaves++;lastSaved=structuredClone(j);if(fail==='pdfpartial'){j.pdfStarted=true;remember(j);throw Error('PDF sin confirmar');}j.saved=true;j.lockReleased=true;j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);},save:async j=>{saves++;lastSaved=structuredClone(j);if(fail==='partial'){j.plan={start:2};remember(j);throw Error('Conexión interrumpida');}if(hold)await new Promise(resolve=>{release=resolve;});j.saved=true;j.lockReleased=true;j.excelUrl='https://empresa.sharepoint.com/libro';j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);}})}
  };
  const context={window,document,localStorage:local,sessionStorage:session,crypto:require('node:crypto').webcrypto,navigator:{},URL,location:{hash:query,search:''},console};
  vm.createContext(context);for(const file of ['production.js','cloud-excel.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),context);
- return {window,local,session,node,events,choose:machine=>{node('machine-select').value=machine;handlers['machine-select:change']();},click:id=>handlers[id+':click'](),fail:value=>fail=value,finish:()=>release?.(),edit:fn=>{fn(snapshot);handlers['multi-root:input']();},snapshot:()=>structuredClone(snapshot),lastSaved:()=>lastSaved,stats:()=>({connections,saves,resets,prints,restores,pdfSaves}),settle:async()=>{for(let i=0;i<20;i++)await new Promise(r=>setImmediate(r));}};
+ return {window,local,session,node,events,routes,choose:machine=>{node('machine-select').value=machine;handlers['machine-select:change']();},click:id=>handlers[id+':click'](),fail:value=>fail=value,finish:()=>release?.(),edit:fn=>{fn(snapshot);handlers['multi-root:input']();},snapshot:()=>structuredClone(snapshot),lastSaved:()=>lastSaved,stats:()=>({connections,saves,resets,prints,restores,pdfSaves}),settle:async()=>{for(let i=0;i<20;i++)await new Promise(r=>setImmediate(r));}};
 }
 test('Un clic guarda; siguiente grupo incrementa pruebas y desbloquea el editor',async()=>{
  const f=ui();f.choose('kirin-1c');await f.click('multi-register');
@@ -25,7 +25,7 @@ test('Un clic guarda; siguiente grupo incrementa pruebas y desbloquea el editor'
  assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 1C - 02');
 });
 test('Error antes de guardar permite corregir sin perder la asignación ni gastar ID',async()=>{
- const f=ui({failure:'auth'});f.choose('kirin-4c');await f.click('multi-register-4c');
+ const f=ui({failure:'auth'});f.choose('kirin-4c');await f.click('multi-register');
  assert.equal(f.stats().saves,0);assert.equal(f.node('cloud-edit').hidden,false);f.click('cloud-edit');assert.equal(f.node('multi-root').inert,false);
  assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 4C - 01');
 });
@@ -56,7 +56,7 @@ test('Producción: activa sin consumir un ID; guarda una vez y continúa el cont
  try{
   const f=ui();f.choose('kirin-4c');await f.click('machine-start-confirm-button');
   assert.equal(f.node('machine-start').hidden,true);assert.equal(reserves,0);assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 03');
-  await f.click('multi-register-4c');assert.equal(reserves,1);f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 04');
+  await f.click('multi-register');assert.equal(reserves,1);f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 04');
  }finally{registry.create=original;}
 });
 
@@ -67,7 +67,7 @@ test('PDF independiente no guarda Excel ni avanza el ID; conserva editor',async(
  await f.click('multi-register');assert.equal(f.stats().saves,1);
 });
 test('Excel primero, PDF después: conserva recibo de Excel y siguiente grupo',async()=>{
- const f=ui();f.choose('kirin-4c');await f.click('multi-register-4c');await f.click('cloud-save-pdf');
+ const f=ui();f.choose('kirin-4c');await f.click('multi-register');await f.click('multi-save-pdf');
  assert.equal(f.stats().saves,1);assert.equal(f.node('cloud-next').hidden,false);assert.equal(f.node('multi-root').inert,false);
  f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 4C - 02');
 });
@@ -90,7 +90,7 @@ test('Conexión fallida desbloquea automáticamente; guardar usa los datos corre
  assert.equal(f.node('multi-root').inert,false);
 });
 test('Recargar después de corregir conserva incluso campos incompletos y deja editar',async()=>{
- const first=ui({failure:'auth'});first.choose('kirin-4c');await first.click('multi-register-4c');
+ const first=ui({failure:'auth'});first.choose('kirin-4c');await first.click('multi-register');
  first.edit(s=>{s.ops[0].id='D-PENDIENTE';s.ops[0].copies='';s.result=null;});
  const next=ui({local:first.local});
  assert.equal(next.snapshot().ops[0].id,'D-PENDIENTE');assert.equal(next.snapshot().ops[0].copies,'');
@@ -116,7 +116,7 @@ test('Volver para corregir conserva el borrador; una escritura parcial sigue pro
  f.click('cloud-edit');assert.equal(f.node('multi-root').inert,false);
 });
 test('PDF fallido después de confirmar Excel conserva la instantánea guardada y permite editar un borrador',async()=>{
- const f=ui();f.choose('kirin-1c');await f.click('multi-register');f.fail('auth');await f.click('cloud-save-pdf');
+ const f=ui();f.choose('kirin-1c');await f.click('multi-register');f.fail('auth');await f.click('multi-save-pdf');
  assert.equal(f.node('multi-root').inert,false);assert.equal(f.node('cloud-edit').hidden,false);
  f.fail('');await f.click('cloud-retry');assert.equal(f.stats().saves,1);assert.equal(f.node('cloud-next').hidden,false);
 });
@@ -166,8 +166,10 @@ test('Terminar en otra pestaña conserva el borrador local y permite seguir rell
  const reloaded=ui({local:f.local,session:f.session});assert.equal(reloaded.snapshot().ops[0].id,'CAMBIO-LOCAL');assert.equal(reloaded.node('multi-root').inert,false);
 });
 
-test('Cada botón de Excel protege la máquina seleccionada',async()=>{
- const f=ui();f.choose('kirin-4c');await f.click('multi-register');
- assert.equal(f.stats().saves,0);assert.match(f.node('cloud-status').textContent,/máquina seleccionada/i);
- await f.click('multi-register-4c');assert.equal(f.stats().saves,1);
-});
+for(const machine of ['kirin-1c','kirin-4c']){
+ test('Los mismos dos botones usan la ruta de '+machine,async()=>{
+  const f=ui();f.choose(machine);await f.click('multi-register');await f.click('multi-save-pdf');
+  assert.deepEqual(f.routes,[['excel',machine],['pdf',machine]]);
+  assert.equal(f.stats().saves,1);assert.equal(f.stats().pdfSaves,1);
+ });
+}
