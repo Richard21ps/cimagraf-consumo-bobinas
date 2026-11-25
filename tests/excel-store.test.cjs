@@ -84,7 +84,7 @@ test('PDF independiente: no crea ni toca un Excel',async()=>{
  assert.equal([...s.items.values()].filter(x=>x.item.name.endsWith('.pdf')).length,1);
 });
 
-test('Excel y PDF usan la OP y la Kirin en el nombre; un pendiente anterior conserva el libro histórico',async()=>{
+test('El PDF usa la OP y la Kirin; se puede recuperar un Excel por OP de la versión anterior',async()=>{
  const s=server(),j=job();j.kind='excel';j.naming=2;
  await store(s).save(j);
  const expected=j.snapshot.result.sourceOps[0].id+'_KIRIN1C';
@@ -94,4 +94,16 @@ test('Excel y PDF usan la OP y la Kirin en el nombre; un pendiente anterior cons
  assert.equal(record.filename({sourceOps:[{id:'A/1'},{id:'B-2'}],machine:'Kirin 4C'},'xlsx'),'A-1_B-2_KIRIN4C.xlsx');
  const old=job('oldjob-5678');old.kind='excel';await store(s).save(old);
  assert.ok([...s.items.values()].some(x=>x.item.name==='Registro_Bobinas_Cimagraf.xlsx'));
+});
+
+test('Nuevas OP se agregan al libro existente de la máquina y se evita volver a consultar la tabla',async()=>{
+ const s=server();s.cloud.bookName='Registro_Kirin_1C.xlsx';
+ const a=job(),b=job('ijklmnop-5678');a.kind=b.kind='excel';
+ b.snapshot.result.sourceOps[0].id='D13925';b.snapshot.result.details.forEach(m=>m.op='D13925');
+ await store(s).save(a);const start=s.calls.length;
+ await store(s).save(b);
+ const books=[...s.items.values()].map(x=>x.item.name).filter(x=>x.endsWith('.xlsx'));
+ assert.deepEqual(books,['Registro_Kirin_1C.xlsx']);
+ assert.deepEqual([...s.sheets.Pruebas.values()].map(row=>row[4]),['D13924','D13925']);
+ assert.equal(s.calls.slice(start).filter(c=>c.url.endsWith('/tables/PruebasBobinas/range')).length,1);
 });

@@ -104,7 +104,7 @@ async function start(kind,receipt=null){
  try{
   const draft=window.CimagrafProduction.state(),snapshot=receipt?JSON.parse(JSON.stringify(receipt.snapshot)):window.CimagrafArchive.snapshot();
   const previous=editing()&&job.kind===kind?job:null;
-  const pending={id:previous?.id||(kind==='excel'?draft.id+'-excel':crypto.randomUUID()),kind,created:receipt?.created||previous?.created||new Date().toISOString(),snapshot,draft,naming:previous?(previous.naming||1):2};
+  const pending={id:previous?.id||(kind==='excel'?draft.id+'-excel':crypto.randomUUID()),kind,created:receipt?.created||previous?.created||new Date().toISOString(),snapshot,draft,naming:previous?.naming||1};
   if(receipt)pending[kind==='pdf'?'excelReceipt':'pdfReceipt']=receipt;
   const changes=currentCopy();
   remember(pending);
