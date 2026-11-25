@@ -3,13 +3,12 @@
 'use strict';
 const $=id=>document.getElementById(id),KEY='cimagraf-excel-pending-v1',EDITOR='cimagraf-editor-copy-v1';
 let running=false,job,copy;
-let lastPDF;try{lastPDF=JSON.parse(sessionStorage.getItem('cimagraf-last-independent-pdf')||'null');}catch(_){}
 try{job=JSON.parse(localStorage.getItem(KEY)||'null');}catch(_){job=null;}
 try{copy=JSON.parse(localStorage.getItem(EDITOR)||'null');}catch(_){copy=null;}
 function remember(value){localStorage.setItem(KEY,JSON.stringify(value));job=value;}
 function rememberCopy(value){copy=value;if(value)localStorage.setItem(EDITOR,JSON.stringify(value));else localStorage.removeItem(EDITOR);}
 function currentCopy(){return copy&&copy.pendingId===(job?.id||null)?copy:null;}
-function canCorrect(value=job){return !!value&&!value.excelReceipt&&!value.plan&&!value.pdfStarted&&!value.saved&&(!value.lockAcquired||value.lockReleased);}
+function canCorrect(value=job){return !!value&&!value.excelReceipt&&!value.pdfReceipt&&!value.plan&&!value.pdfStarted&&!value.saved&&(!value.lockAcquired||value.lockReleased);}
 function editing(){return !!job?.editing&&canCorrect();}
 function preserveEdits(){
  if(!job){if(copy)rememberCopy({pendingId:null,snapshot:window.CimagrafArchive.snapshot()});return;}
@@ -18,9 +17,14 @@ function preserveEdits(){
  }else{rememberCopy({pendingId:job.id,snapshot:window.CimagrafArchive.snapshot()});ui();}
 }
 function blocked(){return running||!!job&&!editing();}
-function completedExcel(){return !running&&job?.saved&&job.lockReleased&&job.kind!=='pdf'?job:null;}
-function canSaveReceiptPDF(){return !!completedExcel()?.snapshot.result.usedRolls.some(b=>b.left>1e-8);}
-window.CimagrafSaveUI={blocked,canSaveReceiptPDF};
+function excelSaved(){return !!(job?.excelReceipt?.saved||job?.kind!=='pdf'&&job?.saved);}
+function pdfSaved(){return !!(job?.pdfReceipt?.saved||job?.pdfConfirmed||job?.saved&&(job.kind==='pdf'||job.pdfId||job.pdfUrl));}
+function done(){return !running&&excelSaved()&&pdfSaved()&&!!job?.lockReleased&&!!job?.saved;}
+function completedExcel(){return !running&&excelSaved()&&!pdfSaved()&&job?.saved&&job.lockReleased?job:null;}
+function completedPDF(){return !running&&pdfSaved()&&!excelSaved()&&job?.saved&&job.lockReleased?job:null;}
+const canSaveReceiptPDF=()=>!!completedExcel();
+const canSaveReceiptExcel=()=>!!completedPDF();
+window.CimagrafSaveUI={blocked,canSaveReceiptPDF,canSaveReceiptExcel,printSnapshot:()=>excelSaved()?(job.excelReceipt||job):pdfSaved()?(job.pdfReceipt||job):null};
 function message(text,error=false){$('cloud-status').textContent=text;$('cloud-status').classList.toggle('cloud-error',error);if($('cloud-error-details'))$('cloud-error-details').hidden=true;}
 function errorDetails(error){
  const d=error.details,panel=$('cloud-error-details'),info=$('cloud-error-info');
@@ -28,27 +32,27 @@ function errorDetails(error){
  info.textContent=[d.step&&'Paso: '+d.step,d.status&&'Estado: '+d.status,d.code&&'Código: '+d.code,d.microsoftMessage&&'Microsoft: '+d.microsoftMessage,d.requestId&&'Referencia: '+d.requestId].filter(Boolean).join('\n');
  panel.hidden=false;
 }
-function link(id,url){
- const a=$(id);a.hidden=true;a.removeAttribute('href');if(!url)return;
- try{const u=new URL(url);if(u.protocol!=='https:'||!/(^|\.)sharepoint\.com$|(^|\.)onedrive\.com$|(^|\.)1drv\.com$/.test(u.hostname))return;a.href=u.href;a.hidden=false;}catch(_){}
-}
 function finishPDF(){
- lastPDF=job;sessionStorage.setItem('cimagraf-last-independent-pdf',JSON.stringify(job));
- const receipt=job.excelReceipt;
- const changes=currentCopy();
- if(receipt){receipt.pdfUrl=job.pdfUrl;remember(receipt);if(changes)rememberCopy({...changes,pendingId:receipt.id});}
- else{localStorage.removeItem(KEY);job=null;if(changes)rememberCopy({...changes,pendingId:null});window.CimagrafArchive.refresh();}
+ const receipt=job.excelReceipt,changes=currentCopy();
+ if(receipt){receipt.pdfUrl=job.pdfUrl;receipt.pdfConfirmed=true;remember(receipt);if(changes)rememberCopy({...changes,pendingId:receipt.id});}
 }
 function ui(){
- const done=!!job?.saved&&!!job?.lockReleased;
+ const settled=!!job?.saved&&!!job?.lockReleased;
  // El estado de OneDrive bloquea nuevos envíos, nunca los campos del editor.
  $('multi-root').inert=false;
- if(blocked()){$('multi-register').disabled=true;$('multi-save-pdf').disabled=!canSaveReceiptPDF();}
+ for(const [id,confirmed,available,label] of [
+  ['multi-register',excelSaved(),canSaveReceiptExcel(),'Guardar en Excel'],
+  ['multi-save-pdf',pdfSaved(),canSaveReceiptPDF(),'Guardar PDF en OneDrive']
+ ]){
+  const button=$(id);
+  button.classList.toggle('save-confirmed',confirmed);
+  button.textContent=confirmed?(id==='multi-register'?'✓ Excel guardado':'✓ PDF guardado'):label;
+  if(blocked())button.disabled=confirmed||!available;
+ }
  $('machine-select').disabled=blocked()||window.CimagrafProduction.metadata().runMode==='production'||!!window.CimagrafProduction.state()?.sent;
- $('cloud-retry').hidden=!job||done||running;
+ $('cloud-retry').hidden=!job||settled||running;
  $('cloud-edit').hidden=!job;
- $('cloud-next').hidden=!done;$('cloud-print').hidden=!done||!job.snapshot.result.usedRolls.some(b=>b.left>1e-8);
- link('cloud-excel-link',job?.excelUrl);link('cloud-last-pdf',job?.pdfUrl||lastPDF?.pdfUrl);
+ $('cloud-next').hidden=!done();
  $('cloud-next').textContent=currentCopy()?'Continuar con cambios como nuevo registro':'Siguiente grupo';
 }
 async function save(){
@@ -66,11 +70,11 @@ async function save(){
   if(job.kind==='pdf'){
    await store.savePDF(job);
    finishPDF();
-   message('PDF confirmado en OneDrive. El guardado de Excel es independiente.');
+   message(excelSaved()?'Excel y PDF guardados. Ya puedes iniciar el siguiente grupo.':'PDF guardado. Guarda el Excel para continuar.');
   }else{
    await store.save(job);
    window.CimagrafProduction.complete();job.draft=window.CimagrafProduction.state();remember(job);
-   message(currentCopy()?'Se guardó la versión enviada. Tus cambios posteriores siguen en un borrador sin enviar.':job.kind==='excel'?'Excel confirmado. Puedes guardar el PDF con su botón independiente o iniciar el siguiente grupo.':'Excel y PDF del pendiente anterior confirmados.');
+   message((pdfSaved()?'Excel y PDF guardados. Ya puedes iniciar el siguiente grupo.':'Excel guardado. Guarda el PDF para continuar.')+(currentCopy()?' Tus cambios posteriores siguen en un borrador sin enviar.':''));
   }
  }catch(e){
   if(job){job.draft=window.CimagrafProduction.state();if(canCorrect()){const changes=currentCopy();if(changes){job.snapshot=changes.snapshot;rememberCopy(null);}job.editing=true;}try{remember(job);}catch(_){}}
@@ -100,18 +104,17 @@ async function start(kind,receipt=null){
  try{
   const draft=window.CimagrafProduction.state(),snapshot=receipt?JSON.parse(JSON.stringify(receipt.snapshot)):window.CimagrafArchive.snapshot();
   const previous=editing()&&job.kind===kind?job:null;
-  const pending={id:previous?.id||(kind==='excel'?draft.id+'-excel':crypto.randomUUID()),kind,created:receipt?.created||previous?.created||new Date().toISOString(),snapshot,draft};
-  if(receipt)pending.excelReceipt=receipt;
+  const pending={id:previous?.id||(kind==='excel'?draft.id+'-excel':crypto.randomUUID()),kind,created:receipt?.created||previous?.created||new Date().toISOString(),snapshot,draft,naming:previous?(previous.naming||1):2};
+  if(receipt)pending[kind==='pdf'?'excelReceipt':'pdfReceipt']=receipt;
   const changes=currentCopy();
   remember(pending);
   if(receipt&&changes)rememberCopy({...changes,pendingId:pending.id});else rememberCopy(null);
   await guardedSave();
  }catch(e){message('No se pudo conservar el grupo: '+e.message,true);ui();}
 }
-$('multi-register').addEventListener('click',()=>start('excel'));
+$('multi-register').addEventListener('click',()=>start('excel',completedPDF()));
 $('multi-save-pdf').addEventListener('click',()=>{
  const receipt=completedExcel();
- if(receipt&&!canSaveReceiptPDF())return;
  return start('pdf',receipt);
 });
 $('cloud-retry').addEventListener('click',guardedSave);
@@ -123,9 +126,8 @@ $('cloud-edit').addEventListener('click',()=>{
 });
 $('multi-root').addEventListener('input',preserveEdits);
 $('multi-root').addEventListener('change',preserveEdits);
-$('cloud-print').addEventListener('click',()=>{if(job?.saved)window.CimagrafArchive.print(job.snapshot.result,job.created);});
 $('cloud-next').addEventListener('click',()=>{
- if(running||!job?.saved||!job?.lockReleased)return;
+ if(!done())return;
  const changes=currentCopy()?.snapshot;
  localStorage.removeItem(KEY);job=null;rememberCopy(null);ui();window.CimagrafArchive.reset();
  if(changes){const identity=window.CimagrafProduction.metadata();if(changes.result)Object.assign(changes.result,identity,{group:identity.recordId});changes.group=identity.recordId;window.CimagrafArchive.restore(changes);rememberCopy({pendingId:null,snapshot:changes});message('Borrador recuperado como nuevo registro. Revisa los datos antes de guardar.');}
@@ -154,9 +156,9 @@ if(job){
   if(canCorrect()){job.editing=!returning;remember(job);}
   if(job.saved&&job.lockReleased&&job.kind!=='pdf'){window.CimagrafProduction.complete();job.draft=window.CimagrafProduction.state();remember(job);}
   window.CimagrafArchive.restore(currentCopy()?.snapshot||job.snapshot);ui();
-  message(editing()?'Recuperamos tus datos. Puedes editarlos y volver a guardar.':job.saved&&job.lockReleased?'Este grupo ya está guardado en Excel. El PDF tiene su propio botón.':'Recuperamos el grupo pendiente. Pulsa Reintentar para continuar sin duplicarlo.');
+  message(editing()?'Recuperamos tus datos. Puedes editarlos y volver a guardar.':done()?'Excel y PDF guardados. Ya puedes iniciar el siguiente grupo.':excelSaved()?'Excel guardado. Guarda el PDF para continuar.':pdfSaved()?'PDF guardado. Guarda el Excel para continuar.':'Recuperamos el grupo pendiente. Pulsa Reintentar para continuar sin duplicarlo.');
   // Regreso de la autenticación corporativa iniciada con Guardar en Excel.
-  if(returning)guardedSave();
+  if(returning&&!job.saved)guardedSave();
  }catch(e){message('No se pudo recuperar el grupo. Puedes editar; conserva los datos del navegador para revisar el pendiente.',true);$('multi-root').inert=false;}
 }else{if(currentCopy()?.snapshot)window.CimagrafArchive.restore(copy.snapshot);ui();}
 })();

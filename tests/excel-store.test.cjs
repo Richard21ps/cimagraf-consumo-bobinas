@@ -83,3 +83,15 @@ test('PDF independiente: no crea ni toca un Excel',async()=>{
  assert.ok(j.saved);assert.equal(s.calls.filter(c=>c.url.includes('/workbook')||c.url.includes('.xlsx')).length,0);
  assert.equal([...s.items.values()].filter(x=>x.item.name.endsWith('.pdf')).length,1);
 });
+
+test('Excel y PDF usan la OP y la Kirin en el nombre; un pendiente anterior conserva el libro histórico',async()=>{
+ const s=server(),j=job();j.kind='excel';j.naming=2;
+ await store(s).save(j);
+ const expected=j.snapshot.result.sourceOps[0].id+'_KIRIN1C';
+ assert.ok([...s.items.values()].some(x=>x.item.name===expected+'.xlsx'));
+ const p=job('ijklmnop-5678');p.kind='pdf';await store(s).savePDF(p);
+ assert.equal(p.pdfName,expected+'.pdf');
+ assert.equal(record.filename({sourceOps:[{id:'A/1'},{id:'B-2'}],machine:'Kirin 4C'},'xlsx'),'A-1_B-2_KIRIN4C.xlsx');
+ const old=job('oldjob-5678');old.kind='excel';await store(s).save(old);
+ assert.ok([...s.items.values()].some(x=>x.item.name==='Registro_Bobinas_Cimagraf.xlsx'));
+});
