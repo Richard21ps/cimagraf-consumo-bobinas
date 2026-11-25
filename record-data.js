@@ -44,12 +44,14 @@ function labelHTML(r,created,logo=''){
   const lot=esc(b.lot),sap=esc(b.sap),description=esc(b.description||'');
   const compact=(ops.join(' / ').length>38||String(b.description||'').length>70||String(b.sap).length>25||String(b.lot).length>30)?' label-compact':'';
   return '<article class="bobbin-label'+compact+'"><div class="label-top">'+(logo.startsWith('data:image/png;base64,')?'<img class="label-logo" alt="Cimagraf" src="'+esc(logo)+'">':'')+'<div class="label-machine">'+esc(r.machine)+' · '+esc(b.id)+'</div></div>'
-   +'<p class="label-sap"><span>'+sap+'</span> <span>'+esc(r.paper.toUpperCase())+' '+esc(String(r.gsm).padStart(3,'0'))+'</span></p>'
-   +'<p class="label-material">GRS × '+esc(b.width)+' mm</p>'
-   +(description?'<p class="label-description">'+description+'</p>':'')
-   +'<p class="label-identifiers">OP '+esc(ops.join(' / '))+' <span class="label-lot">#'+lot+'</span></p>'
-   +'<p class="label-weight">/ '+nf(b.left)+' KG</p>'
-   +'<p class="label-date">'+stamp.date+'</p><small>Peso neto de papel calculado · '+esc(r.recordId||r.group||'')+'</small></article>';
+   +'<div class="label-body"><p class="label-caption">CÓDIGO SAP</p><p class="label-sap">'+sap+'</p>'
+   +'<p class="label-material">'+esc(r.paper.toUpperCase())+' · '+esc(r.gsm)+' g/m²</p>'
+   +'<p class="label-width">ANCHO: '+esc(b.width)+' mm</p>'
+   +(description?'<div class="label-description"><span>Descripción adicional</span><strong>'+description+'</strong></div>':'')
+   +'<p class="label-op">OP: '+esc(ops.join(' / '))+'</p>'
+   +'<p class="label-lot">LOTE: '+lot+'</p>'
+   +'<p class="label-weight">'+nf(b.left)+' kg</p>'
+   +'<p class="label-date">FECHA: '+stamp.date+'</p></div><small>Peso neto de papel calculado · '+esc(r.recordId||r.group||'')+'</small></article>';
  }).join('');
 }
 function filename(r){

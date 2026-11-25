@@ -2,11 +2,11 @@
 window.CimagrafDemoLocal??=new Map();window.CimagrafDemoSession??=new Map();
 window.CimagrafTestFrame={
  async mount(iframe){
-  const base=new URL('../',location.href).href,response=await fetch(new URL('index.html?v=5.0.0',base),{cache:'no-store'});
+  const base=new URL('../',location.href).href,response=await fetch(new URL('index.html?v=5.1.0',base),{cache:'no-store'});
   if(!response.ok)throw Error('No se pudo cargar el editor.');let html=await response.text();
   const isolate='<script>const memory=m=>({getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)});Object.defineProperty(window,"localStorage",{value:memory(parent.CimagrafDemoLocal)});Object.defineProperty(window,"sessionStorage",{value:memory(parent.CimagrafDemoSession)});<\/script>';
   html=html.replace('<head>','<head><base href="'+base+'">'+isolate);
-  html=html.replace(/(<script src="cloud-excel\.js[^>]+>)/,'<script src="tests/fake-services.js?v=5.0.0"><\/script>$1');
+  html=html.replace(/(<script src="cloud-excel\.js[^>]+>)/,'<script src="tests/fake-services.js?v=5.1.0"><\/script>$1');
   iframe.srcdoc=html;
  },
  seed(iframe){

@@ -1,27 +1,27 @@
-# Registro directo en Excel · 5.0.0
+# Guardados independientes · 5.1.0
 
-La calculadora sustituye la integración de Forms por **Guardar en Excel**.
-Conserva GitHub Pages, la aplicación Microsoft y la carpeta automática
-`REGISTRO DE PDF DIGITAL`. No usa Power Automate ni secretos de cliente.
-No modifica ni elimina el formulario o sus respuestas existentes.
+El rótulo usa el formato 1: A4 vertical, una página por bobina con saldo,
+con SAP, material/gramaje, ancho, descripción opcional, OP, lote, kg y fecha.
+Imprimir y Guardar PDF comparten HTML/CSS. Los nombres PDF conservan OP y máquina.
 
-## Uso
+| Máquina | Excel | PDF |
+| --- | --- | --- |
+| Kirin 1C | BASE DE DATOS KIRIN 1C/Registro_Kirin_1C.xlsx | REGISTRO DE BOBINAS KIRIN 1C |
+| Kirin 4C | BASE DE DATOS KIRIN 4C/Registro_Kirin_4C.xlsx | REGISTRO DE BOBINAS KIRIN 4C |
 
-1. Elegir Kirin 1C o Kirin 4C una sola vez en Configurar equipo.
-2. Llenar material, gramaje, ancho, OP, set up, corrida y bobinas.
-3. Cada bobina tiene **lote** y **SAP propios**, y una descripción opcional
-   copiada del rótulo original. No se deducen marcas ni certificaciones.
-4. **Imprimir rótulos** imprime A4 horizontal, una hoja por bobina con saldo:
-   SAP, material, gramaje, ancho, descripción, OP, lote, peso neto calculado
-   a un decimal y fecha de Lima. Las agotadas no generan rótulo de devolución.
-5. **Guardar en Excel** conserva los datos antes de autenticar, guarda PDF
-   y escribe las filas. Solo confirma Guardado tras leer las celdas escritas.
-6. **Siguiente grupo** se habilita al confirmar Excel y PDF.
+Las cuatro carpetas compartidas se comprobaron vacías. El primer guardado
+crea el libro de su máquina utilizando la plantilla del repositorio.
+Guardar en Excel no renderiza ni carga PDF. Guardar PDF no escribe en Excel.
+Se puede guardar primero cualquiera; después de Excel, el botón de PDF del
+panel conserva la misma instantánea confirmada y permite terminar el grupo.
+Guardar únicamente PDF no confirma el registro de Excel ni avanza su contador.
+La numeración central existente conserva su carpeta de control original.
+Se reutiliza la sesión Microsoft corporativa con edición en los destinos.
+No se incluyen vínculos de uso compartido ni tokens en el código público.
 
-La cuenta Microsoft debe tener edición en la carpeta y permiso para usar
-las API de Excel. Se reutiliza Files.ReadWrite delegado. Si la política
-corporativa o el acceso compartido deniegan la operación, el administrador
-debe resolver el permiso. El código no concede acceso a OneDrive.
+Los pendientes anteriores sin tipo explícito conservan su flujo y destino
+original para evitar perder una reserva ya escrita. Las reglas siguientes
+sobre filas, recuperación y validación siguen vigentes para Excel:
 
 ## Libro y filas
 
