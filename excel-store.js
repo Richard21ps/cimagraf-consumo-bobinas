@@ -73,16 +73,17 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
    const book=await workbook(job),base=itemPath(cloud.workbookDestination?.drive||cloud.destination.drive,book.id)+'/workbook';
    const sheet=job.snapshot.result.runMode==='production'?'Registros':'Pruebas',table=sheet==='Registros'?'RegistrosBobinas':'PruebasBobinas';
    const tableBase=base+'/tables/'+table,sheetBase=base+'/worksheets/'+sheet;
-   const header=await request(tableBase+'/headerRowRange');
+   const journalURL=path(journalDir,job.id+'.json');
+   // Encabezado y diario son lecturas independientes.
+   const [header,existingJournal]=await Promise.all([request(tableBase+'/headerRowRange'),optional(journalURL)]);
    if(JSON.stringify(header.values?.[0])!==JSON.stringify(record.headers))throw Error('Los encabezados del Excel cambiaron. Conserva las columnas del registro antes de reintentar.');
    if(job.kind!=='excel')await savePDF(job);
    const expected=record.rows(job.snapshot.result,job.created,job.id,job.pdfUrl);
    if(!expected.length)throw Error('El registro no contiene movimientos de bobinas.');
-   const journalURL=path(journalDir,job.id+'.json');
-   let journal=await optional(journalURL),plan;
+   let journal=existingJournal,plan,initialRange;
    if(journal){plan=await readJson(journal);}
    else{
-    const range=await request(tableBase+'/range');
+    const range=initialRange=await request(tableBase+'/range');
     if(range.columnCount!==record.headers.length||range.rowIndex!==0||range.columnIndex!==0)throw Error('La tabla del Excel cambió de ubicación.');
     let start=range.rowCount+1;
     if(range.rowCount===2){const first=await request(sheetBase+"/range(address='A2:Z2')");if(first.values?.[0]?.every(v=>v===''||v===null))start=2;}
@@ -96,9 +97,8 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
    if(!Number.isInteger(plan.start)||plan.start<2||plan.end!==plan.start+expected.length-1)throw Error('La reserva de filas no es válida.');
    job.plan=plan;hold=true;remember(job);
    const target=sheetBase+"/range(address='A"+plan.start+':Z'+plan.end+"')";
-   const before=await request(target);
+   const [before,range]=await Promise.all([request(target),initialRange?Promise.resolve(initialRange):request(tableBase+'/range')]);
    if((before.values||[]).some(row=>row.some(v=>v!==''&&v!==null)&&!String(row[25]||'').startsWith(job.id+':')))throw Error('Las filas reservadas contienen otro registro. No se ha reemplazado información.');
-   let range=await request(tableBase+'/range');
    if(range.rowCount<plan.end){
     // Solo agrega filas vacías: una respuesta tardía nunca duplica movimientos.
     const blanks=Array.from({length:plan.end-range.rowCount},()=>Array(record.headers.length).fill(''));

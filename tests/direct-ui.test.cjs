@@ -172,6 +172,7 @@ for(const machine of ['kirin-1c','kirin-4c']){
   const f=ui();f.choose(machine);await f.click('multi-register');await f.click('multi-save-pdf');
   assert.deepEqual(f.routes,[['excel',machine],['pdf',machine]]);
   assert.equal(f.stats().saves,1);assert.equal(f.stats().pdfSaves,1);
+  assert.equal(JSON.parse(f.local.getItem('cimagraf-excel-pending-v1')).naming,1);
  });
 }
 
