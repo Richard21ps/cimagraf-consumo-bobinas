@@ -17,10 +17,10 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=5.0.0">
-<link rel="stylesheet" href="report-summary.css?v=5.0.0">
+<link rel="stylesheet" href="compact-v40.css?v=5.1.0">
+<link rel="stylesheet" href="report-summary.css?v=5.1.0">
 <link rel="stylesheet" href="production.css?v=4.16.1">
-<link rel="stylesheet" href="labels.css?v=5.0.0">
+<link rel="stylesheet" href="labels.css?v=5.1.0">
 <link rel="stylesheet" href="intro.css?v=4.14.1">
   <style>
     :root {
@@ -195,7 +195,7 @@
     </div></header>
 
     <section class="multi-workspace" id="multi-root" aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.0.0</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.0</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -257,11 +257,12 @@
         </details>
         <div class="multi-block" aria-labelledby="multi-consolidated-title">
           <h3 id="multi-consolidated-title">4 · Resumen y registro</h3>
-          <p class="multi-muted" id="multi-action-guide">Primero imprime los rótulos de devolución. Luego guarda el grupo en Excel.</p>
+          <p class="multi-muted" id="multi-action-guide">Imprime los rótulos. Guarda Excel y PDF por separado, con sus respectivos botones.</p>
           <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
           <div class="multi-footer-actions" role="group" aria-label="Resumen y envío del grupo" aria-describedby="multi-action-guide">
             <button class="multi-button" id="multi-print" type="button" aria-label="Paso 1: imprimir rótulos" disabled>Imprimir rótulos</button>
             <button class="multi-primary" id="multi-register" type="button" aria-label="Paso 2: guardar en Excel" disabled>Guardar en Excel</button>
+            <button class="multi-button" id="multi-save-pdf" type="button" disabled>Guardar PDF en OneDrive</button>
           </div>
           <p class="multi-note" id="multi-registration-note">El saldo descuenta producción, proceso, lonjas y sobrante neto por bobina. Una fila por OP y bobina utilizada en Excel.</p>
         </div>
@@ -293,8 +294,8 @@
 
 
   <section id="print-summary" class="print-summary cimagraf-report" aria-label="Rótulos para imprimir"></section>
-  <script src="materials.js?v=5.0.0"></script>
-  <script src="record-data.js?v=5.0.0"></script>
+  <script src="materials.js?v=5.1.0"></script>
+  <script src="record-data.js?v=5.1.0"></script>
   <!-- Motor incluido en HTML para evitar que el navegador ejecute una versión antigua del JS. -->
 <script>
 (() => {
@@ -316,7 +317,7 @@ function markDirty(){
  $('multi-delivery-status').textContent='Completa los datos de producción para calcular.';
  $('multi-error').hidden=true;$('multi-success').hidden=true;
  $('multi-register').disabled=true;
- $('multi-print').disabled=true;
+ $('multi-save-pdf').disabled=true;$('multi-print').disabled=true;
  $('print-summary').replaceChildren();
  $('multi-total').textContent='—';$('multi-saldo').textContent='—';$('multi-active').textContent='—';
  $('multi-process-note').textContent='';
@@ -777,7 +778,7 @@ function show(){
  }catch(err){
   result=null;
   renderDeliveryBalance(null,err.shortage);renderRollUsage(err.shortage||null);
-  $('multi-print').disabled=true;$('multi-register').disabled=true;$('print-summary').replaceChildren();
+  $('multi-save-pdf').disabled=true;$('multi-print').disabled=true;$('multi-register').disabled=true;$('print-summary').replaceChildren();
   $('multi-policy-warning').hidden=true;$('multi-success').hidden=true;
   $('multi-error').textContent=err.message;$('multi-error').hidden=false;
   $('multi-delivery-status').textContent=err.shortage?'':err.message;
@@ -863,6 +864,7 @@ function refreshOpQueue(){
  $('multi-summary-status').textContent=missing?'Completa SAP y lote de '+missing.id+'.':!result.group?'Asigna la máquina de esta PC.':'Listo para guardar en Excel.'+(result.runMode==='test'?' Se guardará en la hoja Pruebas.':'');
  $('multi-register').disabled=!ready;
  $('multi-print').disabled=!!missing||!result.usedRolls.some(b=>b.left>EPS);
+ $('multi-save-pdf').disabled=!ready;
  if(!missing&&!result.usedRolls.some(b=>b.left>EPS))$('multi-summary-status').textContent+=' Todas las bobinas utilizadas están agotadas; puedes guardar el registro.';
 }
 function resetMultiAfterConfirmation(){
@@ -920,23 +922,24 @@ window.CimagrafArchive={
   
 <section class="cloud-pdf-panel" id="cloud-panel" aria-label="Registro directo en OneDrive">
  <strong>Registro en OneDrive</strong>
- <p id="cloud-status" role="status" aria-live="polite">Excel y PDF se guardan desde aquí. Microsoft puede solicitar iniciar sesión.</p>
- <p class="cloud-target">Destino: <strong>REGISTRO DE PDF DIGITAL</strong> · <span>Registro_Bobinas_Cimagraf.xlsx</span></p>
+ <p id="cloud-status" role="status" aria-live="polite">Excel y PDF se guardan por separado. Microsoft puede solicitar iniciar sesión.</p>
+ <p class="cloud-target">Excel: BASE DE DATOS de la Kirin seleccionada. PDF: REGISTRO DE BOBINAS de esa misma Kirin.</p>
  <div class="cloud-actions">
   <button class="multi-button" id="cloud-retry" type="button" hidden>Reintentar guardado</button>
   <button class="multi-button" id="cloud-edit" type="button" hidden>Volver para corregir</button>
+  <button class="multi-button" id="cloud-save-pdf" type="button" hidden>Guardar PDF de este grupo</button>
   <button class="multi-button" id="cloud-print" type="button" hidden>Imprimir rótulos guardados</button>
   <button class="multi-primary" id="cloud-next" type="button" hidden>Siguiente grupo</button>
   <a id="cloud-excel-link" target="_blank" rel="noopener noreferrer" hidden>Ver Excel ↗</a>
   <a id="cloud-last-pdf" target="_blank" rel="noopener noreferrer" hidden>Ver PDF ↗</a>
  </div>
 </section>
-<script src="report-pdf.js?v=5.0.0"></script>
-<script src="cloud-destination.js?v=4.13.0"></script>
-<script src="cloud-storage.js?v=5.0.0"></script>
+<script src="report-pdf.js?v=5.1.0"></script>
+<script src="cloud-destination.js?v=5.1.0"></script>
+<script src="cloud-storage.js?v=5.1.0"></script>
 <script src="machine-registry.js?v=4.16.3"></script>
-<script src="production.js?v=5.0.0"></script>
-<script src="excel-store.js?v=5.0.0"></script>
-<script src="cloud-excel.js?v=5.0.0"></script>
+<script src="production.js?v=5.1.0"></script>
+<script src="excel-store.js?v=5.1.0"></script>
+<script src="cloud-excel.js?v=5.1.0"></script>
 </body>
 </html>

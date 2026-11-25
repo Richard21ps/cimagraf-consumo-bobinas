@@ -40,7 +40,7 @@ async function decode(response){
  if(response.status===204)return null;
  return response.json();
 }
-async function connect(){
+async function connect(kind='legacy',machine){
  const access=await token();if(!access)return null;
  const request=async(path,options={})=>{
   if(!path.startsWith('/')||path.startsWith('//'))throw Error('Ruta de Microsoft no válida.');
@@ -64,7 +64,16 @@ async function connect(){
   return decode(response);
  }
  const destination={drive:item.parentReference.driveId,id:item.id,name:item.name};
- return {destination,request,createFile};
+ const result={destination,request,createFile};
+ if(kind==='excel'||kind==='pdf'){
+  const route=window.CimagrafDestinations?.[machine];if(!route)throw Error('Selecciona una máquina válida.');
+  const selected=await request('/users/'+encodeURIComponent(fixed.owner)+'/drive/root:/'+encodeURIComponent(route[kind]));
+  const target=selected.remoteItem||selected;
+  if(!target.folder||!target.id||!target.parentReference?.driveId)throw Error('No se encontró la carpeta '+route[kind]+'.');
+  result[kind==='excel'?'workbookDestination':'pdfDestination']={drive:target.parentReference.driveId,id:target.id};
+  result.bookName=route.book;
+ }
+ return result;
 }
 window.CimagrafCloud={connect};
 })();

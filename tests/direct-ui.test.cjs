@@ -10,7 +10,7 @@ function ui({local=storage(),session=storage(),failure='',query=''}={}){
   CimagrafArchive:{refresh(){},preflight:()=>true,snapshot:()=>structuredClone(snapshot),reportHTML:()=>'<article>Rótulo</article>',restore:s=>{restores++;snapshot=structuredClone(s);},reset(){resets++;window.CimagrafProduction.reset();},print(){prints++;}},
   CimagrafCloud:{connect:async()=>{connections++;if(fail==='auth')throw Error('Sin acceso');return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
   CimagrafReportPDF:{render:async()=>new ArrayBuffer(1)},
-  CimagrafExcelStore:{create:({remember})=>({save:async j=>{saves++;if(fail==='partial'){j.plan={start:2};remember(j);throw Error('Conexión interrumpida');}j.saved=true;j.lockReleased=true;j.excelUrl='https://empresa.sharepoint.com/libro';j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);}})}
+  CimagrafExcelStore:{create:({remember})=>({savePDF:async j=>{j.saved=true;j.lockReleased=true;j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);},save:async j=>{saves++;if(fail==='partial'){j.plan={start:2};remember(j);throw Error('Conexión interrumpida');}j.saved=true;j.lockReleased=true;j.excelUrl='https://empresa.sharepoint.com/libro';j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);}})}
  };
  const context={window,document,localStorage:local,sessionStorage:session,crypto:require('node:crypto').webcrypto,navigator:{},URL,location:{hash:query,search:''},console};
  vm.createContext(context);for(const file of ['production.js','cloud-excel.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),context);
@@ -58,4 +58,16 @@ test('Producción: activa sin consumir un ID; guarda una vez y continúa el cont
   assert.equal(f.node('machine-start').hidden,true);assert.equal(reserves,0);assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 03');
   await f.click('multi-register');assert.equal(reserves,1);f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 4C - 04');
  }finally{registry.create=original;}
+});
+
+test('PDF independiente no guarda Excel ni avanza el ID; conserva editor',async()=>{
+ const f=ui();f.choose('kirin-1c');await f.click('multi-save-pdf');
+ assert.equal(f.stats().saves,0);assert.equal(f.node('multi-root').inert,false);assert.equal(f.local.getItem('cimagraf-excel-pending-v1'),null);
+ assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 1C - 01');
+ await f.click('multi-register');assert.equal(f.stats().saves,1);
+});
+test('Excel primero, PDF después: conserva recibo de Excel y siguiente grupo',async()=>{
+ const f=ui();f.choose('kirin-4c');await f.click('multi-register');await f.click('cloud-save-pdf');
+ assert.equal(f.stats().saves,1);assert.equal(f.node('cloud-next').hidden,false);assert.equal(f.node('multi-root').inert,true);
+ f.click('cloud-next');assert.equal(f.window.CimagrafProduction.metadata().recordId,'PRUEBA · KIRIN 4C - 02');
 });

@@ -7,12 +7,13 @@ registry.create=()=>({open:async(_,key)=>key,next:async key=>counters[key]+1,res
  if(!saved.has('id-'+draft.id))saved.set('id-'+draft.id,++counters[key]);
  const number=saved.get('id-'+draft.id);return {number,recordId:registry.recordId(key,number)};
 }});
-window.CimagrafExcelStore={create:({remember})=>({save:async job=>{
- job.pdfStarted=true;job.plan={start:2};remember(job);
+const createExcel=({remember})=>({save:async job=>{
+ job.plan={start:2};remember(job);
  if(parent.CimagrafDemoDelay)await parent.CimagrafDemoDelay();
  if(parent.CimagrafDemoFail?.())throw Error('Corte de red simulado');
  if(!saved.has(job.id))saved.set(job.id,window.CimagrafRecord.rows(job.snapshot.result,job.created,job.id,'https://ejemplo.sharepoint.com/pdf'));
- job.saved=true;job.lockReleased=true;job.pdfUrl='https://ejemplo.sharepoint.com/pdf';job.excelUrl='https://ejemplo.sharepoint.com/excel';remember(job);
+ job.saved=true;job.lockReleased=true;job.excelUrl='https://ejemplo.sharepoint.com/excel';remember(job);
  parent.CimagrafDemoSaved?.(saved.get(job.id));
-}})};
+}});
+window.CimagrafExcelStore={create:options=>{const store=createExcel(options);store.savePDF=async job=>{job.pdfStarted=true;job.pdfUrl='https://ejemplo.sharepoint.com/pdf';job.saved=true;job.lockReleased=true;options.remember(job);};return store;}};
 })();

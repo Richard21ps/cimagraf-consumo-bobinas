@@ -23,8 +23,9 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
   }
  }
  async function workbook(){
-  let book=await optional(path(root,BOOK));
-  if(!book){status('Preparando el Excel compartido…');book=await file(root,BOOK,await loadTemplate(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}
+  const target=cloud.workbookDestination,dir=target?itemPath(target.drive,target.id):root,name=cloud.bookName||BOOK;
+  let book=await optional(path(dir,name));
+  if(!book){status('Preparando el Excel compartido…');book=await file(dir,name,await loadTemplate(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}
   if(!book.id||book.folder)throw Error('No se pudo identificar el Excel del registro.');return book;
  }
  async function readJson(item){return request(itemPath(cloud.destination.drive,item.id)+'/content');}
@@ -40,8 +41,8 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
   await request(url,{method:'DELETE',headers:current.eTag?{'If-Match':current.eTag}:{}});
  }
  async function savePDF(job){
-  const result=job.snapshot.result,dir=await folder(root,result.machine);
-  if(job.pdfId){const saved=await request(itemPath(cloud.destination.drive,job.pdfId));job.pdfUrl=saved.webUrl;remember(job);return;}
+  const result=job.snapshot.result,target=cloud.pdfDestination,dir=target?itemPath(target.drive,target.id):await folder(root,result.machine);
+  if(job.pdfId){const saved=await request(itemPath(cloud.pdfDestination?.drive||cloud.destination.drive,job.pdfId));job.pdfUrl=saved.webUrl;remember(job);return;}
   status('Preparando el PDF de las bobinas…');
   // El nombre se reserva antes de cargar para recuperar una respuesta interrumpida.
   if(job.pdfStarted){
@@ -69,12 +70,12 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
   let hold=!!job.plan,completed=false;
   try{
    remember(job);
-   const book=await workbook(),base=itemPath(cloud.destination.drive,book.id)+'/workbook';
+   const book=await workbook(),base=itemPath(cloud.workbookDestination?.drive||cloud.destination.drive,book.id)+'/workbook';
    const sheet=job.snapshot.result.runMode==='production'?'Registros':'Pruebas',table=sheet==='Registros'?'RegistrosBobinas':'PruebasBobinas';
    const tableBase=base+'/tables/'+table,sheetBase=base+'/worksheets/'+sheet;
    const header=await request(tableBase+'/headerRowRange');
    if(JSON.stringify(header.values?.[0])!==JSON.stringify(record.headers))throw Error('Los encabezados del Excel cambiaron. Conserva las columnas del registro antes de reintentar.');
-   await savePDF(job);
+   if(job.kind!=='excel')await savePDF(job);
    const expected=record.rows(job.snapshot.result,job.created,job.id,job.pdfUrl);
    if(!expected.length)throw Error('El registro no contiene movimientos de bobinas.');
    const journalURL=path(journalDir,job.id+'.json');
@@ -116,7 +117,11 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
    if(completed||!hold){try{await release(lock);job.lockReleased=true;remember(job);}catch(e){if(completed){job.lockReleased=false;remember(job);throw Error('El registro está guardado. Pulsa Reintentar para liberar el turno de Excel.');}throw e;}}
   }
  }
- return {save};
+ async function savePDFOnly(job){
+  if(scope.CimagrafRecord.missing(job.snapshot.result))throw Error('Completa lote y SAP.');
+  await savePDF(job);job.saved=true;job.lockReleased=true;remember(job);return job;
+ }
+ return {save,savePDF:savePDFOnly};
 }
 scope.CimagrafExcelStore={create,bookName:BOOK};
 })(typeof window==='undefined'?module.exports:window);

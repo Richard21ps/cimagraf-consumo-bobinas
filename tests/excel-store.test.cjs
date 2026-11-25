@@ -4,7 +4,7 @@ test('Excel y rótulo: SAP por bobina, lotes con ceros, fechas Lima y un decimal
  const r=calculate(),rows=record.rows(r,'2026-11-25T02:30:00Z','abcdefgh');
  assert.equal(rows[0][0],'24/11/2026');assert.equal(rows[0][6],'000123-0');assert.equal(rows[0][7],'01.01.01.100045');assert.equal(rows[0][25],'abcdefgh:1');
  const out=record.labelHTML(r,'2026-11-25T14:30:00Z','data:image/png;base64,abcd');
- assert.match(out,/label-logo/);assert.match(out,/#000123-0/);assert.match(out,/01.01.01.100045/);assert.match(out,/160\.7 KG/);assert.doesNotMatch(out,/Libros|Copias|Set up/);
+ assert.match(out,/label-logo/);assert.match(out,/LOTE: 000123-0/);assert.match(out,/01.01.01.100045/);assert.match(out,/160\.7 kg/);assert.doesNotMatch(out,/Libros|Copias|Set up/);
 });
 test('Varias OP/bobinas: saldos secuenciales, retiros una vez, final sin duplicar',()=>{
  const base={copies:1,advance:1000,setupBooks:0,calibration:false,stops:0};
@@ -72,4 +72,14 @@ test('Bobina agotada: registra saldo cero sin fabricar un rótulo de devolución
  const base={id:'A',books:100,copies:1,advance:1000,setupBooks:0,calibration:false,stops:0};
  const r=calculate([base],[{kg:4.32}]);assert.equal(record.labelHTML(r,new Date().toISOString()),'');
  const s=server(),j=job('abcdefgh-1234',r);await store(s).save(j);assert.ok(Math.abs(s.sheets.Pruebas.get(2)[14])<1e-8);
+});
+
+test('Excel independiente: nunca genera ni sube PDF',async()=>{
+ const s=server(),j=job();j.kind='excel';await store(s,()=>{},async()=>{throw Error('No debe renderizar PDF');}).save(j);
+ assert.ok(j.saved);assert.equal(j.pdfId,undefined);assert.equal(s.calls.filter(c=>c.options.type==='application/pdf').length,0);
+});
+test('PDF independiente: no crea ni toca un Excel',async()=>{
+ const s=server(),j=job();j.kind='pdf';s.cloud.pdfDestination={drive:'drive',id:'root'};await store(s).savePDF(j);
+ assert.ok(j.saved);assert.equal(s.calls.filter(c=>c.url.includes('/workbook')||c.url.includes('.xlsx')).length,0);
+ assert.equal([...s.items.values()].filter(x=>x.item.name.endsWith('.pdf')).length,1);
 });
