@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
-const helpers=html.slice(html.indexOf("$('multi-add-roll').addEventListener"),html.indexOf('function mode(useMulti)'));
+const helpers=html.slice(html.indexOf("$('multi-add-roll').addEventListener"),html.indexOf('function mode()'));
 const engine=html.slice(html.indexOf('function coreTareFor('),html.indexOf('\nfunction table('));
 function fixture(saved={},machine='kirin-1c'){
  const nodes={};const memory=new Map(Object.entries(saved));

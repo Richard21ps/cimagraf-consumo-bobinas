@@ -1,115 +1,23 @@
-# PDF directo a OneDrive — v4.19.5
+# PDF en OneDrive · 5.0.0
 
-Se usa Microsoft Graph con autenticación delegada, sin Power Automate,
-servidor propio ni secreto de cliente. La aplicación y el inquilino son los
-identificadores facilitados por el propietario. El URI SPA debe ser exactamente
-https://richard21ps.github.io/cimagraf-consumo-bobinas/
+Guardar en Excel genera el PDF usando el mismo HTML de Imprimir rótulos.
+record-data.js y labels.css definen el rótulo; report-pdf.js lo convierte a
+A4 horizontal, con margen de 12 mm y logo decodificado antes de capturar.
+El PDF conserva el aspecto impreso mediante imágenes; no es texto seleccionable.
 
-Permiso delegado: Files.ReadWrite. Microsoft puede exigir aprobación según
-la política del inquilino. Cada cuenta debe tener edición en la carpeta destino.
-La configuración de permisos por sí sola no equivale al consentimiento.
+Destino: REGISTRO DE PDF DIGITAL/Kirin 1C o Kirin 4C. No hay carpetas por OP.
+Nombre: D13924 - Kirin 1C.pdf; varias OP: D13924 ／ D13925 - Kirin 1C.pdf.
+La barra Unicode U+FF0F evita el separador de rutas ASCII. Si ya existe un
+archivo, se conserva y el nuevo recibe (2), (3), etc.
 
-## Operación
+Cada bobina utilizada con saldo tiene una página. Si todas se agotaron,
+se archiva el resumen de consumo del grupo. Los pesos se muestran a un
+decimal, conservando precisión en Excel.
 
-1. Pulsar «Enviar a Forms»: abre el formulario e inicia el guardado del PDF.
-2. La carpeta común se selecciona automáticamente: REGISTRO DE PDF DIGITAL
-   del OneDrive de richard.pereyra@cimagraf.com.pe. Iniciar sesión si hace falta.
-   El trabajo y el vínculo precargado de Forms se conservan durante el retorno.
-3. La confirmación de Graph marca el PDF guardado; NO borra el trabajo ni
-   certifica que Forms recibió la respuesta.
-4. Completar Forms y esperar su confirmación. Pulsar «Ya envié · Siguiente
-   grupo» para limpiar únicamente después de guardar el PDF.
+Se reutiliza la aplicación corporativa y Files.ReadWrite delegado. MSAL
+Browser 5.27.0 y html2pdf.js 0.14.0 se cargan bajo demanda desde jsDelivr,
+con versión e integridad SHA-384 fijadas. No hay contraseña ni secreto de
+aplicación en el repositorio; no se alteran permisos de OneDrive.
 
-Nombre nuevo: `<OP> - <Máquina>.pdf`; por ejemplo, `D1232 - Kirin 1C.pdf`.
-Con varias OP: `D1232 ／ D1233 - Kirin 4C.pdf`. Se usa la barra Unicode U+FF0F
-para distinguirla del carácter ASCII `/`, reservado a las rutas. El enlace visible muestra ese
-nombre, sin fechas ni identificadores adicionales, salvo el sufijo de OneDrive
-si coincide con un nombre existente. El resumen del grupo sigue
-siendo un solo PDF, con todas las OP y bobinas.
-
-Los PDF nuevos se guardan en **Kirin 1C** o **Kirin 4C**, dentro de
-REGISTRO DE PDF DIGITAL, según la máquina del registro. Se reutiliza la
-carpeta existente o se crea con el primer guardado. No hay carpetas por OP.
-Si existe un PDF con el mismo nombre en esa carpeta, OneDrive agrega un sufijo
-y conserva ambos. El enlace visible muestra el nombre confirmado por OneDrive.
-Los archivos históricos se conservan y los guardados pendientes retoman su
-ruta original.
-
-El separador se conserva en cada trabajo pendiente. Los registros creados en
-v4.18.0 retoman `+`; los nuevos usan `／` tanto en OneDrive como en el enlace.
-
-Si el iframe redirige a login.microsoftonline.com, Microsoft impide cargar esa
-pantalla de autenticación dentro del marco. Revisar la configuración de Forms
-«Cualquier persona puede responder». El enlace alternativo precargado permanece
-visible, sin alterar permisos del formulario ni enviar respuestas de prueba.
-
-La ubicación fue confirmada al abrir el vínculo facilitado por el propietario:
-/personal/richard_pereyra_cimagraf_com_pe/Documents/REGISTRO DE PDF DIGITAL.
-cloud-destination.js fija owner y path, sin incluir el enlace de uso compartido.
-Graph resuelve /users/{owner}/drive/root:/{path} con la sesión de la cuenta activa
-y devuelve driveId y folderId. La carga conserva las comprobaciones de tamaño
-e identificador del archivo. No se solicita un enlace por equipo ni se crea
-una carpeta alternativa si falta acceso. Los permisos de edición siguen siendo
-necesarios; esta configuración no concede permisos ni cambia los existentes.
-
-La reapertura de un grupo ya guardado reutiliza el enlace al PDF confirmado.
-Esta protección no deduplica respuestas que se envíen por separado a Forms.
-
-Los errores mantienen el registro pendiente y bloquean la edición del trabajo
-hasta guardar. No reenviar Forms: usar «Reintentar guardar PDF». La recuperación
-se limita a la misma pestaña/sesión del navegador. Cerrar la sesión o borrar
-sus datos puede eliminar el trabajo pendiente, que todavía no es un archivo
-archivado en OneDrive.
-
-Las bibliotecas MSAL Browser 5.27.0 y html2pdf.js 0.14.0 (bundle) se cargan bajo demanda desde
-jsDelivr con versiones fijadas y SHA-384. Los tokens se administran mediante
-MSAL con caché de sesión, no se incorporan al código ni se registran en logs.
-
-## Validación
-
-- 59 pruebas existentes del motor y Forms.
-- tests/cloud-pdf.test.cjs: carga simulada, permisos denegados, reintentos,
-  recuperación, nombre estable y conservación de datos.
-- PDF real generado con jsPDF y logo, texto y render revisados.
-- La carga real necesita completar el inicio de sesión y confirmar el permiso
-  de edición en la carpeta. No se envían respuestas de prueba a Forms.
-
-## Destino común activado — v4.13.0
-
-La ruta owner/path tiene prioridad sobre configuraciones locales anteriores.
-El apartado para introducir vínculos queda oculto y el destino común aparece
-junto al estado del PDF. Las pruebas cubren un navegador sin configuración,
-una configuración local distinta y una denegación de permisos. La primera carga
-real con esta ruta debe comprobarse con una cuenta autorizada.
-
-## Plantilla única de resumen — v4.13.0
-
-La impresión y el archivo usan buildPrintSummary, expuesto mediante reportHTML.
-report-summary.css define su diseño común. report-pdf.js convierte ese HTML en
-PDF A4 con margen de 12 mm, imágenes decodificadas y escala de captura 2.
-Las filas y el total se protegen contra cortes. El PDF usa imágenes por página
-para conservar el aspecto del documento; el texto no se exporta como texto
-seleccionable. Los saltos de página pueden variar respecto del diálogo de
-impresión según el navegador y sus opciones de impresión.
-
-La pantalla tests/pdf-layout.html genera datos ficticios y permite revisar la
-plantilla y su PDF, con una página o 45 movimientos, sin autenticar usuarios,
-escribir archivos en OneDrive ni enviar Forms. Las pruebas de la carga mock
-verifican que se pasa exactamente el HTML compartido al conversor, el A4,
-los márgenes, la protección de filas y el retorno en memoria.
-
-## Volver al editor sin bloqueo — v4.14.2
-
-«Volver sin borrar» conserva los datos y desbloquea el editor, incluso durante
-una carga lenta del PDF. La finalización de esa carga no vuelve a bloquearlo.
-Mientras el PDF se guarda se puede editar, pero no iniciar un segundo registro.
-
-Al volver a registrar sin cambios, se retoma el mismo Forms y PDF. Con cambios,
-el motor valida y prepara una nueva precarga y un PDF con los datos corregidos.
-Los PDF previamente guardados se conservan. El programa no envía, modifica ni
-verifica respuestas de Microsoft Forms: si el usuario ya lo envió, no debe
-volver a enviar esa respuesta.
-
-La recuperación clona las OP y bobinas para que editar el formulario no altere
-la instantánea archivada. Las pruebas cubren retorno con guardado correcto,
-reapertura sin cambios, correcciones y retorno durante una carga pendiente.
+Ver PDF y Ver Excel se habilitan tras confirmar el guardado. Los reintentos
+recuperan el mismo grupo. Consultar registro-excel.md para uso y recuperación.

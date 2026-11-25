@@ -22,8 +22,8 @@ window.CimagrafReportPDF={async render(html){
  return window.html2pdf().set({
   margin:12,
   image:{type:'jpeg',quality:0.98},
-  html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:false,logging:false,windowWidth:1000,scrollX:0,scrollY:0},
-  jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+  html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:false,logging:false,windowWidth:1100,scrollX:0,scrollY:0},
+  jsPDF:{unit:'mm',format:'a4',orientation:'landscape',compress:true},
   pagebreak:{mode:['css','legacy'],avoid:['tr','.print-total','.print-material-strip','.print-heading']}
  }).from(report).toPdf().outputPdf('arraybuffer');
 }};

@@ -1,27 +1,18 @@
-<!doctype html><html lang="es"><meta charset="utf-8"><title>Prueba visual PDF CIMAGRAF</title>
-<link rel="stylesheet" href="../report-summary.css?v=4.15.2">
-<style>body{font-family:Arial;background:#e6e9ec;margin:20px}button{padding:12px}#source{background:#fff;width:186mm;padding:12mm;box-sizing:content-box;margin:16px auto}#app{position:absolute;left:-10000px;width:1200px;height:800px}#result{width:100%;height:900px;border:0}#state{padding:12px;background:white}</style>
-<h1>Prueba visual con datos ficticios</h1><p>No guarda en OneDrive ni envía respuestas a Forms.</p>
-<button id="render" disabled>Generar PDF de prueba</button><button id="many" disabled>Probar varias páginas</button><p id="state">Cargando plantilla…</p><a id="download" hidden download="cimagraf-prueba.pdf">Descargar PDF de prueba</a><iframe id="result" title="PDF generado" hidden></iframe><div id="source"></div><iframe id="app" src="../index.html?v=4.15.2" title="Calculadora para recuperar plantilla"></iframe>
-<script src="../report-pdf.js"></script><script>
-let r;
-const app=document.getElementById('app'),state=document.getElementById('state');let url;
-app.onload=()=>{
- const w=app.contentWindow,d=app.contentDocument;
- const select=d.getElementById('machine-select');
- if(!select.value){select.value='kirin-1c';select.dispatchEvent(new w.Event('change',{bubbles:true}));}
- const width=d.getElementById('multi-width');width.value=select.value==='kirin-4c'?'469':'480';width.dispatchEvent(new w.Event('change',{bubbles:true}));
- const fields={'#multi-group':'PRUEBA VISUAL','[data-op="0"][data-field="id"]':'OP01','[data-op="0"][data-field="books"]':'100','[data-op="0"][data-field="copies"]':'30','[data-op="0"][data-field="advance"]':'240','[data-op="0"][data-field="setupBooks"]':'10','[data-op="0"][data-field="stops"]':'2','[data-roll="0"][data-field="lot"]':'000123-A','[data-roll="0"][data-field="kg"]':'200'};
- for(const [selector,value] of Object.entries(fields)){const el=d.querySelector(selector);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));}
- const calibration=d.querySelector('[data-field="calibration"]');calibration.checked=true;calibration.dispatchEvent(new w.Event('input',{bubbles:true}));
- queueMicrotask(()=>{r=w.CimagrafArchive.snapshot().result;document.getElementById('render').disabled=!r;document.getElementById('many').disabled=!r;state.textContent=r?'Plantilla lista con cálculo real de set up, calibración, paradas y empalmes.':'No se pudo preparar el ejemplo.';});
-};
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Prueba visual del rótulo CIMAGRAF</title>
+<link rel="stylesheet" href="../report-summary.css?v=5.0.0"><link rel="stylesheet" href="../labels.css?v=5.0.0">
+<style>body{font:14px Arial;background:#e6e9ec;margin:20px}button{padding:10px;margin-right:8px}#source{background:white;width:273mm;margin:15px auto}#app{position:absolute;left:-10000px;width:1200px;height:800px}#result{width:100%;height:850px;border:0}#state{padding:12px;background:white}</style>
+<h1>Prueba visual con datos ficticios</h1><p>No inicia sesión ni escribe en Microsoft. PDF y rótulo comparten HTML y estilos.</p>
+<button id="render" disabled>Generar PDF</button><button id="many" disabled>Probar 3 páginas</button><p id="state">Cargando…</p><a id="download" hidden download="cimagraf-prueba.pdf">Descargar PDF</a><iframe id="result" title="PDF generado" hidden></iframe><div id="source"></div><iframe id="app" title="Calculadora aislada"></iframe>
+<script src="test-frame.js?v=5.0.0"></script><script src="../report-pdf.js?v=5.0.0"></script><script>
+const app=document.getElementById('app'),state=document.getElementById('state');let r,url;
+app.onload=()=>{if(!app.contentWindow.CimagrafArchive)return;CimagrafTestFrame.seed(app);queueMicrotask(()=>{r=app.contentWindow.CimagrafArchive.snapshot().result;document.getElementById('render').disabled=!r;document.getElementById('many').disabled=!r;state.textContent=r?'Rótulo listo para generar.':'Error al calcular.';});};
 async function generate(many){try{
- state.textContent='Generando…';let data=JSON.parse(JSON.stringify(r));
- if(many){const archive=app.contentWindow.CimagrafArchive,snapshot=archive.snapshot();snapshot.ops=Array.from({length:45},(_,i)=>({id:'OP'+(i+1),books:10,copies:30,advance:240,setupBooks:1,calibration:false,stops:1}));snapshot.rolls=[{id:'Bobina 1',lot:'000123-A',kg:500,width:snapshot.rolls[0].width,scrap:5,coreGross:0,coreTare:''}];archive.restore(snapshot);data=archive.snapshot().result;}
- const html=app.contentWindow.CimagrafArchive.reportHTML(data,'2026-11-04T14:30:00Z');document.getElementById('source').innerHTML='<section class="cimagraf-report">'+html+'</section>';
+ state.textContent='Generando PDF…';const data=JSON.parse(JSON.stringify(r));
+ if(many){const first=data.usedRolls[0];data.usedRolls=Array.from({length:3},(_,i)=>({...first,id:'Bobina '+(i+1),lot:'000123-'+(i+1)}));data.details=data.usedRolls.map(b=>({...data.details[0],bobina:b.id}));}
+ const html=app.contentWindow.CimagrafArchive.reportHTML(data,'2026-11-25T14:30:00Z');document.getElementById('source').innerHTML='<section class="cimagraf-report">'+html+'</section>';
  const bytes=await CimagrafReportPDF.render(html);if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
- const result=document.getElementById('result');result.src=url;result.hidden=false;const a=document.getElementById('download');a.href=url;a.hidden=false;state.textContent='PDF generado: '+bytes.byteLength+' bytes. La plantilla original está debajo.';
+ const frame=document.getElementById('result');frame.src=url;frame.hidden=false;const a=document.getElementById('download');a.href=url;a.hidden=false;state.textContent='PDF generado: '+bytes.byteLength+' bytes.';
 }catch(e){state.textContent='Error: '+e.message;}}
 document.getElementById('render').onclick=()=>generate(false);document.getElementById('many').onclick=()=>generate(true);
+CimagrafTestFrame.mount(app).catch(e=>{state.textContent=e.message;});
 </script></html>

@@ -1,0 +1,15 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Prueba aislada del registro directo</title>
+<style>body{font:14px Arial;margin:0;color:#172b3a}header{padding:14px;background:#eaf4f9}button{padding:8px;margin:3px}iframe{border:0;width:100%;height:1100px}#rows{overflow:auto;font-size:12px;max-height:140px}label{margin-right:12px}</style>
+<header><strong>PRUEBA AISLADA · DATOS FICTICIOS</strong><p>Usa los botones reales. No inicia sesión ni escribe archivos en Microsoft. El almacenamiento de la calculadora real no se modifica.</p>
+<button id="seed" disabled>Cargar ejemplo</button><label><input id="fail" type="checkbox"> Simular corte</label><label><input id="slow" type="checkbox"> Simular espera</label><button id="finish">Terminar espera</button><button id="reload">Recuperar editor</button>
+<p id="state">Cargando…</p><pre id="rows"></pre></header><iframe id="app" title="Editor aislado"></iframe>
+<script src="test-frame.js?v=5.0.0"></script><script>
+const app=document.getElementById('app'),state=document.getElementById('state');let finish;
+window.CimagrafDemoFail=()=>document.getElementById('fail').checked;
+window.CimagrafDemoDelay=()=>document.getElementById('slow').checked?new Promise(resolve=>{finish=resolve;}):Promise.resolve();
+window.CimagrafDemoSaved=rows=>{state.textContent='Guardado simulado confirmado: '+rows.length+' fila(s).';document.getElementById('rows').textContent=JSON.stringify(rows,null,2);};
+app.onload=()=>{if(!app.contentWindow.CimagrafArchive)return;document.getElementById('seed').disabled=false;state.textContent='Editor listo. Carga un ejemplo y pulsa Guardar en Excel.';};
+document.getElementById('seed').onclick=()=>CimagrafTestFrame.seed(app);
+document.getElementById('finish').onclick=()=>{finish?.();finish=null;};document.getElementById('reload').onclick=()=>CimagrafTestFrame.mount(app);
+CimagrafTestFrame.mount(app).catch(e=>{state.textContent=e.message;});
+</script></html>

@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const html = readFileSync(require('node:path').join(__dirname, '../index.html'), 'utf8');
 // Ejecuta la función de producción, sin mantener una copia del motor.
-const start = html.indexOf('function validate(', html.indexOf('const GROUP_FORM_KEYS'));
+const start = html.indexOf('function validate(', html.indexOf('const EPS='));
 const source = html.slice(start, html.indexOf('\nfunction table(', start));
 const removalSource=html.slice(html.indexOf('function coreTareFor('),start);
 function calculate(meters, bobbins, paper='Otro papel', gsm=70) {
@@ -59,18 +59,13 @@ test('Motivo nuevo: formulario oculto hasta que se solicite',()=>{const c=proble
 test('Motivo elegido reemplaza el selector y permite cambiar',()=>{const c=problemContext('["Motivo A"]');c.roll={id:'Bobina 1',problems:['Motivo A']};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/Motivo A/);assert.doesNotMatch(output,/data-problem-select/);assert.match(output,/data-problem-remove/);});
 const printStart=html.indexOf('function buildPrintSummary(r,stamp){');
 const printSource=html.slice(printStart,html.indexOf('function preparePrintSummary(){',printStart));
-const tableStart=html.indexOf('function table(headers,rows){',html.indexOf('const GROUP_FORM_KEYS'));
+const tableStart=html.indexOf('function table(headers,rows){',html.indexOf('const EPS='));
 const tableSource=html.slice(tableStart,html.indexOf('function renderRollUsage(r){',tableStart));
 function printReport(r){const c={r,escapeHtml:s=>String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')};vm.createContext(c);return vm.runInContext(numberFormatSource+tableSource+printSource+";buildPrintSummary(r,'Fecha de prueba')",c);}
 test('Impresión: varias OP comparten bobina sin duplicar saldo final',()=>{const r=calculate([400,600],[[200,1000,10]]);const output=printReport(r);assert.match(output,/26[.]6/);assert.match(output,/40[.]6/);assert.match(output,/162[.]0/);assert.match(output,/TOTAL A ENTREGAR AL ALMACÉN <strong>120[.]0 kg/);});
 test('Impresión: OP que usa varias bobinas incluye agotadas y saldo final',()=>{const output=printReport(calculate([2000],[[75,1000,5],[200,500,10]]));assert.match(output,/Bobina 1/);assert.match(output,/Bobina 2/);assert.match(output,/TOTAL A ENTREGAR AL ALMACÉN <strong>155[.]0 kg/);});
 test('Impresión: separa bobinas sin utilizar de la devolución y escapa identificadores',()=>{const r=calculate([1000],[[200,1000,10],[300,500]]);r.group='<img src=x>';r.details[0].op='<script>';const output=printReport(r);assert.doesNotMatch(output.split('class="print-bobbin-lots"')[0],/Bobina 2/);assert.doesNotMatch(output,/<img src=x>|<script>/);assert.match(output,/&lt;script&gt;/);});
 test('Impresión disponible fuera del desglose, sin enviar a Forms',()=>{assert.ok(html.indexOf('id="multi-print"')>html.indexOf('</details>',html.indexOf('id="multi-calculation-details"')));const listener=html.slice(html.indexOf("$('multi-print').addEventListener"),html.indexOf("window.addEventListener('beforeprint'"));assert.match(listener,/window[.]print/);assert.doesNotMatch(listener,/forms|fetch|submit/);});
-test('Envío habilitado con saldos cero, inferiores a 100 y mayores',()=>{
- const refreshStart=html.indexOf('function refreshOpQueue(){');
- const refresh=html.slice(refreshStart,html.indexOf('function groupText(',refreshStart));
- for(const kg of [80,80.01,179,180,200]){const r=calculate([1000],[[kg,1000,10]]);r.group='PRUEBA';r.loads[0].lot='0001';const elements={};const c={window:{},result:r,escapeHtml:String,WITHDRAWAL_FORM_KEYS:{reasons:"",areas:""},$:id=>elements[id]??(elements[id]={})};vm.createContext(c);vm.runInContext(numberFormatSource+tableSource+printSource+refresh+';refreshOpQueue()',c);assert.equal(elements['multi-register'].disabled,false);}
-});
 test('Sin mensajes ni controles de devolución mínima en cálculo, gráfica o impresión',()=>{assert.doesNotMatch(html,/MIN_RETURN_PER_BOBINA|returnViolations|100 kg|Envío bloqueado: cada bobina/);const output=printReport(calculate([1000],[[179,1000,10]]));assert.match(output,/TOTAL A ENTREGAR AL ALMACÉN <strong>99[.]0 kg/);assert.doesNotMatch(output,/print-review/);});
 test('Logo PNG integrado e idéntico en calculadora e impresión',()=>{const logo=html.match(/class="brand-logo" src="(data:image\/png;base64,[^"]+)"/)[1];const printed=printReport(calculate([1000],[[179,1000,10]]));assert.ok(printed.includes('class="print-logo" src="'+logo+'"'));assert.equal(Buffer.from(logo.split(',')[1],'base64').subarray(1,4).toString(),'PNG');});
 
@@ -98,46 +93,12 @@ test('Áreas: Almacén y Planta digital disponibles con catálogo vacío o invá
 test('Áreas: selección múltiple sin duplicados y sin cambiar pesos',()=>{const c=problemContext('[]');c.roll={scrap:'12',coreGross:'8'};vm.runInContext("assignArea(roll,'Almacén');assignArea(roll,'almacén');assignArea(roll,' Planta digital ')",c);assert.equal(c.roll.areas.length,2);assert.equal(c.roll.scrap,'12');assert.equal(c.roll.coreGross,'8');});
 test('Áreas guardadas: limpia nombres y conserva opciones predeterminadas',()=>{const c=problemContext('["Mantenimiento","mantenimiento",null,42]');assert.equal(vm.runInContext('areaCatalog.join("|")',c),'Almacén|Planta digital|Mantenimiento');});
 test('Área elegida reemplaza el selector, con HTML escapado',()=>{const c=problemContext('[]');c.roll={id:'Bobina 2',areas:['<Área>']};const output=vm.runInContext('problemControls(roll,1)',c);assert.doesNotMatch(output,/data-area-select/);assert.doesNotMatch(output,/data-area-start/);assert.match(output,/&lt;Área>/);assert.doesNotMatch(output,/<Área>/);assert.match(output,/data-area-remove="0"/);});
-const withdrawalStart=html.indexOf('function withdrawalFormAnswers(');
-const withdrawalSource=html.slice(withdrawalStart,html.indexOf('function groupText(',withdrawalStart));
-test('Forms: respuestas distinguen bobinas y no incluyen sobrante sin papel retirado',()=>{const c={r:{loads:[{id:'Bobina 1',retired:12,problems:['Lonjas dañadas'],areas:['Almacén']},{id:'Bobina 2',retired:0,corePaper:10,problems:['No enviar'],areas:['No enviar']},{id:'Bobina 3',retired:2,problems:['Ajuste'],areas:['Planta digital','Mantenimiento']}]},fmt:String,WITHDRAWAL_FORM_KEYS:{reasons:'',areas:''}};vm.createContext(c);const answers=vm.runInContext(withdrawalSource+';withdrawalFormAnswers(r)',c);assert.match(answers.reasons,/Bobina 1 \(12 kg\): Lonjas dañadas/);assert.match(answers.areas,/Planta digital; Mantenimiento/);assert.doesNotMatch(answers.reasons+answers.areas,/Bobina 2|No enviar/);assert.equal(vm.runInContext('withdrawalFieldsConnected()',c),false);});
 test('Impresión compacta muestra descuentos y saldo sin parámetros ni motivos',()=>{const r=calculate([1000],[[200,1000,10]]);r.usedRolls[0].problems=['<Daño>'];r.usedRolls[0].areas=['Almacén'];const output=printReport(r);assert.doesNotMatch(output,/Motivos de las lonjas|Áreas involucradas|Parámetros por OP|Libros set up|Copias/);assert.match(output,/Descuentos/);assert.equal(r.usedRolls[0].problems[0],'<Daño>');near(r.saldo,120);});
 
 test('Motivos y áreas ocultos con cero o vacío desde el primer dibujo',()=>{const c=problemContext('[]');for(const scrap of ['0','',0]){c.roll={id:'Bobina 1',scrap,areas:['Almacén'],problems:['Daño']};assert.match(vm.runInContext('problemControls(roll,0)',c),/class="roll-problems-wrap" hidden/);}c.roll.scrap='0.1';assert.doesNotMatch(vm.runInContext('problemControls(roll,0)',c),/class="roll-problems-wrap" hidden/);});
 test('Papel retirado positivo abre; cero y vacío ocultan solo esa bobina',()=>{const wrappers=[{hidden:true},{hidden:true}],panels=wrappers.map(w=>({open:false,closest:()=>w}));const c={localStorage:{getItem:()=>null},rolls:[{scrap:'0',problems:['Daño'],areas:['Almacén']},{scrap:'12'}],root:{querySelector:selector=>panels[Number(selector.match(/"(\d+)"/)[1])]}};vm.createContext(c);vm.runInContext(problemSource,c);vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,false);assert.equal(panels[1].open,true);for(const scrap of ['0','']){c.rolls[1].scrap=scrap;vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,true);assert.equal(panels[1].open,false);}assert.equal(wrappers[0].hidden,true);c.rolls[1].scrap='2';vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,false);assert.equal(c.rolls[0].problems[0],'Daño');assert.equal(c.rolls[0].areas[0],'Almacén');});
 
-test('Precarga Forms: botón e iframe conservan los datos de una y varias OP',()=>{
- const defs=html.slice(html.indexOf('const GROUP_FORM_KEYS ='),html.indexOf('const EPS=',html.indexOf('const GROUP_FORM_KEYS =')));
- const formatting=html.slice(html.indexOf('function fmt(n)'),html.indexOf('function perOpData('));
- const packets=html.slice(html.indexOf('function withdrawalFormAnswers('),html.indexOf('const originalFormsInstructions='));
- const listener=html.slice(html.indexOf("function prepareGroupForms("),html.indexOf('// Catálogo de materiales compartido'));
- for(const meters of [[1000],[400,600]]){
-  const r=calculate(meters,[[200,1000,10]]);r.loads[0].lot='0001';r.loads[0].problems=['MATERIAL DAÑADO'];r.loads[0].areas=['Almacén','Planta digital'];r.group='GRUPO PRUEBA';r.type=meters.length>1?'Varias OP / una bobina':'Una OP / una bobina';const elements={};const frames=[];let click;
-  const c={window:{},result:r,URL,requestAnimationFrame:fn=>frames.push(fn),document:{body:{classList:{add(){}}}},$:id=>elements[id]??(elements[id]={setAttribute(){},classList:{contains:()=>Boolean(elements[id]?.open),add(){elements[id].open=true;}},addEventListener:(event,fn)=>{if(id==='multi-register')click=fn;}})};
-  vm.createContext(c);vm.runInContext(defs+formatting+packets+printSource+listener,c);click();assert.notEqual(elements['forms-frame'].src,'about:blank');while(frames.length)frames.shift()();
-  const external=new URL(elements['forms-external'].href),embedded=new URL(elements['forms-frame'].src);assert.equal(elements['forms-frame'].hidden,false);
-  assert.equal(external.searchParams.get('r790012348e2543d18936c9ae9ddb82e7'),'GRUPO PRUEBA');
-  assert.equal(external.searchParams.get('r1a6fb6883bc444629eea97caf2ece32c'),r.sourceOps.map(o=>o.id).join(', '));
-  assert.equal(external.searchParams.get('rf67ad5d129824657b4de24dee465a751'),'70');
-  assert.equal(external.searchParams.get('r6461e1c1fa7f44ccbf714af864bf7fe5'),'120');
-  assert.ok(external.searchParams.get('r5fe334ce1fbe4cd9b5cc674705401176').startsWith('CIMAGRAF_OPS_V2||'));
-  assert.equal(embedded.searchParams.get('embed'),'true');embedded.searchParams.delete('embed');assert.deepEqual([...embedded.searchParams],[...external.searchParams]);
-  assert.equal(external.searchParams.get('rb7ca9bd0b6a6460f88cc587e008af38f'),'10');
-  assert.equal(external.searchParams.get('rc459d8332ecd430e8abea5453d19b919'),'0');
-  assert.equal(external.searchParams.get('rfb2612aef72a481abfd0f8a13e7d53e7'),'Bobina 1 (10 kg): MATERIAL DAÑADO');
-  assert.equal(external.searchParams.get('r6f7bff5b0b75451e9a11e48e6531be7d'),'Bobina 1 (10 kg): Almacén; Planta digital');
-  assert.equal(external.searchParams.has(''),false);
- }
-});
-
-test('Forms: pesos nuevos suman retirado y sobrante bruto por separado',()=>{const c={fmt:String,r:{loads:[{id:'Bobina 1',retired:5,coreGross:10,corePaper:9.01,problems:['Lonjas'],areas:['Almacén']},{id:'Bobina 2',retired:3,coreGross:4,corePaper:2.7235}]},WITHDRAWAL_FORM_KEYS:{retired:'r'+'1'.repeat(32),coreGross:'r'+'2'.repeat(32),reasons:'r'+'3'.repeat(32),areas:'r'+'4'.repeat(32)}};vm.createContext(c);const a=vm.runInContext(withdrawalSource+';withdrawalFormAnswers(r)',c);assert.equal(a.retired,'8');assert.equal(a.coreGross,'14');assert.equal(vm.runInContext('withdrawalFieldsConnected()',c),true);c.r.loads=[{retired:0,coreGross:0}];const z=vm.runInContext('withdrawalFormAnswers(r)',c);assert.equal(z.retired,'0');assert.equal(z.coreGross,'0');assert.equal(z.reasons,'No aplica');assert.equal(z.areas,'No aplica');});
-test('Forms: interfaz integrada abierta al iniciar',()=>{assert.match(html,/<iframe class="forms-frame" height="650"/);assert.doesNotMatch(html,/<iframe hidden class="forms-frame"/);assert.match(html,/id="forms-inline-toggle"/);assert.match(html,/forms-frame'\)\.hidden=false/);});
-
-test('Forms: las cuatro preguntas configuradas son distintas y están conectadas',()=>{const start=html.indexOf('const WITHDRAWAL_FORM_KEYS =');const defs=html.slice(start,html.indexOf('const GROUP_DETAIL_QUESTION_KEY',start));const c={};vm.createContext(c);vm.runInContext(defs+withdrawalSource,c);assert.equal(vm.runInContext('withdrawalFieldsConnected()',c),true);assert.equal(vm.runInContext('new Set(Object.values(WITHDRAWAL_FORM_KEYS)).size',c),4);});
-
 test('Motivo y área seleccionados: no quedan desplegables ni botones de agregar',()=>{const c=problemContext('["Daño"]');c.roll={id:'Bobina 1',scrap:5,problems:['Daño'],areas:['Almacén'],problemsOpen:true};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/withdrawal-fields/);assert.match(output,/Datos completos/);assert.doesNotMatch(output,/<select|data-area-start|data-problem-start/);assert.match(output,/data-problem-remove/);assert.match(output,/data-area-remove/);c.roll.problems=[];const changed=vm.runInContext('problemControls(roll,0)',c);assert.match(changed,/data-problem-select/);assert.doesNotMatch(changed,/data-area-select/);});
-test('Lonjas conserva el peso y las mismas preguntas de Forms',()=>{assert.match(html,/field\('Lonjas \(kg\)'/);assert.doesNotMatch(html,/Papel retirado \(kg\)/);assert.match(html,/rb7ca9bd0b6a6460f88cc587e008af38f/);});
-
 test('Resumen incluye máquina e ID sin cambiar kg ni tablas',()=>{const r=calculate([1000],[[200,1000,10]]);r.machine='Kirin 4C';r.recordId='KIRIN 4C-0001';const out=printReport(r);assert.match(out,/Máquina: Kirin 4C/);assert.match(out,/Registro: KIRIN 4C-0001/);assert.match(out,/TOTAL A ENTREGAR AL ALMACÉN <strong>120[.]0 kg/);});
 
 console.log(`${count} pruebas correctas y estructura del desglose verificada.`);

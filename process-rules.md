@@ -3,7 +3,7 @@
 Corrección confirmada por el usuario el 4 de noviembre de 2026. La calibración se corrigió a 26 m el 5 de noviembre de 2026. Los parámetros son por OP:
 
 - Libros de set up: entero >= 0 (valor inicial 0).
-- Libros de corrida: entero > 0; conserva el campo interno `books` de Forms/Excel.
+- Libros de corrida: entero > 0; conserva el campo interno `books`.
 - Copias por libro: una sola cantidad común para set up y corrida (`copies`).
 - Calibración: checkbox independiente, desmarcado inicialmente.
 - Paradas: entero >= 0 (valor inicial 0).
@@ -50,27 +50,17 @@ calibración marcada, 2 paradas y una bobina:
 Total: 1092,4 m. Con ancho 1000 mm, gramaje 100 g/m² y 200 kg iniciales,
 sin lonjas ni sobrante: consumo 109,24 kg y devolución 90,76 kg.
 
-## Forms y compatibilidad
+## Registro directo — 5.0.0
 
-Se conservan las preguntas existentes y las primeras nueve columnas del
-paquete `CIMAGRAF_OPS_V2`. Metros y kg por OP incluyen todos los consumos.
-Las columnas adicionales, desde la décima, contienen:
-libros de set up, calibración (0/1), paradas, metros de corrida,
-metros de set up, metros de calibración, metros de paradas, metros de empalmes,
-kg de corrida, kg de proceso y versión de las reglas (2 para Kirin 1C; 3 para Kirin 4C con 13 m de blanco).
-Las preguntas de lonjas/sobrante conservan exclusivamente los pesos introducidos.
-
-No se cambian preguntas ni respuestas de Microsoft Forms ni archivos Excel.
-Las instantáneas anteriores se pueden imprimir conservando sus valores originales.
-Al volver a editar un registro de la versión 4.15.0, los libros de set up
-quedan pendientes de completar: no se convierten las antiguas copias a libros.
-Un registro corregido con reglas nuevas no reutiliza un PDF con reglas anteriores.
+Las reglas de cálculo se conservan. Excel recibe una fila por movimiento de
+OP y bobina, sin paquetes de Forms. Los rótulos muestran saldo, SAP y lote;
+el detalle completo queda en Excel. Ver registro-excel.md y onedrive-pdf.md.
 
 ## Comprobaciones
 
 `tests/process.test.cjs` cubre fórmulas, calibración sin set up, copias comunes,
 reglas de empalme, anchos distintos, material insuficiente, saldo cero, taras
-y detalle de Forms. Los escenarios históricos de `tests/calculation.test.cjs`
+y detalle por OP. Los escenarios históricos de `tests/calculation.test.cjs`
 fijan el metraje total incluido el empalme para verificar asignación y masa;
 las pruebas nuevas verifican cada componente del metraje.
 
@@ -88,7 +78,7 @@ consumo cero y el retiro correspondiente.
 El material, gramaje y ancho aparecen en la cabecera. No se imprimen
 parámetros de entrada ni tablas de metraje, ni se repiten anchos en las tablas.
 Al pie se muestran los saldos finales por bobina y el total a entregar.
-Los motivos y áreas se mantienen en los registros de cálculo y Forms;
+Los motivos y áreas se mantienen en los registros de cálculo y Excel;
 se omiten del resumen compacto.
 
 No se modifica el motor de cálculo ni los saldos: las filas solo muestran

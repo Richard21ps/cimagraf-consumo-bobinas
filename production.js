@@ -1,116 +1,81 @@
-/* Asignación de equipo y paso de pruebas a producción, sin cambiar el motor de kg. */
+/* Máquina de esta PC y numeración central para el registro directo. */
 (function(){
 'use strict';
 const $=id=>document.getElementById(id),CONFIG='cimagraf-machine-v1',DRAFT='cimagraf-registration-v1';
 const machines=window.CimagrafRegistry.machines;
-let config={},draft=null,busy=false,forward=false,legacy=false;
 const parse=(storage,key)=>{try{return JSON.parse(storage.getItem(key)||'null');}catch(_){return null;}};
-config=parse(localStorage,CONFIG)||{};
+let config=parse(localStorage,CONFIG)||{},draft=parse(sessionStorage,DRAFT),busy=false;
+const pending=parse(localStorage,'cimagraf-excel-pending-v1');
+if(pending?.draft&&draft?.id!==pending.draft.id)draft=pending.draft;
 if(!machines[config.machine])config={};
-draft=parse(sessionStorage,DRAFT);
 if(!draft||!machines[draft.machine]||typeof draft.id!=='string')draft=null;
-const pending=parse(sessionStorage,'cimagraf-pdf-pending-v1');
-// Un grupo ya enviado conserva el texto de su ID y su PDF al cambiar el formato.
-if(draft?.sent&&pending?.snapshot?.result?.machineKey===draft.machine&&typeof pending.snapshot.result.recordId==='string')draft.recordId=pending.snapshot.result.recordId;
-legacy=!!pending&&!pending.snapshot?.result?.machine;
 if(draft)config.machine=draft.machine;
-const connected=()=>['machine','recordId'].every(k=>/^r[a-z0-9]{32}$/.test(window.CimagrafMachineForm?.[k]||''));
 function persist(){localStorage.setItem(CONFIG,JSON.stringify(config));if(draft)sessionStorage.setItem(DRAFT,JSON.stringify(draft));else sessionStorage.removeItem(DRAFT);}
 function makeDraft(){
  if(!config.machine)return;
- draft={id:crypto.randomUUID(),machine:config.machine,mode:config.production?'production':'test',number:config.production?(config.next||1):(config.testNext||1),sent:false};
- persist();
+ draft={id:crypto.randomUUID(),machine:config.machine,mode:config.production?'production':'test',number:config.production?(config.next||1):(config.testNext||1),sent:false};persist();
 }
-function id(){
- if(!draft)return '';
- return draft.recordId||(draft.mode==='test'?'PRUEBA · ':'')+window.CimagrafRegistry.recordId(draft.machine,draft.number);
-}
-function metadata(){return legacy?{}:{machine:machines[draft?.machine||config.machine]||'',machineKey:draft?.machine||config.machine||'',runMode:draft?.mode||'test',recordId:id()};}
+function id(){return draft?(draft.recordId||(draft.mode==='test'?'PRUEBA · ':'')+window.CimagrafRegistry.recordId(draft.machine,draft.number)):'';}
+function metadata(){return {machine:machines[draft?.machine||config.machine]||'',machineKey:draft?.machine||config.machine||'',runMode:draft?.mode||'test',recordId:id()};}
 function status(message,error=false){$('machine-status').textContent=message;$('machine-status').classList.toggle('machine-error',error);}
 function render(){
- const machine=machines[config.machine];
  $('machine-select').value=config.machine||'';
- $('machine-select').disabled=busy||!!draft?.sent||!!config.production||legacy;
- $('machine-name').textContent=machine||'Asigna esta computadora';
- $('machine-mode').textContent=config.production?'PRODUCCIÓN':'PRUEBAS';
- $('machine-mode').classList.toggle('is-production',!!config.production);
- $('machine-start').hidden=!!config.production||legacy;
- $('machine-start').disabled=!machine||busy||!!draft?.sent||!connected();
- $('machine-setup').open=!machine;
- $('machine-connection-note').hidden=connected()||!!config.production||legacy;
- if(!legacy){$('multi-group').value=id();$('multi-group').readOnly=true;$('multi-group').placeholder='Se genera al asignar la máquina';}
- if(legacy)status('Termina el registro anterior antes de configurar la máquina.');
- else if(!machine)status('Elige la máquina de esta PC.');
- else status(config.production?(draft?.sent?'ID registrado; se conserva al reabrir.':'ID confirmado al enviar.'):'No consume IDs de producción.');
+ $('machine-select').disabled=busy||!!draft?.sent||!!config.production;
+ $('machine-name').textContent=machines[config.machine]||'Asigna esta computadora';
+ $('machine-mode').textContent=config.production?'PRODUCCIÓN':'PRUEBAS';$('machine-mode').classList.toggle('is-production',!!config.production);
+ $('machine-start').hidden=!!config.production;$('machine-start').disabled=busy||!draft||!!draft.sent;
+ $('machine-setup').open=!config.machine;$('machine-connection-note').hidden=!!config.production;
+ $('multi-group').value=id();$('multi-group').readOnly=true;
+ status(!draft?'Elige la máquina de esta PC.':draft.mode==='test'?'Las pruebas se guardan en una hoja separada.':draft.sent?'Número reservado para este registro.':'El ID se confirma al guardar.');
  window.CimagrafArchive.refresh();
 }
-function newGroup(){
- legacy=false;draft=null;sessionStorage.removeItem(DRAFT);makeDraft();render();
+function reset(){draft=null;sessionStorage.removeItem(DRAFT);makeDraft();render();}
+async function prepare(cloud){
+ if(!draft)throw Error('Asigna la máquina de esta PC.');
+ if(draft.mode==='production'&&!draft.sent){
+  const registry=window.CimagrafRegistry.create({request:cloud.request,saveAttempt:()=>persist()});
+  const parent=await registry.open(cloud.destination,draft.machine);
+  const allocated=await registry.reserve(parent,draft.machine,draft);
+  draft.number=allocated.number;draft.recordId=allocated.recordId;draft.sent=true;config.next=allocated.number+1;persist();render();
+ }
+ return metadata();
 }
-window.CimagrafProduction={metadata,ready:()=>legacy||!!draft,reset:newGroup};
-if(!legacy&&!draft)makeDraft();
-$('machine-select').addEventListener('change',()=>{
- if(busy||draft?.sent||config.production){render();return;}
- const machine=$('machine-select').value;
- if(!machines[machine])return;
- config={machine,testNext:1};draft=null;
- try{makeDraft();render();}catch(e){status('No se pudo recordar el equipo. Habilita el almacenamiento del navegador.',true);}
-});
-async function run(action){
- if(busy||!draft)return;
+function complete(){
+ if(!draft)return;
+ draft.saved=true;draft.sent=true;
+ if(draft.mode==='test')config.testNext=draft.number+1;
+ persist();render();
+}
+async function activate(){
+ if(busy||!draft||draft.sent)return;
  busy=true;$('multi-root').inert=true;
  try{
-  if(action==='activate'&&!connected())throw new Error('Primero conecta Máquina e ID de registro con Forms.');
-  if(action==='send'&&!window.CimagrafArchive.preflight())return;
-  draft.action=action;draft.snapshot=window.CimagrafArchive.snapshot();persist();
-  if(action==='activate'||draft.mode==='production'){
-   if(!connected())throw new Error('Falta conectar los campos nuevos de Forms.');
-   status(action==='activate'?'Preparando la numeración de esta máquina…':'Confirmando el ID en OneDrive…');
-   const cloud=await window.CimagrafCloud.connect();if(!cloud)return;
-   const registry=window.CimagrafRegistry.create({request:cloud.request,saveAttempt:()=>persist()});
-   const parent=await registry.open(cloud.destination,draft.machine);
-   if(action==='activate'){
-    const next=await registry.next(parent);
-    config.production=true;config.next=next;draft=null;makeDraft();
-    $('machine-start-confirm').hidden=true;
-   }else if(!draft.sent){
-    const allocation=await registry.reserve(parent,draft.machine,draft);
-    draft.number=allocation.number;draft.sent=true;config.next=allocation.number+1;
-   }
-  }else if(!draft.sent){draft.sent=true;config.testNext=draft.number+1;}
-  delete draft.action;delete draft.snapshot;persist();render();
-  if(action==='send'){
-   // El motor prepara el mismo URL precargado y el guardado PDF de siempre.
-   $('multi-root').inert=false;
-   if(!window.CimagrafArchive.preflight())return;
-   forward=true;
-   try{$('multi-register').click();}finally{forward=false;}
-  }
- }catch(e){status(e.message||'No se pudo confirmar el ID. Tus datos se conservan; vuelve a intentar.',true);}
- finally{
-  busy=false;
-  if(!$('forms-modal').classList.contains('open'))$('multi-root').inert=false;
-  $('machine-select').disabled=!!draft?.sent||!!config.production||legacy;
-  $('machine-start').disabled=!config.machine||!!draft?.sent||!connected();
- }
+  draft.action='activate';draft.snapshot=window.CimagrafArchive.snapshot();persist();
+  status('Confirmando numeración en OneDrive…');
+  const cloud=await window.CimagrafCloud.connect();if(!cloud)return;
+  const registry=window.CimagrafRegistry.create({request:cloud.request,saveAttempt:()=>persist()});
+  const next=await registry.next(await registry.open(cloud.destination,draft.machine));
+  config.production=true;config.next=next;draft=null;makeDraft();$('machine-start-confirm').hidden=true;render();
+ }catch(e){status(e.message||'No se pudo iniciar producción. Tus datos se conservan.',true);}
+ finally{busy=false;$('multi-root').inert=false;$('machine-start').disabled=!draft||!!draft.sent;}
 }
+window.CimagrafProduction={metadata,prepare,complete,reset,ready:()=>!!draft,state:()=>draft?JSON.parse(JSON.stringify(draft)):null};
+if(!draft)makeDraft();
+$('machine-select').addEventListener('change',()=>{
+ if(busy||draft?.sent||config.production){render();return;}
+ const machine=$('machine-select').value;if(!machines[machine])return;
+ config={machine,testNext:1};draft=null;
+ try{makeDraft();render();}catch(e){status('Habilita el almacenamiento del navegador para recordar este equipo.',true);}
+});
 $('machine-start').addEventListener('click',()=>{$('machine-start-confirm').hidden=false;});
 $('machine-start-cancel').addEventListener('click',()=>{$('machine-start-confirm').hidden=true;});
-$('machine-start-confirm-button').addEventListener('click',()=>run('activate'));
-document.addEventListener('click',event=>{
- if(!event.target.closest('#multi-register')||forward||legacy)return;
- event.preventDefault();event.stopImmediatePropagation();
- if(busy||$('forms-modal').classList.contains('open'))return;
- if(!draft){$('machine-setup').open=true;status('Asigna la máquina antes de registrar.',true);return;}
- run('send');
-},true);
-window.addEventListener('storage',event=>{
- if(event.key!==CONFIG)return;
+$('machine-start-confirm-button').addEventListener('click',activate);
+window.addEventListener('storage',e=>{
+ if(e.key!==CONFIG)return;
  const latest=parse(localStorage,CONFIG);
- if(latest?.machine!==config.machine){status('La asignación cambió en otra pestaña. Termina este trabajo antes de recargar.',true);return;}
+ if(latest?.machine!==config.machine){status('La asignación cambió en otra pestaña. Termina este grupo antes de recargar.',true);return;}
  if(latest?.production&&!config.production&&!draft?.sent){config=latest;draft=null;makeDraft();render();}
 });
 render();
-// Conserva los datos antes de redirigir a Microsoft y retoma la misma reserva al volver.
-if(draft?.action){const action=draft.action;if(draft.snapshot)window.CimagrafArchive.restore(draft.snapshot);run(action);}
+if(draft?.action==='activate'){if(draft.snapshot)window.CimagrafArchive.restore(draft.snapshot);activate();}
 })();

@@ -196,17 +196,8 @@ header{margin-bottom:14px}
 .roll-problems-wrap[hidden]{display:none!important}
 
 /* 4.9.2: acceso visible a la precarga fuera del iframe de Microsoft. */
-.forms-open-options{padding:10px 18px;background:#fff;border-bottom:1px solid #d8e0e6}
-.forms-open-options .forms-external{display:inline-block;border-radius:7px;padding:10px 14px;background:#145b83;color:#fff;text-decoration:none;margin:0}
-.forms-open-options p{font-size:12px;color:#536572;margin:6px 0 0;line-height:1.4}
 
 /* 4.9.3: ventana compacta y vista integrada opcional. */
-.forms-panel{height:auto;max-height:94vh;max-height:94dvh;min-height:0;overflow-y:auto}
-.forms-heading,.forms-instructions,.forms-open-options,.forms-footer{flex:0 0 auto}
-.forms-inline-toggle{align-self:flex-start;margin:10px 18px;font-size:13px}
-.forms-frame{flex:1 0 360px;min-height:360px}
-.forms-frame[hidden]{display:none!important}
-@media(max-width:600px){.forms-panel{max-height:98vh;max-height:98dvh}.forms-heading{flex-wrap:wrap}.forms-open-options{padding:10px 12px}.forms-open-options .forms-external{display:block;text-align:center}.forms-inline-toggle{margin:8px 12px}}
 
 /* 4.10: motivo y área contiguos; la selección reemplaza al desplegable. */
 .withdrawal-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
@@ -222,22 +213,7 @@ header{margin-bottom:14px}
 @media(max-width:480px){.withdrawal-fields{grid-template-columns:1fr;gap:10px}}
 
 /* 4.10.1: vista integrada abierta y con altura real suficiente. */
-.forms-panel{height:min(96vh,1100px);height:min(96dvh,1100px);max-height:96vh;max-height:96dvh;overflow-y:auto}
-.forms-frame{height:650px;min-height:650px;flex:1 0 650px}
-.forms-open-options{padding-top:7px;padding-bottom:7px}
-.forms-open-options .forms-external{padding:7px 12px;font-size:13px}
-.forms-inline-toggle{min-height:30px;margin-top:5px;margin-bottom:5px;padding:5px 9px}
-@media(max-width:600px){.forms-panel{height:98vh;height:98dvh;max-height:98vh;max-height:98dvh}}
 
-/* 4.10.2: los estilos antiguos del HTML no deben reducir el marco de Forms. */
-#forms-modal .forms-panel{height:min(96vh,1100px);height:min(96dvh,1100px);max-height:96vh;max-height:96dvh;min-height:0;overflow-y:auto}
-#forms-modal .forms-heading,#forms-modal .forms-instructions,#forms-modal .forms-open-options,#forms-modal .forms-footer,#forms-modal .forms-inline-toggle{flex-shrink:0}
-#forms-modal #forms-frame{display:block;width:100%;height:650px;min-height:650px;flex:1 0 650px}
-#forms-modal #forms-frame[hidden]{display:none}
-#forms-modal .forms-open-options{font-size:12px;padding:6px 18px}
-#forms-modal .forms-open-options summary{cursor:pointer;color:#536572}
-#forms-modal .forms-open-options[open] .forms-external{margin-top:8px}
-@media(max-width:600px){#forms-modal .forms-panel{height:98vh;height:98dvh;max-height:98vh;max-height:98dvh}}
 
 /* 4.10.3: primero el resumen y después el registro, con pasos compactos. */
 #multi-root .multi-footer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:620px}
@@ -254,14 +230,8 @@ header{margin-bottom:14px}
 
 .cloud-pdf-panel{width:min(100% - 28px,1480px);margin:0 auto 24px;padding:16px;background:#fff;border:1px solid #d7e3ea;border-radius:12px;color:#35576c;font-size:13px;box-sizing:border-box}.cloud-pdf-panel p{margin:7px 0}.cloud-pdf-panel details{margin-top:12px}.cloud-pdf-panel summary{cursor:pointer}.cloud-pdf-panel input{width:100%;margin:6px 0 10px}.cloud-pdf-panel [hidden]{display:none!important}.cloud-pdf-panel a{display:inline-block;margin:8px;color:#145b83}.cloud-error{color:#942d2d;font-weight:700}@media print{.cloud-pdf-panel{display:none!important}}
 
-#forms-cloud-status:empty{display:none}#forms-cloud-status.cloud-error{color:#942d2d}#forms-modal #cloud-folder-setup{margin:8px 0;font-size:12px}#cloud-folder-setup summary{cursor:pointer}#cloud-folder-url{width:100%;box-sizing:border-box;min-height:38px;margin:5px 0}#cloud-folder-setup .multi-button{min-height:30px;padding:5px 9px;font-size:12px}
 
 /* 4.11.1: salida visible si Microsoft bloquea el formulario integrado. */
-#forms-modal .forms-open-options{padding:9px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#forms-modal .forms-open-options p{flex-basis:100%;margin:0;font-size:12px}
-#forms-modal .forms-open-options .forms-external{margin:0;font-size:13px;padding:9px 12px}
-#forms-reload{min-height:34px;font-size:12px;padding:6px 10px}
-@media(max-width:600px){#forms-modal .forms-open-options .forms-external{flex:1 0 100%;box-sizing:border-box}}
 
 /* 4.17: tres grupos compactos por OP, con los mismos campos y reglas. */
 #multi-root #multi-op-list .op-process-groups{grid-template-columns:minmax(0,3fr) minmax(0,2fr) minmax(0,2fr);gap:8px;align-items:stretch}
