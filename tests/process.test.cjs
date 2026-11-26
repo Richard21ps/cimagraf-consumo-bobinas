@@ -28,7 +28,7 @@ test('Asignación por etapas y por ancho real: conserva metros y cada kg',()=>{
 });
 test('Setup, calibración y paradas diferentes por OP',()=>{const r=calculate([{...base,id:'A'},{...base,id:'B',setupBooks:3,calibration:false,stops:0}],[roll(400)]);near(r.sums[0].stopMeters,54.4);near(r.sums[1].setupMeters,81.6);near(r.sums[1].calibrationMeters,0);near(r.sums[1].stopMeters,0);});
 test('Material justo, saldo cero e insuficiencia por descuentos de proceso',()=>{near(calculate([base],[roll(109.24)]).saldo,0);assert.throws(()=>calculate([base],[roll(109.23)]),/Material insuficiente/);});
-test('Validación: no permite negativos, fracciones ni entradas inválidas',()=>{for(const key of ['setupBooks','stops'])for(const value of (key==='stops'?[-1,.5,NaN,Infinity]:[-1,.5,'',NaN,Infinity]))assert.throws(()=>calculate([{...base,[key]:value}]),/enteras/);assert.throws(()=>calculate([{...base,calibration:'false'}]),/calibración/);});
+test('Validación: no permite negativos, fracciones ni entradas inválidas',()=>{for(const key of ['setupBooks','stops'])for(const value of [-1,.5,NaN,Infinity])assert.throws(()=>calculate([{...base,[key]:value}]),/enteras/);assert.throws(()=>calculate([{...base,calibration:'false'}]),/calibración/);});
 test('Lonjas y tuco se descuentan una vez además del proceso',()=>{const r=calculate([base],[roll(200,480,5,10)],'Bond',90);near(r.loads[0].corePaper,9.01);near(r.loads[0].scrap,14.01);near(r.total,1092.4*.0432);near(r.saldo,200-14.01-1092.4*.0432);});
 test('Copias comunes modifican corrida y set up; no modifican los 26 m de calibración',()=>{const r=calculate([{...base,copies:40}]);near(r.sums[0].productionMeters,960);near(r.sums[0].setupMeters,296);near(r.sums[0].calibrationMeters,26);near(r.sums[0].stopMeters,59.2);near(r.sums[0].metros,1361.2);});
 test('Paradas vacías equivalen a cero en cálculo y registro',()=>{const zero=calculate([{...base,stops:0}]);for(const stops of ['',undefined,null]){const r=calculate([{...base,stops}]);near(r.sums[0].stopMeters,0);near(r.total,zero.total);near(r.saldo,zero.saldo);assert.equal(r.sourceOps[0].stops,0);}});
@@ -61,3 +61,5 @@ test('Faltante del grupo: suma el resto de la primera OP y todas las OP siguient
  });
 });
 console.log(count+' pruebas de proceso correctas.');
+
+test('Set up vacío calcula el mismo saldo que cero, inclusive con calibración',()=>{const empty=calculate([{...base,setupBooks:'',stops:''}]);const zero=calculate([{...base,setupBooks:0,stops:0}]);near(empty.saldo,zero.saldo);near(empty.sums[0].setupMeters,0);near(empty.sums[0].calibrationMeters,26);});
