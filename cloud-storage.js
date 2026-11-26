@@ -3,6 +3,7 @@
 'use strict';
 const CLIENT='8ba1d9b9-a6a9-4917-8df8-31f50262d24e',TENANT='7ea58235-dfc8-4281-88d4-e87d2951c20f';
 const REDIRECT='https://richard21ps.github.io/cimagraf-consumo-bobinas/',scopes=['Files.ReadWrite'];
+const sharedScopes=[...scopes,'Files.ReadWrite.All'];
 let auth,loading;
 const operatorIds=new Set(['9ec3e64b3d83e2b691b6a78d544a936e78997ff75e37bb5b9024be3f53bb4b5d', '0980e2c9a65f1f6db7ce217dcacec3aee484f2b4ab81bf782034e67cab988632', 'dfcf2cf97b8e75fb841528e9e80693df4366c2329ea0b5b8a303f6e17b02896c']);
 const status=text=>{document.getElementById('cloud-status').textContent=text;};
@@ -30,8 +31,8 @@ async function allowed(account){
  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(username));
  return operatorIds.has(Array.from(new Uint8Array(hash),n=>n.toString(16).padStart(2,'0')).join(''));
 }
-async function silent(a,account){
- try{return await a.acquireTokenSilent({scopes,account});}
+async function silent(a,account,requestedScopes=scopes){
+ try{return await a.acquireTokenSilent({scopes:requestedScopes,account});}
  catch(e){if(!(e instanceof msal.InteractionRequiredAuthError))throw e;return null;}
 }
 async function verifySession(){
@@ -50,7 +51,7 @@ async function token(){
  if(account){
   if(!await allowed(account))throw Error('Esta cuenta no está habilitada para la calculadora. Vuelve a abrirla e ingresa con una cuenta autorizada.');
   const result=await silent(a,account);
-  if(result?.accessToken)return result.accessToken;
+  if(result?.accessToken)return {client:a,account,access:result.accessToken};
  }
  status('Inicia sesión con la cuenta corporativa. El grupo queda conservado en este equipo.');
  await a.acquireTokenRedirect({scopes,account,redirectUri:REDIRECT});return null;
@@ -78,16 +79,30 @@ async function decode(response,step){
  return response.json();
 }
 async function connect(kind='legacy',machine){
- const access=await token();if(!access)return null;
+ const session=await token();if(!session)return null;
+ const fixed=window.CimagrafPDFDestination;
+ if(!fixed?.owner||!fixed?.path)throw Error('No está configurada la carpeta de OneDrive.');
+ const isOwner=accountId(session.account)===accountId({username:fixed.owner});
+ try{return await connectWithToken(session.access,fixed,isOwner,kind,machine);}
+ catch(error){
+  if(isOwner||error.status!==403||String(error.code).toLowerCase()!=='accessdenied')throw error;
+  // Connection only looks up folders. No file write has started.
+  const shared=await silent(session.client,session.account,sharedScopes);
+  if(shared?.accessToken){
+   if(shared.accessToken===session.access)throw error;
+   return connectWithToken(shared.accessToken,fixed,false,kind,machine);
+  }
+  status('Microsoft necesita autorización para guardar en las carpetas compartidas. Conservamos el grupo pendiente.');
+  await session.client.acquireTokenRedirect({scopes:sharedScopes,account:session.account,redirectUri:REDIRECT});
+  return null;
+ }
+}
+async function connectWithToken(access,fixed,isOwner,kind,machine){
  const request=async(path,options={},step=operation(path,options))=>{
   if(!path.startsWith('/')||path.startsWith('//'))throw Error('Ruta de Microsoft no válida.');
   const response=await fetch('https://graph.microsoft.com/v1.0'+path,{...options,signal:AbortSignal.timeout(180000),headers:{Authorization:'Bearer '+access,...options.headers}});
   return decode(response,step);
  };
- const fixed=window.CimagrafPDFDestination;
- if(!fixed?.owner||!fixed?.path)throw Error('No está configurada la carpeta de OneDrive.');
- const account=auth.getActiveAccount()||auth.getAllAccounts()[0];
- const isOwner=String(account?.username||'').toLowerCase()===fixed.owner.toLowerCase();
  let ownerDrive;
  async function ownerFolder(path,step){
   const encoded=path.split('/').map(encodeURIComponent).join('/');
