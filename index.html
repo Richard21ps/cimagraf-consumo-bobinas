@@ -213,7 +213,7 @@
     </div></header>
 
     <section class="multi-workspace" id="multi-root" aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.13</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.14</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -425,15 +425,11 @@ function coreTareControls(roll,index){
 function refreshCoreTareNotes(){
  rolls.forEach((roll,index)=>{
   const note=root.querySelector('[data-core-note="'+index+'"]');if(!note)return;
-  note.hidden=!(Number(roll.coreGross)>0);if(note.hidden)return;
   const tare=coreTareFor($('multi-paper').value,roll.width);
-  if(tare!==null){
-   const gross=numeric(roll.coreGross),net=gross-tare;
-   note.innerHTML='Sobrante: '+nf(gross)+' kg − tuco '+tare.toFixed(3)+' kg = <strong>'+(net>=0?nf(net)+' kg de papel':'revisa el peso ingresado')+'</strong><span>Tara automática según material y ancho. No se descuenta cartón de los kg iniciales netos.</span>';
-  }else{
-   // Otros materiales conservan la captura manual hasta disponer de una referencia.
-   if(!note.querySelector('input'))note.innerHTML=field('Tuco vacío (kg)',roll.coreTare??'','type="number" min="0" step="any" data-roll="'+index+'" data-field="coreTare" placeholder="Tara para otro material"')+'<span>Para este material aún no hay un factor de tara. Ingresa el peso del tuco vacío.</span>';
-  }
+  note.hidden=!(Number(roll.coreGross)>0)||tare!==null;
+  if(note.hidden)return;
+  // Sin referencia automática, el cálculo necesita el peso del tuco vacío.
+  if(!note.querySelector('input'))note.innerHTML=field('Tuco vacío (kg)',roll.coreTare??'','type="number" min="0" step="any" data-roll="'+index+'" data-field="coreTare" placeholder="Tara para otro material"')+'<span>Para este material aún no hay un factor de tara. Ingresa el peso del tuco vacío.</span>';
  });
 }
 
