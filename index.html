@@ -17,10 +17,10 @@
   <link rel="stylesheet" href="centrado-v26.css?v=2b90eeb">
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
-<link rel="stylesheet" href="compact-v40.css?v=5.1.11">
-<link rel="stylesheet" href="report-summary.css?v=5.1.11">
+<link rel="stylesheet" href="compact-v40.css?v=5.1.12">
+<link rel="stylesheet" href="report-summary.css?v=5.1.12">
 <link rel="stylesheet" href="production.css?v=4.16.1">
-<link rel="stylesheet" href="labels.css?v=5.1.11">
+<link rel="stylesheet" href="labels.css?v=5.1.12">
 <link rel="stylesheet" href="intro.css?v=4.14.1">
   <style>
     :root {
@@ -181,13 +181,14 @@
     #access-dialog{width:min(430px,calc(100% - 32px));box-sizing:border-box;border:1px solid #cddce3;border-radius:18px;padding:26px;background:white;color:#193547;text-align:center}
     #access-dialog::backdrop{background:#13293899}
     #access-signin{margin:6px auto 0}
-    #save-progress{max-width:520px;margin:12px 0 0;padding:10px 12px;border:1px solid #c4dce8;border-radius:9px;background:#f2f8fc}
-    #save-progress-label{display:block;margin-bottom:6px;font-weight:700;color:#155474}
-    #save-progress-bar{display:block;width:100%;height:12px;accent-color:#1878a5}
-    #save-progress.is-complete #save-progress-bar{accent-color:#1e754b}
-    #save-progress.is-complete #save-progress-label{color:#14643b}
-    #save-progress.is-error #save-progress-bar{accent-color:#a52531}
+    #save-progress{max-width:520px;margin:12px 0 0;padding:12px 14px;border:1px solid #b9d9c7;border-radius:10px;background:#f1faf4}
+    #save-progress-label{display:block;margin-bottom:8px;font-weight:700;color:#14643b}
+    #save-progress-bar{display:block;width:100%;height:18px;appearance:none;border:0;border-radius:9px;overflow:hidden;accent-color:#218b52;background:#deeee4;box-shadow:inset 0 2px 4px #103c292b,0 2px 0 #b8d3c3}
+    #save-progress-bar::-webkit-progress-bar{border-radius:9px;background:#deeee4;box-shadow:inset 0 2px 4px #103c292b}
+    #save-progress-bar::-webkit-progress-value{border-radius:9px;background:linear-gradient(#81dca2,#32a967 45%,#187844);box-shadow:inset 0 1px 0 #c6f3d6,inset 0 -2px 0 #146039;transition:width .3s ease}
+    #save-progress-bar::-moz-progress-bar{border-radius:9px;background:linear-gradient(#81dca2,#32a967 45%,#187844);box-shadow:inset 0 1px 0 #c6f3d6,inset 0 -2px 0 #146039}
     #save-progress.is-error #save-progress-label{color:#a52531}
+    @media(prefers-reduced-motion:reduce){#save-progress-bar::-webkit-progress-value{transition:none}}
     #cloud-panel #cloud-edit{color:#fff;background:#a52531;border-color:#a52531}
     #cloud-panel #cloud-edit:hover{background:#851b25;border-color:#851b25}
     #cloud-next:not([hidden]){display:block;margin:12px 0 0 auto}
@@ -212,7 +213,7 @@
     </div></header>
 
     <section class="multi-workspace" id="multi-root" aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.11</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.12</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -315,8 +316,8 @@
 
 
   <section id="print-summary" class="print-summary cimagraf-report" aria-label="Rótulos para imprimir"></section>
-  <script src="materials.js?v=5.1.11"></script>
-  <script src="record-data.js?v=5.1.11"></script>
+  <script src="materials.js?v=5.1.12"></script>
+  <script src="record-data.js?v=5.1.12"></script>
   <!-- Motor incluido en HTML para evitar que el navegador ejecute una versión antigua del JS. -->
 <script>
 (() => {
@@ -966,13 +967,13 @@ window.CimagrafArchive={
  <p id="access-status" role="status">Verificando tu sesión de Microsoft…</p>
  <button id="access-signin" class="multi-primary" type="button" hidden>Iniciar sesión con Microsoft</button>
 </dialog>
-<script src="report-pdf.js?v=5.1.11"></script>
-<script src="cloud-destination.js?v=5.1.11"></script>
-<script src="cloud-storage.js?v=5.1.11"></script>
+<script src="report-pdf.js?v=5.1.12"></script>
+<script src="cloud-destination.js?v=5.1.12"></script>
+<script src="cloud-storage.js?v=5.1.12"></script>
 <script src="machine-registry.js?v=4.16.3"></script>
-<script src="production.js?v=5.1.11"></script>
-<script src="excel-store.js?v=5.1.11"></script>
-<script src="cloud-excel.js?v=5.1.11"></script>
-<script src="access-gate.js?v=5.1.11"></script>
+<script src="production.js?v=5.1.12"></script>
+<script src="excel-store.js?v=5.1.12"></script>
+<script src="cloud-excel.js?v=5.1.12"></script>
+<script src="access-gate.js?v=5.1.12"></script>
 </body>
 </html>

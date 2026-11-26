@@ -194,12 +194,12 @@ test('PDF primero: persiste al reabrir, el Excel usa los datos confirmados y amb
 test('El progreso espera la confirmación y no marca 100% en un fallo de PDF',async()=>{
  const f=ui({hold:true});f.choose('kirin-1c');
  const pending=f.click('multi-register');await f.settle();
- assert.equal(f.node('save-progress-bar').value,40);
+ assert.equal(f.node('save-progress-bar').value,60);
  assert.match(f.node('save-progress-label').textContent,/Excel/);
  f.finish();await pending;
  assert.equal(f.node('save-progress-bar').value,100);
  f.fail('pdfpartial');await f.click('multi-save-pdf');
- assert.equal(f.node('save-progress-bar').value,40);
+ assert.equal(f.node('save-progress-bar').value,60);
  assert.equal(f.node('save-progress').classList['is-error'],true);
  f.fail('');await f.click('cloud-retry');
  assert.equal(f.node('save-progress-bar').value,100);

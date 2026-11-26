@@ -69,15 +69,15 @@ function showProgress(value,step,error=false){
 async function save(){
  if(running||!job)return;running=true;ui();
  saveLabel=job.kind==='pdf'?'PDF':'Excel';
- showProgress(0,'Conectando con OneDrive…');
+ showProgress(20,'Conectando con OneDrive…');
  try{
   message('Conectando con OneDrive. Conservamos los datos mientras se guardan…');
-  const cloud=await window.CimagrafCloud.connect(job.kind||'legacy',job.draft?.machine||job.snapshot.result.machineKey);if(!cloud){showProgress(0,'Inicia sesión en Microsoft.');return;}
-  showProgress(30,'Preparando el guardado…');
+  const cloud=await window.CimagrafCloud.connect(job.kind||'legacy',job.draft?.machine||job.snapshot.result.machineKey);if(!cloud){showProgress(20,'Inicia sesión en Microsoft.');return;}
+  showProgress(20,'Preparando el guardado…');
   const identity=await window.CimagrafProduction.prepare(cloud);
   Object.assign(job.snapshot.result,identity);job.snapshot.result.group=identity.recordId;job.snapshot.group=identity.recordId;
   job.draft=window.CimagrafProduction.state();remember(job);
-  const store=window.CimagrafExcelStore.create({cloud,remember,status:message,onWrite:()=>showProgress(40,'Guardando y esperando confirmación…'),
+  const store=window.CimagrafExcelStore.create({cloud,remember,status:message,onWrite:()=>showProgress(60,'Guardando y esperando confirmación…'),
    loadTemplate:async()=>{const response=await fetch('assets/Registro_Bobinas_Cimagraf.xlsx?v=5.0.0',{cache:'no-cache'});if(!response.ok)throw Error('No se pudo preparar el Excel. Revisa Internet y reintenta.');return response.arrayBuffer();},
    renderPDF:(result,created)=>window.CimagrafReportPDF.render(window.CimagrafArchive.reportHTML(result,created))
   });
