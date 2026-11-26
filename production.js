@@ -51,7 +51,7 @@ async function activate(){
  busy=true;
  try{
   draft.action='activate';draft.snapshot=window.CimagrafArchive.snapshot();persist();
-  status('Confirmando numeración en OneDrive…');
+  status('Confirmando la numeración compartida…');
   const cloud=await window.CimagrafCloud.connect();if(!cloud)return;
   const registry=window.CimagrafRegistry.create({request:cloud.request,saveAttempt:()=>persist()});
   const next=await registry.next(await registry.open(cloud.destination,draft.machine));

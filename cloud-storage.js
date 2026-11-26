@@ -78,26 +78,34 @@ async function decode(response,step){
  if(response.status===204)return null;
  return response.json();
 }
-async function connect(kind='legacy',machine){
+function sharePointConfig(source){
+ const ids=[source?.controlId,...['kirin-1c','kirin-4c'].flatMap(key=>[source?.folders?.[key]?.excel,source?.folders?.[key]?.pdf])];
+ if(![source?.driveId,...ids].every(id=>typeof id==='string'&&id.trim()===id&&id.length>0)||new Set(ids).size!==ids.length)
+  throw Error('Verifica la biblioteca y las cinco carpetas de destino en SharePoint.');
+ return source;
+}
+async function connect(kind='legacy',machine,target=window.CimagrafSharePointDestination?'sharepoint':'onedrive'){
+ if(target!=='onedrive'&&target!=='sharepoint')throw Error('No se reconoce el destino del registro.');
+ const sharePoint=target==='sharepoint'?sharePointConfig(window.CimagrafSharePointDestination):null;
  const session=await token();if(!session)return null;
  const fixed=window.CimagrafPDFDestination;
- if(!fixed?.owner||!fixed?.path)throw Error('No está configurada la carpeta de OneDrive.');
- const isOwner=accountId(session.account)===accountId({username:fixed.owner});
- try{return await connectWithToken(session.access,fixed,isOwner,kind,machine);}
+ if(!sharePoint&&(!fixed?.owner||!fixed?.path))throw Error('No está configurada la carpeta de OneDrive.');
+ const isOwner=!sharePoint&&accountId(session.account)===accountId({username:fixed.owner});
+ try{return await connectWithToken(session.access,fixed,isOwner,kind,machine,sharePoint);}
  catch(error){
   if(isOwner||error.status!==403||String(error.code).toLowerCase()!=='accessdenied')throw error;
   // Connection only looks up folders. No file write has started.
   const shared=await silent(session.client,session.account,sharedScopes);
   if(shared?.accessToken){
    if(shared.accessToken===session.access)throw error;
-   return connectWithToken(shared.accessToken,fixed,false,kind,machine);
+   return connectWithToken(shared.accessToken,fixed,false,kind,machine,sharePoint);
   }
   status('Microsoft necesita autorización para guardar en las carpetas compartidas. Conservamos el grupo pendiente.');
   await session.client.acquireTokenRedirect({scopes:sharedScopes,account:session.account,redirectUri:REDIRECT});
   return null;
  }
 }
-async function connectWithToken(access,fixed,isOwner,kind,machine){
+async function connectWithToken(access,fixed,isOwner,kind,machine,sharePoint){
  const request=async(path,options={},step=operation(path,options))=>{
   if(!path.startsWith('/')||path.startsWith('//'))throw Error('Ruta de Microsoft no válida.');
   const response=await fetch('https://graph.microsoft.com/v1.0'+path,{...options,signal:AbortSignal.timeout(180000),headers:{Authorization:'Bearer '+access,...options.headers}});
@@ -117,8 +125,16 @@ async function connectWithToken(access,fixed,isOwner,kind,machine){
    return request(endpoint(),{},step);
   }
  }
- const folder=await ownerFolder(fixed.path,'Abrir la carpeta de control '+fixed.path),item=folder.remoteItem||folder;
- if(!item.folder||!item.id||!item.parentReference?.driveId)throw Error('No se encontró la carpeta del registro.');
+ async function verifiedFolder(path,id,step){
+  if(!sharePoint){
+   const folder=await ownerFolder(path,step),item=folder.remoteItem||folder;
+   if(!item.folder||!item.id||!item.parentReference?.driveId)throw Error('No se encontró la carpeta '+path+'.');
+   return {drive:item.parentReference.driveId,id:item.id,name:item.name};
+  }
+  const item=await request('/drives/'+encodeURIComponent(sharePoint.driveId)+'/items/'+encodeURIComponent(id),{},step);
+  if(!item.folder||item.id!==id||item.parentReference?.driveId!==sharePoint.driveId)throw Error('Microsoft no confirmó la carpeta configurada en SharePoint.');
+  return {drive:sharePoint.driveId,id:item.id,name:item.name};
+ }
  // Upload sessions documentan fail al crear: nunca reemplaza un archivo ya existente.
  async function createFile(parent,name,bytes,contentType){
   const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes),size=data.byteLength;
@@ -139,14 +155,13 @@ async function connectWithToken(access,fixed,isOwner,kind,machine){
   if(response.status===202)throw Error('La carga quedó incompleta. Reintenta el registro.');
   return decode(response,'Subir el contenido del archivo a OneDrive');
  }
- const destination={drive:item.parentReference.driveId,id:item.id,name:item.name};
- const result={destination,request,createFile};
+ const controlName=sharePoint?'Control de bobinas de SharePoint':fixed.path;
+ const destination=await verifiedFolder(controlName,sharePoint?.controlId,'Abrir la carpeta de control '+controlName);
+ const result={destination,request,createFile,target:sharePoint?'sharepoint':'onedrive'};
  if(kind==='excel'||kind==='pdf'){
   const route=window.CimagrafDestinations?.[machine];if(!route)throw Error('Selecciona una máquina válida.');
-  const selected=await ownerFolder(route[kind],'Abrir la carpeta '+route[kind]);
-  const target=selected.remoteItem||selected;
-  if(!target.folder||!target.id||!target.parentReference?.driveId)throw Error('No se encontró la carpeta '+route[kind]+'.');
-  result[kind==='excel'?'workbookDestination':'pdfDestination']={drive:target.parentReference.driveId,id:target.id};
+  const selected=await verifiedFolder(route[kind],sharePoint?.folders[machine][kind],'Abrir la carpeta '+route[kind]);
+  result[kind==='excel'?'workbookDestination':'pdfDestination']={drive:selected.drive,id:selected.id};
   result.bookName=route.book;
  }
  return result;

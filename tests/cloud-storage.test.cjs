@@ -3,11 +3,11 @@ const source=fs.readFileSync(path.join(__dirname,'../cloud-storage.js'),'utf8');
 const owner='richard.pereyra@cimagraf.com.pe';
 const response=(status,body,headers={})=>({ok:status>=200&&status<300,status,json:async()=>structuredClone(body),headers:{get:key=>headers[key]||null}});
 const folder=name=>({id:name,folder:{},parentReference:{driveId:'drive-confirmado'}});
-function client(handler,username=owner,sharedAccess='SOLO-SIMULACION-COMPARTIDO'){
+function client(handler,username=owner,sharedAccess='SOLO-SIMULACION-COMPARTIDO',sharePoint=null){
  const calls=[],redirects=[],requests=[];
  class InteractionRequiredAuthError extends Error{}
  class Auth{async initialize(){}async handleRedirectPromise(){return null;}getActiveAccount(){return username?{username}:null;}getAllAccounts(){return [];}async acquireTokenSilent({scopes}){requests.push([...scopes]);if(scopes.includes('Files.ReadWrite.All')){if(!sharedAccess)throw new InteractionRequiredAuthError();return {accessToken:sharedAccess};}return {accessToken:'SOLO-SIMULACION'};}async acquireTokenRedirect(options){redirects.push(options);}}
- const msal={PublicClientApplication:Auth,InteractionRequiredAuthError},window={msal,CimagrafPDFDestination:{owner,path:'REGISTRO DE PDF DIGITAL'},CimagrafDestinations:{'kirin-1c':{excel:'BASE DE DATOS KIRIN 1C',pdf:'REGISTRO DE BOBINAS KIRIN 1C',book:'Registro_Kirin_1C.xlsx'}}};
+ const msal={PublicClientApplication:Auth,InteractionRequiredAuthError},window={msal,CimagrafSharePointDestination:sharePoint,CimagrafPDFDestination:{owner,path:'REGISTRO DE PDF DIGITAL'},CimagrafDestinations:{'kirin-1c':{excel:'BASE DE DATOS KIRIN 1C',pdf:'REGISTRO DE BOBINAS KIRIN 1C',book:'Registro_Kirin_1C.xlsx'},'kirin-4c':{excel:'BASE DE DATOS KIRIN 4C',pdf:'REGISTRO DE BOBINAS KIRIN 4C',book:'Registro_Kirin_4C.xlsx'}}};
  const context={window,msal,AbortSignal,URL,Uint8Array,TextEncoder,crypto:require('node:crypto').webcrypto,document:{getElementById:()=>({textContent:''})},fetch:async(url,options)=>{calls.push({url,options});return handler(url,options);}};
  vm.createContext(context);vm.runInContext(source,context);return {...window.CimagrafCloud,calls,redirects,requests};
 }
@@ -71,6 +71,29 @@ test('Si el acceso compartido sigue denegado, informa el 403 de Microsoft una so
  const f=client(async()=>response(403,{error:{code:'accessDenied'}},{'request-id':'referencia-'+(++attempts)}),'kirin.bn@cimagraf.com.pe');
  await assert.rejects(()=>f.connect(),e=>e.status===403&&e.details.requestId==='referencia-2');
  assert.equal(f.calls.length,2);assert.equal(f.redirects.length,0);
+});
+const sp={driveId:'drive-confirmado',controlId:'control',folders:{'kirin-1c':{excel:'excel-1c',pdf:'pdf-1c'},'kirin-4c':{excel:'excel-4c',pdf:'pdf-4c'}}};
+test('SharePoint abre por ID el control y solo el destino de la operación y la máquina seleccionadas',async()=>{
+ for(const machine of ['kirin-1c','kirin-4c']){
+  for(const kind of ['excel','pdf']){
+   const expected=sp.folders[machine][kind];
+   const f=client(async url=>response(200,folder(url.split('/').at(-1))),owner,undefined,sp);
+   const c=await f.connect(kind,machine);
+   assert.equal(c.target,'sharepoint');assert.equal(c.destination.id,'control');
+   assert.equal(c[kind==='excel'?'workbookDestination':'pdfDestination'].id,expected);
+   assert.deepEqual(f.calls.map(c=>c.url),['control',expected].map(id=>'https://graph.microsoft.com/v1.0/drives/'+sp.driveId+'/items/'+id));
+  }
+ }
+});
+test('SharePoint no cambia de destino si Microsoft devuelve una carpeta de otra biblioteca',async()=>{
+ const f=client(async url=>response(200,{...folder(url.split('/').at(-1)),parentReference:{driveId:'otra-biblioteca'}}),owner,undefined,sp);
+ await assert.rejects(()=>f.connect('excel','kirin-1c'),/no confirmó la carpeta/);
+ assert.equal(f.calls.length,1);
+});
+test('Sin una configuración completa de SharePoint no hay consulta ni escritura',async()=>{
+ const f=client(async()=>{throw Error('No toca Microsoft');},owner,undefined,{...sp,controlId:'excel-4c'});
+ await assert.rejects(()=>f.connect('pdf','kirin-4c'),/cinco carpetas/);
+ assert.equal(f.calls.length,0);assert.equal(f.requests.length,0);
 });
 test('Si también falla la ruta por ID, conserva el mensaje exacto y el paso de Microsoft',async()=>{
  const f=client(async url=>url.includes('/me/drive?')?response(200,{id:'drive-real'}):response(400,{error:{code:'invalidRequest',message:'ObjectHandle is Invalid'}}));
