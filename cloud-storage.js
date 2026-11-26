@@ -4,7 +4,7 @@
 const CLIENT='8ba1d9b9-a6a9-4917-8df8-31f50262d24e',TENANT='7ea58235-dfc8-4281-88d4-e87d2951c20f';
 const REDIRECT='https://richard21ps.github.io/cimagraf-consumo-bobinas/',scopes=['Files.ReadWrite'];
 let auth,loading;
-const operatorIds=new Set(['9ec3e64b3d83e2b691b6a78d544a936e78997ff75e37bb5b9024be3f53bb4b5d', '0980e2c9a65f1f6db7ce217dcacec3aee484f2b4ab81bf782034e67cab988632']);
+const operatorIds=new Set(['9ec3e64b3d83e2b691b6a78d544a936e78997ff75e37bb5b9024be3f53bb4b5d', '0980e2c9a65f1f6db7ce217dcacec3aee484f2b4ab81bf782034e67cab988632', 'dfcf2cf97b8e75fb841528e9e80693df4366c2329ea0b5b8a303f6e17b02896c']);
 const status=text=>{document.getElementById('cloud-status').textContent=text;};
 function library(){return new Promise((resolve,reject)=>{
  if(window.msal){resolve();return;}
