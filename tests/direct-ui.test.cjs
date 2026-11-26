@@ -10,7 +10,7 @@ function ui({local=storage(),session=storage(),failure='',query='',hold=false}={
   CimagrafArchive:{refresh(){},preflight:()=>true,snapshot:()=>structuredClone(snapshot),reportHTML:()=>'<article>Rótulo</article>',restore:s=>{restores++;snapshot=structuredClone(s);},reset(){resets++;window.CimagrafProduction.reset();},print(){prints++;}},
   CimagrafCloud:{connect:async(kind,machine)=>{routes.push([kind,machine]);connections++;if(fail==='auth')throw Error('Sin acceso');if(fail&&typeof fail==='object')throw fail;return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
   CimagrafReportPDF:{render:async()=>new ArrayBuffer(1)},
-  CimagrafExcelStore:{create:({remember})=>({savePDF:async j=>{pdfSaves++;lastSaved=structuredClone(j);if(fail==='pdfpartial'){j.pdfStarted=true;remember(j);throw Error('PDF sin confirmar');}j.saved=true;j.lockReleased=true;j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);},save:async j=>{saves++;lastSaved=structuredClone(j);if(fail==='partial'){j.plan={start:2};remember(j);throw Error('Conexión interrumpida');}if(hold)await new Promise(resolve=>{release=resolve;});j.saved=true;j.lockReleased=true;j.excelUrl='https://empresa.sharepoint.com/libro';remember(j);}})}
+  CimagrafExcelStore:{create:({remember,onWrite})=>({savePDF:async j=>{onWrite();pdfSaves++;lastSaved=structuredClone(j);if(fail==='pdfpartial'){j.pdfStarted=true;remember(j);throw Error('PDF sin confirmar');}j.saved=true;j.lockReleased=true;j.pdfUrl='https://empresa.sharepoint.com/pdf';remember(j);},save:async j=>{onWrite();saves++;lastSaved=structuredClone(j);if(fail==='partial'){j.plan={start:2};remember(j);throw Error('Conexión interrumpida');}if(hold)await new Promise(resolve=>{release=resolve;});j.saved=true;j.lockReleased=true;j.excelUrl='https://empresa.sharepoint.com/libro';remember(j);}})}
  };
  const context={window,document,localStorage:local,sessionStorage:session,crypto:require('node:crypto').webcrypto,navigator:{},URL,location:{hash:query,search:''},console};
  vm.createContext(context);for(const file of ['production.js','cloud-excel.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),context);
@@ -189,4 +189,20 @@ test('PDF primero: persiste al reabrir, el Excel usa los datos confirmados y amb
  assert.equal(g.node('multi-register').classList['save-confirmed'],true);
  assert.equal(g.node('multi-save-pdf').classList['save-confirmed'],true);
  assert.equal(g.node('cloud-next').hidden,false);
+});
+
+test('El progreso espera la confirmación y no marca 100% en un fallo de PDF',async()=>{
+ const f=ui({hold:true});f.choose('kirin-1c');
+ const pending=f.click('multi-register');await f.settle();
+ assert.equal(f.node('save-progress-bar').value,40);
+ assert.match(f.node('save-progress-label').textContent,/Excel/);
+ f.finish();await pending;
+ assert.equal(f.node('save-progress-bar').value,100);
+ f.fail('pdfpartial');await f.click('multi-save-pdf');
+ assert.equal(f.node('save-progress-bar').value,40);
+ assert.equal(f.node('save-progress').classList['is-error'],true);
+ f.fail('');await f.click('cloud-retry');
+ assert.equal(f.node('save-progress-bar').value,100);
+ assert.match(f.node('save-progress-label').textContent,/PDF/);
+ f.click('cloud-next');assert.equal(f.node('save-progress').hidden,true);
 });

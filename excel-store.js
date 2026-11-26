@@ -7,7 +7,7 @@ const bytes=value=>new TextEncoder().encode(JSON.stringify(value));
 const path=(parent,name)=>parent+':/'+encodeURIComponent(name);
 const itemPath=(drive,id)=>'/drives/'+encodeURIComponent(drive)+'/items/'+encodeURIComponent(id);
 const same=(a,b)=>typeof b==='number'?typeof a==='number'&&Math.abs(a-b)<1e-7:String(a??'').replace(/^'(?=[=+\-@])/,'')===String(b??'').replace(/^'(?=[=+\-@])/,'');
-function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
+function create({cloud,remember,loadTemplate,renderPDF,status=()=>{},onWrite=()=>{}}){
  const request=cloud.request,root=itemPath(cloud.destination.drive,cloud.destination.id);
  async function optional(url){try{return await request(url);}catch(e){if(e.status===404)return null;throw e;}}
  async function folder(parent,name){
@@ -56,6 +56,7 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
    job.pdfName=name;
   }
   job.pdfSize=data.byteLength;job.pdfStarted=true;remember(job);
+  onWrite();
   status('Guardando el PDF en OneDrive…');
   const saved=await file(dir,job.pdfName,data,'application/pdf');
   if(saved.size!==job.pdfSize)throw Error('No se pudo confirmar el PDF completo. Reintenta este registro.');
@@ -104,6 +105,7 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{}}){
     const blanks=Array.from({length:plan.end-range.rowCount},()=>Array(record.headers.length).fill(''));
     await request(tableBase+'/rows/add',json({index:null,values:blanks}));
    }
+   onWrite();
    status('Guardando los movimientos de OP y bobina en Excel…');
    const formats=expected.map(row=>row.map((_,i)=>record.numericColumns.includes(i)?(i===9||i===10?'0':'0.0'):'@'));
    // Formato primero para conservar SAP/lote con ceros y texto literal.

@@ -55,15 +55,29 @@ function ui(){
  $('cloud-next').hidden=!done();
  $('cloud-next').textContent=currentCopy()?'Continuar con cambios como nuevo registro':'Siguiente grupo';
 }
+// El porcentaje representa etapas, no bytes transferidos ni tiempo restante.
+let savePercent=0,saveLabel='';
+function showProgress(value,step,error=false){
+ const panel=$('save-progress');
+ savePercent=value;
+ panel.classList.toggle('is-error',error);
+ panel.classList.toggle('is-complete',value===100);
+ $('save-progress-bar').value=value;
+ $('save-progress-label').textContent=saveLabel+' · '+value+' % · '+step;
+ panel.hidden=false;
+}
 async function save(){
  if(running||!job)return;running=true;ui();
+ saveLabel=job.kind==='pdf'?'PDF':'Excel';
+ showProgress(0,'Conectando con OneDrive…');
  try{
   message('Conectando con OneDrive. Conservamos los datos mientras se guardan…');
-  const cloud=await window.CimagrafCloud.connect(job.kind||'legacy',job.draft?.machine||job.snapshot.result.machineKey);if(!cloud)return;
+  const cloud=await window.CimagrafCloud.connect(job.kind||'legacy',job.draft?.machine||job.snapshot.result.machineKey);if(!cloud){showProgress(0,'Inicia sesión en Microsoft.');return;}
+  showProgress(30,'Preparando el guardado…');
   const identity=await window.CimagrafProduction.prepare(cloud);
   Object.assign(job.snapshot.result,identity);job.snapshot.result.group=identity.recordId;job.snapshot.group=identity.recordId;
   job.draft=window.CimagrafProduction.state();remember(job);
-  const store=window.CimagrafExcelStore.create({cloud,remember,status:message,
+  const store=window.CimagrafExcelStore.create({cloud,remember,status:message,onWrite:()=>showProgress(40,'Guardando y esperando confirmación…'),
    loadTemplate:async()=>{const response=await fetch('assets/Registro_Bobinas_Cimagraf.xlsx?v=5.0.0',{cache:'no-cache'});if(!response.ok)throw Error('No se pudo preparar el Excel. Revisa Internet y reintenta.');return response.arrayBuffer();},
    renderPDF:(result,created)=>window.CimagrafReportPDF.render(window.CimagrafArchive.reportHTML(result,created))
   });
@@ -76,7 +90,9 @@ async function save(){
    window.CimagrafProduction.complete();job.draft=window.CimagrafProduction.state();remember(job);
    message((pdfSaved()?'Excel y PDF guardados. Ya puedes iniciar el siguiente grupo.':'Excel guardado. Guarda el PDF para continuar.')+(currentCopy()?' Tus cambios posteriores siguen en un borrador sin enviar.':''));
   }
+  showProgress(100,'Guardado confirmado');
  }catch(e){
+  showProgress(savePercent,'Guardado sin confirmar. Revisa el aviso.',true);
   if(job){job.draft=window.CimagrafProduction.state();if(canCorrect()){const changes=currentCopy();if(changes){job.snapshot=changes.snapshot;rememberCopy(null);}job.editing=true;}try{remember(job);}catch(_){}}
   if(editing())window.CimagrafArchive.refresh();
   message((e.message||'No se pudo confirmar el guardado.')+(editing()?' Puedes editar los datos y volver a guardar.':' Puedes editar un borrador; Reintentar recupera la versión enviada anteriormente.'),true);
@@ -128,6 +144,7 @@ $('multi-root').addEventListener('input',preserveEdits);
 $('multi-root').addEventListener('change',preserveEdits);
 $('cloud-next').addEventListener('click',()=>{
  if(!done())return;
+ $('save-progress').hidden=true;
  const changes=currentCopy()?.snapshot;
  localStorage.removeItem(KEY);job=null;rememberCopy(null);ui();window.CimagrafArchive.reset();
  if(changes){const identity=window.CimagrafProduction.metadata();if(changes.result)Object.assign(changes.result,identity,{group:identity.recordId});changes.group=identity.recordId;window.CimagrafArchive.restore(changes);rememberCopy({pendingId:null,snapshot:changes});message('Borrador recuperado como nuevo registro. Revisa los datos antes de guardar.');}
