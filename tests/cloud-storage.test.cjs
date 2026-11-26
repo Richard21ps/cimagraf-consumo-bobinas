@@ -4,11 +4,11 @@ const owner='richard.pereyra@cimagraf.com.pe';
 const response=(status,body,headers={})=>({ok:status>=200&&status<300,status,json:async()=>structuredClone(body),headers:{get:key=>headers[key]||null}});
 const folder=name=>({id:name,folder:{},parentReference:{driveId:'drive-confirmado'}});
 function client(handler,username=owner){
- const calls=[];
- class Auth{async initialize(){}async handleRedirectPromise(){return null;}getActiveAccount(){return {username};}getAllAccounts(){return [];}async acquireTokenSilent(){return {accessToken:'SOLO-SIMULACION'};}}
+ const calls=[],redirects=[];
+ class Auth{async initialize(){}async handleRedirectPromise(){return null;}getActiveAccount(){return username?{username}:null;}getAllAccounts(){return [];}async acquireTokenSilent(){return {accessToken:'SOLO-SIMULACION'};}async acquireTokenRedirect(options){redirects.push(options);}}
  const msal={PublicClientApplication:Auth},window={msal,CimagrafPDFDestination:{owner,path:'REGISTRO DE PDF DIGITAL'},CimagrafDestinations:{'kirin-1c':{excel:'BASE DE DATOS KIRIN 1C',pdf:'REGISTRO DE BOBINAS KIRIN 1C',book:'Registro_Kirin_1C.xlsx'}}};
- const context={window,msal,AbortSignal,URL,Uint8Array,document:{getElementById:()=>({textContent:''})},fetch:async(url,options)=>{calls.push({url,options});return handler(url,options);}};
- vm.createContext(context);vm.runInContext(source,context);return {connect:window.CimagrafCloud.connect,calls};
+ const context={window,msal,AbortSignal,URL,Uint8Array,TextEncoder,crypto:require('node:crypto').webcrypto,document:{getElementById:()=>({textContent:''})},fetch:async(url,options)=>{calls.push({url,options});return handler(url,options);}};
+ vm.createContext(context);vm.runInContext(source,context);return {...window.CimagrafCloud,calls,redirects};
 }
 test('La ruta por propietario conserva las carpetas configuradas y los destinos independientes',async()=>{
  const f=client(async url=>response(200,folder(url.endsWith('DIGITAL')?'control':'pdf')));
@@ -30,7 +30,7 @@ test('InvalidRequest por UPN del propietario: resuelve su drive y usa ese ID en 
  assert.equal(c.bookName,'Registro_Kirin_1C.xlsx');
 });
 test('Otra cuenta no puede cambiar el destino al OneDrive propio cuando falla el del propietario',async()=>{
- const f=client(async()=>response(400,{error:{code:'invalidRequest',message:'Identificador no válido',innerError:{'request-id':'referencia-123'}}}),'maquinista@cimagraf.com.pe');
+ const f=client(async()=>response(400,{error:{code:'invalidRequest',message:'Identificador no válido',innerError:{'request-id':'referencia-123'}}}),'kirin.bn@cimagraf.com.pe');
  await assert.rejects(()=>f.connect('pdf','kirin-1c'),e=>{
   assert.equal(e.status,400);assert.equal(e.details.microsoftMessage,'Identificador no válido');assert.equal(e.details.requestId,'referencia-123');
   assert.match(e.details.step,/carpeta de control/);return true;
@@ -72,4 +72,18 @@ test('Una sesión rechazada con invalidRequest se reintenta sin nombre duplicado
 test('No se reintenta la sesión si Microsoft no confirma un error 400',async()=>{
  let sessions=0;const f=client(async(url)=>{if(url.endsWith('/createUploadSession')){sessions++;return response(503,{error:{code:'serviceUnavailable'}});}return response(200,folder('control'));});
  const c=await f.connect();await assert.rejects(()=>c.createFile('/drives/d/items/i','test.pdf',new Uint8Array([1]),'application/pdf'));assert.equal(sessions,1);
+});
+
+test('Las dos cuentas Kirin y el propietario abren el editor sin tocar OneDrive',async()=>{
+ for(const username of [owner,'KIRIN.COLOR@CIMAGRAF.COM.PE','kirin.bn@cimagraf.com.pe']){
+  const f=client(()=>{throw Error('No toca OneDrive');},username);
+  assert.equal(await f.verifySession(),'ready');assert.equal(f.calls.length,0);
+ }
+});
+test('Una cuenta no autorizada no entra ni guarda; el botón permite elegir otra',async()=>{
+ const f=client(()=>{throw Error('No toca OneDrive');},'otro@cimagraf.com.pe');
+ assert.equal(await f.verifySession(),'denied');
+ await assert.rejects(()=>f.connect(),/no está habilitada/);
+ await f.signIn();assert.equal(f.redirects[0].prompt,'select_account');assert.equal(f.calls.length,0);
+ assert.equal(await client(()=>{},'').verifySession(),'signin');
 });

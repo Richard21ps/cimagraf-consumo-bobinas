@@ -4,6 +4,7 @@
 const CLIENT='8ba1d9b9-a6a9-4917-8df8-31f50262d24e',TENANT='7ea58235-dfc8-4281-88d4-e87d2951c20f';
 const REDIRECT='https://richard21ps.github.io/cimagraf-consumo-bobinas/',scopes=['Files.ReadWrite'];
 let auth,loading;
+const operatorIds=new Set(['9ec3e64b3d83e2b691b6a78d544a936e78997ff75e37bb5b9024be3f53bb4b5d', '0980e2c9a65f1f6db7ce217dcacec3aee484f2b4ab81bf782034e67cab988632']);
 const status=text=>{document.getElementById('cloud-status').textContent=text;};
 function library(){return new Promise((resolve,reject)=>{
  if(window.msal){resolve();return;}
@@ -21,9 +22,36 @@ async function init(){
  })();
  try{return await loading;}finally{loading=null;}
 }
+const accountId=account=>String(account?.username||'').trim().toLowerCase();
+async function allowed(account){
+ const username=accountId(account);
+ if(!username||account.tenantId&&account.tenantId!==TENANT)return false;
+ if(username===accountId({username:window.CimagrafPDFDestination?.owner}))return true;
+ const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(username));
+ return operatorIds.has(Array.from(new Uint8Array(hash),n=>n.toString(16).padStart(2,'0')).join(''));
+}
+async function silent(a,account){
+ try{return await a.acquireTokenSilent({scopes,account});}
+ catch(e){if(!(e instanceof msal.InteractionRequiredAuthError))throw e;return null;}
+}
+async function verifySession(){
+ const a=await init(),account=a.getActiveAccount()||a.getAllAccounts()[0];
+ if(!account)return 'signin';
+ if(!await allowed(account))return 'denied';
+ const result=await silent(a,account);
+ return result?.accessToken?'ready':'signin';
+}
+async function signIn(){
+ const a=await init();
+ await a.acquireTokenRedirect({scopes,redirectUri:REDIRECT,prompt:'select_account'});
+}
 async function token(){
  const a=await init(),account=a.getActiveAccount()||a.getAllAccounts()[0];
- if(account){try{return (await a.acquireTokenSilent({scopes,account})).accessToken;}catch(e){if(!(e instanceof msal.InteractionRequiredAuthError))throw e;}}
+ if(account){
+  if(!await allowed(account))throw Error('Esta cuenta no está habilitada para la calculadora. Vuelve a abrirla e ingresa con una cuenta autorizada.');
+  const result=await silent(a,account);
+  if(result?.accessToken)return result.accessToken;
+ }
  status('Inicia sesión con la cuenta corporativa. El grupo queda conservado en este equipo.');
  await a.acquireTokenRedirect({scopes,account,redirectUri:REDIRECT});return null;
 }
@@ -108,5 +136,5 @@ async function connect(kind='legacy',machine){
  }
  return result;
 }
-window.CimagrafCloud={connect};
+window.CimagrafCloud={connect,verifySession,signIn};
 })();

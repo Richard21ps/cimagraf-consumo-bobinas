@@ -1,7 +1,7 @@
 /* SOLO PRUEBAS. Se carga exclusivamente en test-frame.js, nunca en la calculadora. */
 (function(){
 const saved=new Map(),counters={'kirin-1c':0,'kirin-4c':0};
-window.CimagrafCloud={connect:async()=>{
+window.CimagrafCloud={verifySession:async()=>'ready',connect:async()=>{
  if(parent.CimagrafDemoConnectFail?.())throw Error('Fallo de conexión simulado antes de escribir');
  return {destination:{drive:'SIMULADO',id:'SIMULADO'}};
 }};
