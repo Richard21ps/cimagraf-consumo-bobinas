@@ -6,13 +6,13 @@
 .label-body{border:1px solid #777;padding:3mm 5mm}
 .bobbin-label p{margin:0;padding:4mm 0;font-family:Arial,sans-serif;font-weight:800;line-height:1.15;overflow-wrap:anywhere;border-bottom:1px solid #111}
 .bobbin-label .label-caption{font-size:20pt;text-decoration:underline;border:0;padding:2mm 0}
-.bobbin-label .label-sap{font-size:30pt;padding:4mm 0 6mm}
+.bobbin-label .label-sap{font-size:54pt;font-weight:900;line-height:1.05;padding:3mm 0 5mm}
 .bobbin-label .label-material,.bobbin-label .label-width,.bobbin-label .label-op,.bobbin-label .label-lot,.bobbin-label .label-date{font-size:23pt}
 .bobbin-label .label-description{margin:3mm 0 0;background:#f2eef7;border-radius:2mm;padding:3mm;font-size:17pt;border-bottom:1px solid #111;overflow-wrap:anywhere}
 .label-description span{display:block;font-size:12pt;font-weight:400;margin-bottom:2mm}.label-description strong{display:block}
 .bobbin-label .label-weight{font-size:48pt}.bobbin-label .label-date{border:0}
 .bobbin-label small{display:block;font-size:8pt;color:#444;margin-top:4mm}
-.bobbin-label.label-compact p{font-size:19pt;padding:3mm 0}.bobbin-label.label-compact .label-sap{font-size:25pt}.bobbin-label.label-compact .label-weight{font-size:42pt}
+.bobbin-label.label-compact p{font-size:19pt;padding:3mm 0}.bobbin-label.label-compact .label-sap{font-size:44pt}.bobbin-label.label-compact .label-weight{font-size:42pt}
 @media print{@page{size:A4 portrait;margin:12mm}}
 #multi-root .multi-bobbins .multi-row-fields{grid-template-columns:minmax(105px,1.25fr) minmax(120px,1.4fr) minmax(85px,.8fr) minmax(65px,.6fr) minmax(120px,1.2fr);align-items:end}
 #multi-root .multi-bobbins .roll-label-description{grid-column:1/-1;grid-row:3}
