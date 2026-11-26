@@ -3,12 +3,13 @@ const source=fs.readFileSync(path.join(__dirname,'../cloud-storage.js'),'utf8');
 const owner='richard.pereyra@cimagraf.com.pe';
 const response=(status,body,headers={})=>({ok:status>=200&&status<300,status,json:async()=>structuredClone(body),headers:{get:key=>headers[key]||null}});
 const folder=name=>({id:name,folder:{},parentReference:{driveId:'drive-confirmado'}});
-function client(handler,username=owner){
- const calls=[],redirects=[];
- class Auth{async initialize(){}async handleRedirectPromise(){return null;}getActiveAccount(){return username?{username}:null;}getAllAccounts(){return [];}async acquireTokenSilent(){return {accessToken:'SOLO-SIMULACION'};}async acquireTokenRedirect(options){redirects.push(options);}}
- const msal={PublicClientApplication:Auth},window={msal,CimagrafPDFDestination:{owner,path:'REGISTRO DE PDF DIGITAL'},CimagrafDestinations:{'kirin-1c':{excel:'BASE DE DATOS KIRIN 1C',pdf:'REGISTRO DE BOBINAS KIRIN 1C',book:'Registro_Kirin_1C.xlsx'}}};
+function client(handler,username=owner,sharedAccess='SOLO-SIMULACION-COMPARTIDO'){
+ const calls=[],redirects=[],requests=[];
+ class InteractionRequiredAuthError extends Error{}
+ class Auth{async initialize(){}async handleRedirectPromise(){return null;}getActiveAccount(){return username?{username}:null;}getAllAccounts(){return [];}async acquireTokenSilent({scopes}){requests.push([...scopes]);if(scopes.includes('Files.ReadWrite.All')){if(!sharedAccess)throw new InteractionRequiredAuthError();return {accessToken:sharedAccess};}return {accessToken:'SOLO-SIMULACION'};}async acquireTokenRedirect(options){redirects.push(options);}}
+ const msal={PublicClientApplication:Auth,InteractionRequiredAuthError},window={msal,CimagrafPDFDestination:{owner,path:'REGISTRO DE PDF DIGITAL'},CimagrafDestinations:{'kirin-1c':{excel:'BASE DE DATOS KIRIN 1C',pdf:'REGISTRO DE BOBINAS KIRIN 1C',book:'Registro_Kirin_1C.xlsx'}}};
  const context={window,msal,AbortSignal,URL,Uint8Array,TextEncoder,crypto:require('node:crypto').webcrypto,document:{getElementById:()=>({textContent:''})},fetch:async(url,options)=>{calls.push({url,options});return handler(url,options);}};
- vm.createContext(context);vm.runInContext(source,context);return {...window.CimagrafCloud,calls,redirects};
+ vm.createContext(context);vm.runInContext(source,context);return {...window.CimagrafCloud,calls,redirects,requests};
 }
 test('La ruta por propietario conserva las carpetas configuradas y los destinos independientes',async()=>{
  const f=client(async url=>response(200,folder(url.endsWith('DIGITAL')?'control':'pdf')));
@@ -40,6 +41,36 @@ test('Otra cuenta no puede cambiar el destino al OneDrive propio cuando falla el
 test('Permiso denegado: conserva el estado y detalle, sin cambiar cuenta ni reintentar escrituras',async()=>{
  const f=client(async()=>response(403,{error:{code:'accessDenied',message:'Access denied'}},{'request-id':'r-403'}));
  await assert.rejects(()=>f.connect(),e=>e.status===403&&e.details.requestId==='r-403'&&/permiso/.test(e.message));assert.equal(f.calls.length,1);
+ assert.deepEqual(f.requests,[['Files.ReadWrite']]);
+});
+test('Excel y PDF compartidos conservan los destinos tras el 403 inicial',async()=>{
+ for(const kind of ['excel','pdf']){
+  const f=client(async(url,options)=>{
+   if(options.headers.Authorization==='Bearer SOLO-SIMULACION')return response(403,{error:{code:'accessDenied'}});
+   return response(200,folder(url.endsWith('DIGITAL')?'control':'destino'));
+  },'kirin.bn@cimagraf.com.pe');
+  const c=await f.connect(kind,'kirin-1c');
+  assert.equal(c.destination.id,'control');
+  assert.equal(c[kind==='excel'?'workbookDestination':'pdfDestination'].id,'destino');
+  assert.equal(f.calls.length,3);
+  assert.equal(f.calls[0].url,f.calls[1].url);
+  assert.ok(f.calls.every(c=>c.url.includes(encodeURIComponent(owner))&&!c.options.method));
+  assert.deepEqual(f.requests,[['Files.ReadWrite'],['Files.ReadWrite','Files.ReadWrite.All']]);
+ }
+});
+test('Si Microsoft requiere consentimiento, no vuelve a consultar ni escribe antes de obtenerlo',async()=>{
+ const f=client(async()=>response(403,{error:{code:'accessDenied'}}),'kirin.color@cimagraf.com.pe',null);
+ assert.equal(await f.connect('pdf','kirin-1c'),null);
+ assert.equal(f.calls.length,1);
+ assert.equal(f.redirects.length,1);
+ assert.equal(f.redirects[0].account.username,'kirin.color@cimagraf.com.pe');
+ assert.ok(f.redirects[0].scopes.includes('Files.ReadWrite.All'));
+});
+test('Si el acceso compartido sigue denegado, informa el 403 de Microsoft una sola vez',async()=>{
+ let attempts=0;
+ const f=client(async()=>response(403,{error:{code:'accessDenied'}},{'request-id':'referencia-'+(++attempts)}),'kirin.bn@cimagraf.com.pe');
+ await assert.rejects(()=>f.connect(),e=>e.status===403&&e.details.requestId==='referencia-2');
+ assert.equal(f.calls.length,2);assert.equal(f.redirects.length,0);
 });
 test('Si también falla la ruta por ID, conserva el mensaje exacto y el paso de Microsoft',async()=>{
  const f=client(async url=>url.includes('/me/drive?')?response(200,{id:'drive-real'}):response(400,{error:{code:'invalidRequest',message:'ObjectHandle is Invalid'}}));
