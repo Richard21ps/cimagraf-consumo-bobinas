@@ -33,9 +33,14 @@ async function choose(machine){
  if(previous&&!(await previous.isSameEntry(selected)))throw Error('Para continuar el mismo Excel, vuelve a elegir la carpeta registrada: '+previous.name+'.');
  await directory(machine,selected);return selected.name;
 }
-async function connect(machine){
+async function authorizedFolder(machine){
+ if(!names[machine])return null;
  const dir=await directory(machine);
- if(!dir||await dir.queryPermission({mode:'readwrite'})!=='granted')
+ return dir&&await dir.queryPermission({mode:'readwrite'})==='granted'?dir:null;
+}
+async function connect(machine){
+ const dir=await authorizedFolder(machine);
+ if(!dir)
   throw Error('Pulsa «Elegir carpeta» y permite el acceso. Luego reintenta el guardado.');
  return dir;
 }
@@ -121,9 +126,12 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
  async function savePDF(job){
   const record=scope.CimagrafRecord,result=job.snapshot.result;
   const base=record.filename(result).replace(/\.pdf$/i,'');
-  const name=job.pdfName||(base+'_'+job.id.replace(/[^\w-]/g,'')+'.pdf');
   const target=await subfolder(dir,result.machineKey,'pdf');
-  let handle=await existing(target,name);
+  let name=job.pdfName||base+'.pdf',handle=await existing(target,name);
+  for(let copy=2;!job.pdfName&&handle;copy++){
+   if(copy>9999)throw Error('Hay demasiados informes con este nombre.');
+   name=base+' ('+copy+').pdf';handle=await existing(target,name);
+  }
   if(handle&&(await handle.getFile()).size){
    if(!job.pdfHash||await digest(await (await handle.getFile()).arrayBuffer())!==job.pdfHash)throw Error('Ya existe otro PDF con este nombre. No se reemplazó.');
   }else{
@@ -133,6 +141,7 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
    const data=old?.size?await old.arrayBuffer():await renderPDF(result,job.created);
    const hash=await digest(data);
    if(old?.size&&hash!==job.pdfHash)throw Error('El PDF anterior no coincide con este registro. No se reemplazó.');
+   if(!handle&&await existing(target,name))throw Error('Ya se creó un PDF con este nombre. Reintenta para guardar sin reemplazarlo.');
    job.pdfName=name;job.pdfHash=hash;job.pdfStarted=true;remember(job);onWrite();
    if(!handle)handle=await target.getFileHandle(name,{create:true});
    await write(handle,data);
@@ -141,5 +150,5 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
  }
  return {save,savePDF};
 }
-scope.CimagrafLocalStore={choose,connect,create};
+scope.CimagrafLocalStore={choose,connect,authorizedFolder,create};
 })(typeof window==='undefined'?module.exports:window);
