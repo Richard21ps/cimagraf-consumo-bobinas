@@ -66,3 +66,29 @@
 .warehouse-input-unit input{width:100%;min-width:0;box-sizing:border-box;background:white;border:2px solid #d7bc85;font-size:24px;font-weight:750;padding:8px 10px;transition:border-color .15s,box-shadow .15s}
 .warehouse-input-unit input:focus{outline:none;border-color:#b28334;box-shadow:0 0 0 3px #d7bc8533}
 @media(max-width:700px){.warehouse-cards{grid-template-columns:1fr}.warehouse-stat{gap:6px}}
+
+/* Los datos de entrada acompañan al resultado; el ahorro es el foco visual. */
+.warehouse-entry{padding:12px}
+.warehouse-entry h4{font-size:16px;margin-bottom:10px}
+.warehouse-cards{max-width:700px;gap:9px}
+.warehouse-stat{padding:9px 11px;gap:4px;border-radius:10px;box-shadow:0 2px 0 #e2eaf0}
+.warehouse-stat.expected{box-shadow:0 2px 0 #eee1c9}
+.warehouse-stat.assigned{box-shadow:0 2px 0 #d2e7db}
+.warehouse-badge{padding:2px 7px;font-size:10px}
+.warehouse-field-title,.warehouse-stat label{font-size:13px}
+.warehouse-stat output{font-size:20px}
+.warehouse-stat small{font-size:11px}
+.warehouse-input-unit input{font-size:19px;padding:5px 8px;border-width:1px}
+.warehouse-entry #warehouse-help{font-size:12px;margin:9px 0}
+.warehouse-entry .warehouse-comparison{padding:18px 22px;border-width:2px;background:linear-gradient(120deg,#edf8f1,#f8fcf9);box-shadow:0 4px 0 #d2e7db}
+.warehouse-entry .warehouse-comparison.overuse{background:linear-gradient(120deg,#fff0f0,#fffafa);box-shadow:0 4px 0 #f1d8d8}
+.warehouse-entry .warehouse-comparison.equal{background:#f2f5f8;box-shadow:0 4px 0 #e0e7ed}
+.warehouse-entry .warehouse-comparison h3{font-size:13px;font-weight:600}
+.comparison-focus{margin:13px 0}
+.comparison-state{display:block;font-size:20px;font-weight:800}
+.comparison-numbers{display:flex;align-items:baseline;gap:30px;flex-wrap:wrap}
+.warehouse-entry .comparison-value,.comparison-percent{font-size:44px;font-weight:850;line-height:1.15;margin:4px 0;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.comparison-percent{border-left:1px solid currentColor;padding-left:30px}
+.comparison-numbers small{font-size:21px;letter-spacing:0}
+@media(max-width:700px){.warehouse-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.warehouse-stat{padding:8px}.warehouse-stat small{display:none}.warehouse-field-title,.warehouse-stat label{font-size:12px}.warehouse-stat output{font-size:18px}.warehouse-input-unit{gap:4px}.warehouse-input-unit input{font-size:18px;padding:5px}.warehouse-entry .comparison-value,.comparison-percent{font-size:35px}.comparison-numbers{gap:18px}.comparison-percent{padding-left:18px}}
+@media(max-width:380px){.warehouse-cards{grid-template-columns:1fr}.warehouse-stat{display:grid;grid-template-columns:1fr 1fr;align-items:center}.warehouse-badge{display:none}}
