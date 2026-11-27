@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
 <link rel="stylesheet" href="compact-v40.css?v=5.1.24">
-<link rel="stylesheet" href="report-summary.css?v=5.1.27">
+<link rel="stylesheet" href="report-summary.css?v=5.1.28">
 <link rel="stylesheet" href="production.css?v=4.16.1">
 <link rel="stylesheet" href="labels.css?v=5.1.13">
 <link rel="stylesheet" href="intro.css?v=4.14.1">
@@ -210,7 +210,7 @@
     </div></header>
 
     <section class="multi-workspace" id="multi-root" aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.27</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.28</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -272,6 +272,13 @@
         </details>
         <div class="multi-block" aria-labelledby="multi-consolidated-title">
           <h3 id="multi-consolidated-title">4 · Resumen y registro</h3>
+          <section class="warehouse-entry" aria-labelledby="warehouse-title">
+            <h4 id="warehouse-title">Comparación con Almacén</h4>
+            <label for="warehouse-expected">Kg que Almacén indica devolver · todo el grupo</label>
+            <input id="warehouse-expected" type="number" min="0" step="any" placeholder="Ej.: 100" aria-describedby="warehouse-help">
+            <p id="warehouse-help" class="multi-muted">Ingresa el total previsto para este grupo. Déjalo vacío si no tienes el dato.</p>
+            <div id="warehouse-comparison" aria-live="polite"></div>
+          </section>
           <p class="multi-muted" id="multi-action-guide">Guarda el registro en el Excel consolidado de la máquina y el PDF por OP. Cuando ambos botones estén en verde, podrás pasar al siguiente grupo.</p>
           <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
           <div class="multi-footer-actions" role="group" aria-label="Resumen y envío del grupo" aria-describedby="multi-action-guide">
@@ -315,7 +322,7 @@
 
   <section id="print-summary" class="print-summary cimagraf-report" aria-label="Rótulos para imprimir"></section>
   <script src="materials.js?v=5.1.12"></script>
-  <script src="record-data.js?v=5.1.12"></script>
+  <script src="record-data.js?v=5.1.28"></script>
   <!-- Motor incluido en HTML para evitar que el navegador ejecute una versión antigua del JS. -->
 <script>
 (() => {
@@ -332,6 +339,7 @@ const field=(title,value,attr)=>'<label>'+title+'<input '+attr+' value="'+escape
 function escapeHtml(v){return String(v??'').replace(/[&"'<>]/g,c=>({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'}[c]));}
 function markDirty(){
  result=null;
+ $('warehouse-comparison').replaceChildren();
  renderDeliveryBalance();
  refreshCoreTareNotes();renderRollUsage(null);$('multi-policy-warning').hidden=true;
  $('multi-delivery-status').textContent='Completa los datos de producción para calcular.';
@@ -799,7 +807,8 @@ function show(){
   const r=validate(identity.machineKey);
   const group=$('multi-group').value.trim();
   const type=ops.length>1?(rolls.length>1?'Varias OP / varias bobinas':'Varias OP / una bobina'):(rolls.length>1?'Una OP / varias bobinas':'Una OP / una bobina');
-  result={...r,...identity,group,type};$('multi-error').hidden=true;$('multi-success').hidden=false;$('multi-breakdown-hint').hidden=true;
+  result={...r,...identity,group,type,warehouseExpectedKg:$('warehouse-expected').validity.valid&&$('warehouse-expected').value!==''?Number($('warehouse-expected').value):null};
+  $('warehouse-comparison').innerHTML=$('warehouse-expected').validity.valid?window.CimagrafRecord.comparisonHTML(result):'<p class="multi-alert">Ingresa un peso de Almacén igual o mayor que cero.</p>';$('multi-error').hidden=true;$('multi-success').hidden=false;$('multi-breakdown-hint').hidden=true;
   $('multi-success').textContent='Cálculo correcto. La asignación de bobinas es secuencial y no se ha duplicado ningún peso inicial.';
   $('multi-results').hidden=false;
   renderDeliveryBalance(r);
@@ -868,6 +877,7 @@ function buildPrintSummary(r,stamp,archived=false){
   +'<p class="print-note">Inicio − consumo − descuentos = saldo. Consumo corresponde a la corrida; descuentos incluyen proceso, lonjas y sobrante neto. La siguiente OP continúa con el saldo de esa bobina.</p>'
   +(archived?'<h2>Devolver por bobina · kg</h2><section class="print-bobbin-return">'+table(['Bobina','Estado','Saldo final'],finalRows)+'</section>':'<h2>Bobinas y devolución · kg</h2><section class="print-bobbin-lots">'+table(['Bobina','Número de lote','Estado','Saldo a devolver'],finalRows)+'</section>')
   +'<div class="print-total">TOTAL A ENTREGAR AL ALMACÉN <strong>'+nf(r.saldo)+' kg</strong></div>'
+  +(r.warehouseExpectedKg!==null&&r.warehouseExpectedKg!==undefined?window.CimagrafRecord.comparisonHTML(r):'')
   +'<p class="print-note">Pesos netos de papel, sin cartón. Lonjas y sobrante se descuentan una sola vez por bobina. Solo se suman los saldos finales para la devolución.</p>';
 }
 function missingRollLot(r){return r.loads.find(b=>!b.lot);}
@@ -908,7 +918,7 @@ function refreshOpQueue(){
  if(!result)return;
  $('multi-op-registration-table').innerHTML=table(['OP','Libros set up','Libros corrida','Número de pliegos','Calibración','Paradas','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.setupBooks??0,o.books,o.copies,o.calibration?'Sí':'No',o.stops??0,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  const missing=missingLabelData(result);
- const ready=!missing&&!!result.group&&!!window.CimagrafProduction?.ready()&&!window.CimagrafSaveUI?.blocked();
+ const ready=$('warehouse-expected').validity.valid&&!missing&&!!result.group&&!!window.CimagrafProduction?.ready()&&!window.CimagrafSaveUI?.blocked();
  $('multi-summary-status').textContent=missing?'Completa SAP y lote de '+missing.id+'.':!result.group?'Asigna la máquina de esta PC.':'Destino: '+result.machine+'.'+(result.runMode==='test'?' Se guardará en la carpeta de pruebas.':'');
  $('multi-register').disabled=!ready&&!window.CimagrafSaveUI?.canSaveReceiptExcel();
  $('multi-print').disabled=!!missing||!result.usedRolls.some(b=>b.left>EPS);
@@ -917,6 +927,7 @@ function refreshOpQueue(){
 }
 function resetMultiAfterConfirmation(){
  $('multi-calculation-details').open=false;
+ $('warehouse-expected').value='';$('warehouse-comparison').replaceChildren();
  ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}];
  rolls=[blankRoll()];
  renderWidthOptions('');closeWidthForm();updateCatalog({name:'Bond',gsm:90});
@@ -951,7 +962,7 @@ renderWidthOptions('');
 redraw();mode(true);scheduleAuto();
 window.CimagrafArchive={
  refresh:()=>{syncWidthMachine(window.CimagrafProduction?.metadata().machineKey);markDirty();scheduleAuto();},
- preflight:()=>{show();return !!result&&!missingLabelData(result)&&!!result.group&&!!window.CimagrafProduction?.ready();},
+ preflight:()=>{if(!$('warehouse-expected').reportValidity())return false;show();return !!result&&!missingLabelData(result)&&!!result.group&&!!window.CimagrafProduction?.ready();},
  reportHTML:(r,created)=>{
   const summary=buildPrintSummary(r,new Date(created).toLocaleString('es-PE',{timeZone:'America/Lima'}),true);
   const labels=window.CimagrafRecord.labelHTML(r,created,document.querySelector('.brand-logo').getAttribute('src'));
@@ -965,7 +976,7 @@ window.CimagrafArchive={
   rolls=JSON.parse(JSON.stringify(s.rolls));
   const machineKey=restoredIdentity?.machineKey||window.CimagrafProduction?.metadata().machineKey;
   widthMachine=Object.hasOwn(MACHINE_WIDTHS,machineKey)?machineKey:'';
-  restoreWidthSelection();$('multi-group').value=s.group;updateCatalog({name:s.paper,gsm:s.gsm,restore:true});redraw();show();
+  $('warehouse-expected').value=s.result?.warehouseExpectedKg??'';restoreWidthSelection();$('multi-group').value=s.group;updateCatalog({name:s.paper,gsm:s.gsm,restore:true});redraw();show();
  },
  reset:resetMultiAfterConfirmation
 };
@@ -986,7 +997,7 @@ window.CimagrafArchive={
 <script>window.CimagrafLocalMode=true;</script>
 <script src="machine-registry.js?v=4.16.3"></script>
 <script src="production.js?v=5.1.25"></script>
-<script src="local-store.js?v=5.1.25"></script>
+<script src="local-store.js?v=5.1.28"></script>
 <script src="cloud-excel.js?v=5.1.25"></script>
 </body>
 </html>

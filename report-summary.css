@@ -32,3 +32,19 @@
 /* El informe precede a los rótulos; cada bobina con saldo usa una hoja nueva. */
 .cimagraf-report .pdf-label-pages{break-before:page;page-break-before:always}
 .cimagraf-report .pdf-label-pages .bobbin-label{break-inside:avoid;page-break-inside:avoid}
+
+.warehouse-entry{margin:16px 0;padding:16px;border:1px solid #cfdae4;border-radius:12px;background:#fff}
+.warehouse-entry h4{margin:0 0 12px;color:#15385b;font-size:18px}
+.warehouse-entry label{display:block;font-weight:700;margin-bottom:8px}
+.warehouse-entry input{width:180px;max-width:100%;padding:10px 12px;border:1px solid #bccfdd;border-radius:9px;font:inherit}
+.warehouse-comparison{margin-top:12px;padding:14px;border:1px solid #aacabb;border-radius:10px;background:#edf8f1;color:#176641;break-inside:avoid;page-break-inside:avoid}
+.warehouse-comparison.overuse{background:#fff0f0;border-color:#e6b1b1;color:#a1252d}
+.warehouse-comparison.equal{background:#f2f5f8;border-color:#cdd8e1;color:#355367}
+.warehouse-comparison h3{font-size:16px;margin:0 0 8px}
+.warehouse-comparison p{font-size:14px;margin:6px 0}
+.warehouse-comparison .comparison-value{display:block;font-size:23px;margin:10px 0}
+.warehouse-comparison .comparison-note{font-size:12px}
+.cimagraf-report .warehouse-comparison{padding:7px 10px;margin-top:10px}
+.cimagraf-report .warehouse-comparison h3{font-size:10pt}
+.cimagraf-report .warehouse-comparison p{font-size:8pt}
+.cimagraf-report .warehouse-comparison .comparison-value{font-size:13pt;margin:6px 0}

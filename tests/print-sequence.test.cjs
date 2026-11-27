@@ -7,7 +7,7 @@ const start=html.indexOf('function buildPrintSummary('),report=html.slice(start,
 const nf=html.match(/const nf=x=>[^;]+;/)[0];
 const base={books:1,copies:1,advance:1000,setupBooks:0,calibration:false,stops:0};
 function calculate(ops,rolls){const c={ops:ops.map((o,i)=>({...base,id:'OP'+(i+1),...o})),rolls:rolls.map((r,i)=>({id:'Bobina '+(i+1),width:1000,scrap:0,coreGross:0,coreTare:0,...r})),$:id=>({value:id==='multi-gsm'?'100':'Otro papel'}),numeric:Number};vm.createContext(c);vm.runInContext(nf+engine,c);return vm.runInContext('validate()',c);}
-function print(r,archived=false){const c={r,archived,escapeHtml:s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};vm.createContext(c);return vm.runInContext(nf+table+report+";buildPrintSummary(r,'Prueba',archived)",c);}
+function print(r,archived=false){const c={r,archived,window:{CimagrafRecord:require('../record-data.js').CimagrafRecord},escapeHtml:s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};vm.createContext(c);return vm.runInContext(nf+table+report+";buildPrintSummary(r,'Prueba',archived)",c);}
 function rows(output){return [...output.match(/<tbody>([\s\S]*?)<\/tbody>/)[1].matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m=>[...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(c=>c[1]));}
 const number=s=>Number(s.replace(/,/g,''));
 let count=0;function test(name,fn){fn();count++;console.log('OK '+name);}
@@ -74,3 +74,12 @@ test('Guardar PDF incluye el informe antes del rótulo; sin saldo no agrega una 
  assert.match(css,/\.pdf-label-pages\{break-before:page;page-break-before:always/);
 });
 console.log(count+' pruebas de secuencia e impresión correctas.');
+
+test('El informe incluye el ahorro del grupo una sola vez y el rótulo mantiene su formato',()=>{
+ const r=calculate([{books:100},{books:100}],[{kg:100}]);r.warehouseExpectedKg=50;
+ const out=print(r,true);
+ assert.equal((out.match(/Comparación con Almacén/g)||[]).length,1);
+ assert.match(out,/Ahorro:/);
+ const {CimagrafRecord}=require('../record-data.js');
+ assert.doesNotMatch(CimagrafRecord.labelHTML(r,'2026-11-27T14:00:00Z'),/Comparación|Ahorro/);
+});
