@@ -1,6 +1,7 @@
 /* Comprueba el acceso antes de empezar una OP. Las credenciales se introducen en Microsoft. */
 (function(){
 'use strict';
+if(window.CimagrafLocalMode)return;
 const $=id=>document.getElementById(id);
 const intro=$('welcome-intro'), dialog=$('access-dialog'), status=$('access-status'), button=$('access-signin');
 const panels=[document.querySelector('main.page'),$('cloud-panel')];

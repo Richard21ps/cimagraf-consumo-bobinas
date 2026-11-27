@@ -1,7 +1,7 @@
 /* Excel y PDF son operaciones independientes, con recuperación por operación. */
 (function(){
 'use strict';
-const suffix=window.CimagrafSharePointPilot===true?'-sharepoint-prueba':'';
+const local=window.CimagrafLocalMode===true,suffix=local?'-local':window.CimagrafSharePointPilot===true?'-sharepoint-prueba':'';
 const $=id=>document.getElementById(id),KEY='cimagraf-excel-pending-v1'+suffix,EDITOR='cimagraf-editor-copy-v1'+suffix;
 let running=false,job,copy;
 try{job=JSON.parse(localStorage.getItem(KEY)||'null');}catch(_){job=null;}
@@ -10,12 +10,13 @@ function remember(value){localStorage.setItem(KEY,JSON.stringify(value));job=val
 function rememberCopy(value){copy=value;if(value)localStorage.setItem(EDITOR,JSON.stringify(value));else localStorage.removeItem(EDITOR);}
 function currentCopy(){return copy&&copy.pendingId===(job?.id||null)?copy:null;}
 function cloudTarget(value,draft=value?.draft){
+ if(local)return 'local';
  if(value?.cloudTarget)return value.cloudTarget;
  if(value?.plan||value?.lockAcquired||value?.pdfStarted||value?.pdfId||value?.saved||
     value?.excelReceipt||value?.pdfReceipt||draft?.attempt||draft?.sent)return 'onedrive';
  return window.CimagrafSharePointDestination?'sharepoint':'onedrive';
 }
-const service=value=>cloudTarget(value)==='sharepoint'?'SharePoint':'OneDrive';
+const service=value=>local?'esta PC':cloudTarget(value)==='sharepoint'?'SharePoint':'OneDrive';
 function canCorrect(value=job){return !!value&&!value.excelReceipt&&!value.pdfReceipt&&!value.plan&&!value.pdfStarted&&!value.saved&&(!value.lockAcquired||value.lockReleased);}
 function editing(){return !!job?.editing&&canCorrect();}
 function preserveEdits(){
@@ -82,12 +83,14 @@ async function save(){
  try{
   job.cloudTarget=cloudTarget(job);remember(job);
   message('Conectando con '+service(job)+'. Conservamos los datos mientras se guardan…');
-  const cloud=await window.CimagrafCloud.connect(job.kind||'legacy',job.draft?.machine||job.snapshot.result.machineKey,job.cloudTarget);if(!cloud){showProgress(20,'Inicia sesión en Microsoft.');return;}
+  const machine=job.draft?.machine||job.snapshot.result.machineKey;
+  const dir=local?await window.CimagrafLocalStore.connect(machine):null;
+  const cloud=local?{local:true}:await window.CimagrafCloud.connect(job.kind||'legacy',machine,job.cloudTarget);if(!cloud){showProgress(20,'Inicia sesión en Microsoft.');return;}
   showProgress(20,'Preparando el guardado…');
   const identity=await window.CimagrafProduction.prepare(cloud);
   Object.assign(job.snapshot.result,identity);job.snapshot.result.group=identity.recordId;job.snapshot.group=identity.recordId;
   job.draft=window.CimagrafProduction.state();remember(job);
-  const store=window.CimagrafExcelStore.create({cloud,remember,status:message,onWrite:()=>showProgress(60,'Guardando y esperando confirmación…'),
+  const store=(local?window.CimagrafLocalStore:window.CimagrafExcelStore).create({cloud,dir,remember,status:message,onWrite:()=>showProgress(60,'Guardando y esperando confirmación…'),
    loadTemplate:async()=>{const response=await fetch('assets/Registro_Bobinas_Cimagraf.xlsx?v=5.0.0',{cache:'no-cache'});if(!response.ok)throw Error('No se pudo preparar el Excel. Revisa Internet y reintenta.');return response.arrayBuffer();},
    renderPDF:(result,created)=>window.CimagrafReportPDF.render(window.CimagrafArchive.reportHTML(result,created))
   });
@@ -138,6 +141,20 @@ async function start(kind,receipt=null){
   if(receipt&&changes)rememberCopy({...changes,pendingId:pending.id});else rememberCopy(null);
   await guardedSave();
  }catch(e){message('No se pudo conservar el grupo: '+e.message,true);ui();}
+}
+if(local){
+ const chooser=$('local-folder'), intro=$('app-intro'), hint=$('cloud-target');
+ if(intro)intro.textContent='Calcula el consumo y guarda Excel y PDF en una carpeta de esta PC.';
+ if(hint)hint.textContent='Los archivos se guardan solo en esta PC. Elige una carpeta para cada máquina.';
+ chooser.hidden=false;
+ message('Selecciona tu máquina y pulsa «Elegir o habilitar carpeta».');
+ chooser.addEventListener('click',async()=>{
+  if(running)return;
+  chooser.disabled=true;
+  try{const name=await window.CimagrafLocalStore.choose(window.CimagrafProduction.metadata().machineKey);message('Carpeta habilitada: '+name+'. Puedes guardar Excel y PDF.');}
+  catch(e){message(e.name==='AbortError'?'No se cambió la carpeta.':e.message,true);}
+  finally{chooser.disabled=false;}
+ });
 }
 $('multi-register').addEventListener('click',()=>start('excel',completedPDF()));
 $('multi-save-pdf').addEventListener('click',()=>{
