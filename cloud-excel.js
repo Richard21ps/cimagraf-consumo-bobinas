@@ -33,7 +33,16 @@ function completedExcel(){return !running&&excelSaved()&&!pdfSaved()&&job?.saved
 function completedPDF(){return !running&&pdfSaved()&&!excelSaved()&&job?.saved&&job.lockReleased?job:null;}
 const canSaveReceiptPDF=()=>!!completedExcel();
 const canSaveReceiptExcel=()=>!!completedPDF();
-window.CimagrafSaveUI={blocked,canSaveReceiptPDF,canSaveReceiptExcel,printSnapshot:()=>excelSaved()?(job.excelReceipt||job):pdfSaved()?(job.pdfReceipt||job):null};
+let folderCheck=0;
+async function refreshFolder(){
+ if(!local)return;
+ const chooser=$('local-folder'), machine=window.CimagrafProduction.metadata().machineKey, check=++folderCheck;
+ try{
+  const folder=await window.CimagrafLocalStore.authorizedFolder(machine);
+  if(check===folderCheck)chooser.hidden=!!folder;
+ }catch(_){if(check===folderCheck)chooser.hidden=false;}
+}
+window.CimagrafSaveUI={blocked,canSaveReceiptPDF,canSaveReceiptExcel,refreshFolder,printSnapshot:()=>excelSaved()?(job.excelReceipt||job):pdfSaved()?(job.pdfReceipt||job):null};
 function message(text,error=false){$('cloud-status').textContent=text;$('cloud-status').classList.toggle('cloud-error',error);if($('cloud-error-details'))$('cloud-error-details').hidden=true;}
 function errorDetails(error){
  const d=error.details,panel=$('cloud-error-details'),info=$('cloud-error-info');
@@ -110,7 +119,7 @@ async function save(){
   if(editing())window.CimagrafArchive.refresh();
   message((e.message||'No se pudo confirmar el guardado.')+(editing()?' Puedes editar los datos y volver a guardar.':' Puedes editar un borrador; Reintentar recupera la versión enviada anteriormente.'),true);
   errorDetails(e);
- }finally{running=false;ui();}
+ }finally{running=false;ui();refreshFolder();}
 }
 async function guardedSave(){
  if(running)return;
@@ -144,14 +153,15 @@ async function start(kind,receipt=null){
 }
 if(local){
  const chooser=$('local-folder');
- chooser.hidden=false;
- message('Selecciona tu máquina y pulsa «Elegir carpeta».');
+ message('Usa la carpeta de tu máquina. Si aún no está configurada, pulsa «Elegir carpeta».');
+ refreshFolder();
+ window.addEventListener('focus',refreshFolder);
  chooser.addEventListener('click',async()=>{
   if(running)return;
   chooser.disabled=true;
   try{const name=await window.CimagrafLocalStore.choose(window.CimagrafProduction.metadata().machineKey);message('Carpeta habilitada: '+name+'. Puedes guardar Excel y PDF.');}
   catch(e){message(e.name==='AbortError'?'No se cambió la carpeta.':e.message,true);}
-  finally{chooser.disabled=false;}
+  finally{chooser.disabled=false;refreshFolder();}
  });
 }
 $('multi-register').addEventListener('click',()=>start('excel',completedPDF()));

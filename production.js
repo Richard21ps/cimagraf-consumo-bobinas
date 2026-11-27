@@ -29,6 +29,7 @@ function render(){
  $('multi-group').value=id();$('multi-group').readOnly=true;
  status(local?'Guardado en la carpeta elegida en esta PC.':pilot?'Prueba de SharePoint: usa datos de ejemplo.':!draft?'Elige la máquina de esta PC.':draft.mode==='test'?'Las pruebas se guardan en una hoja separada.':draft.sent?'Número reservado para este registro.':'El ID se confirma al guardar.');
  window.CimagrafArchive.refresh();
+ if(local)window.CimagrafSaveUI?.refreshFolder();
 }
 function reset(){draft=null;sessionStorage.removeItem(DRAFT);makeDraft();render();}
 async function prepare(cloud){
