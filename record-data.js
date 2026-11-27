@@ -16,7 +16,7 @@ function movements(r){
   const entries=moves.length?moves:[{op:r.sourceOps[0]?.id||'—',productiveKg:0,processKg:0,metros:0,saldo:bobbin.left}];
   entries.forEach((move,index)=>{
    const first=index===0,last=index===entries.length-1;
-   const retired=first?Number(bobbin.retired||0):0,core=first?Number(bobbin.corePaper||0):0;
+   const retired=first?Number(bobbin.retired||0):0,core=(r.deductionAllocation==='start-end'?last:first)?Number(bobbin.corePaper||0):0;
    const process=Number(move.processKg||0),production=Number(move.productiveKg??move.kg??0),deductions=process+retired+core;
    if(Math.abs(opening-production-deductions-move.saldo)>1e-6)throw Error('El movimiento de '+bobbin.id+' no concilia.');
    rows.push({bobbin,op:move.op,opening,production,process,retired,core,deductions,meters:move.metros||0,balance:move.saldo,final:last?bobbin.left:0,last,first});
@@ -55,11 +55,25 @@ function labelHTML(r,created,logo=''){
  }).join('');
 }
 // Comparación del grupo completo; no modifica el consumo ni el saldo.
+function materialTotals(r){
+ const loads=r.loads||[];
+ const plantBalance=loads[0]?.isPlantBalance?Number(loads[0].initial):0;
+ const available=loads.reduce((sum,b)=>sum+Number(b.initial),0);
+ const dispatched=available-plantBalance;
+ const consumed=Number(r.total)+Number(r.totalScrap);
+ return {dispatched,plantBalance,available,consumed};
+}
 function comparison(r){
  const raw=r?.warehouseExpectedKg;
  if(raw===undefined||raw===null||String(raw).trim()==='')return null;
  const expected=Number(raw),actual=Number(r.saldo);
  if(!Number.isFinite(expected)||expected<0||!Number.isFinite(actual))return null;
+ if(r.comparisonMethod==='consumption'){
+  const totals=materialTotals(r),assigned=totals.dispatched-expected;
+  if(!r.loads?.length||Object.values(totals).some(v=>!Number.isFinite(v)||v<0)||assigned<0)return null;
+  const delta=assigned-totals.consumed,kg=Math.abs(delta)<1e-8?0:delta;
+  return {expected,actual,...totals,assigned,kg,percent:assigned>0?kg/assigned*100:null,status:kg>0?'Ahorro':kg<0?'Exceso de consumo':'Sin ahorro'};
+ }
  const delta=actual-expected,kg=Math.abs(delta)<1e-8?0:delta;
  // Los pendientes anteriores conservan su base original al reintentar.
  if(r.comparisonBasis!=='assigned')return {expected,actual,kg,percent:expected>0?kg/expected*100:null,status:kg>0?'Ahorro':kg<0?'Mayor consumo':'Sin diferencia'};
@@ -73,9 +87,10 @@ function comparisonHTML(r,details=true){
  const assigned=r.comparisonBasis==='assigned';
  const base=assigned?'Ahorro ÷ kg asignados × 100.':'Diferencia respecto a la devolución prevista por Almacén.';
  const noPercent=assigned?'Los kg asignados son 0: no se calcula un porcentaje sobre cero.':'Almacén indica 0 kg: no se calcula un porcentaje sobre cero.';
+ const consumption=r.comparisonMethod==='consumption'&&details?'<p>Saldo de planta adicional: <strong>'+nf(c.plantBalance)+' kg</strong> · Consumo total: <strong>'+nf(c.consumed)+' kg</strong></p>':'';
  const figures=assigned&&details?'<p>Despacho: <strong>'+nf(c.dispatched)+' kg</strong> · Devolución prevista: <strong>'+nf(c.expected)+' kg</strong> · Asignado: <strong>'+nf(c.assigned)+' kg</strong></p>':!assigned?'<p>Devolución prevista: <strong>'+nf(c.expected)+' kg</strong></p>':'';
  const highlight=details?'<strong class="comparison-value">'+c.status+': '+nf(Math.abs(c.kg))+' kg · '+(c.percent===null?'Porcentaje no disponible':nf(Math.abs(c.percent))+' %')+'</strong>':'<div class="comparison-focus"><span class="comparison-state">'+c.status+'</span><div class="comparison-numbers"><strong class="comparison-value">'+nf(Math.abs(c.kg))+' <small>kg</small></strong><strong class="comparison-percent">'+(c.percent===null?'—':nf(Math.abs(c.percent)))+' <small>%</small></strong></div></div>';
- return '<section class="warehouse-comparison '+(c.kg>0?'saving':c.kg<0?'overuse':'equal')+'"><h3>Comparación con Almacén · todo el grupo</h3>'+figures+'<p>Saldo calculado: <strong>'+nf(c.actual)+' kg</strong></p>'+highlight+'<p class="comparison-note">'+(c.percent===null?noPercent:base+' Más saldo significa menos papel consumido.')+'</p></section>';
+ return '<section class="warehouse-comparison '+(c.kg>0?'saving':c.kg<0?'overuse':'equal')+'"><h3>Comparación con Almacén · todo el grupo</h3>'+figures+consumption+'<p>Saldo calculado: <strong>'+nf(c.actual)+' kg</strong></p>'+highlight+'<p class="comparison-note">'+(c.percent===null?noPercent:base+(r.comparisonMethod==='consumption'?' El consumo incluye el papel utilizado del saldo de planta.':' Más saldo significa menos papel consumido.'))+'</p></section>';
 }
 const comparisonHeaders=['Fecha','Hora','Máquina','Registro','OP del grupo','Devolución prevista (kg)','Saldo calculado (kg)','Diferencia (kg)','Diferencia (%)','Resultado','Clave registro','Despacho total (kg)','Kg asignados','Base del porcentaje'];
 function comparisonRow(r,created,jobId){
@@ -94,5 +109,5 @@ function filename(r,extension='pdf'){
  const ops=Array.from([...new Set(r.sourceOps.map(o=>clean(o.id)))].join('_')).slice(0,130).join('').replace(/[. ]+$/g,'');
  return ops+'_'+clean(r.machine).replace(/\s+/g,'').toUpperCase()+'.'+extension;
 }
-scope.CimagrafRecord={localHeaders,localRows,comparison,comparisonHTML,comparisonHeaders,comparisonRow,headers,numericColumns,dateParts,movements,rows,missing,labelHTML,filename};
+scope.CimagrafRecord={materialTotals,localHeaders,localRows,comparison,comparisonHTML,comparisonHeaders,comparisonRow,headers,numericColumns,dateParts,movements,rows,missing,labelHTML,filename};
 })(typeof window==='undefined'?module.exports:window);

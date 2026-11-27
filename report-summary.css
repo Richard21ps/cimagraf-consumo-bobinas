@@ -127,3 +127,6 @@
 .warehouse-details .warehouse-field-title{font-size:13px}
 .warehouse-details .warehouse-stat output{font-size:18px}
 @media(max-width:600px){.warehouse-row{grid-template-columns:1fr;gap:10px}.warehouse-details .warehouse-cards{grid-template-columns:1fr}.warehouse-row .warehouse-input-unit{max-width:240px}}
+
+.plant-balance-check{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#45647b;margin-left:12px}
+.plant-balance-check input[type="checkbox"]{width:16px;height:16px;margin:0;accent-color:#176641}
