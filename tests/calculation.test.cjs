@@ -45,32 +45,9 @@ test('Gráfico: bobina sin utilizar y saldo pequeño sin bloqueo',()=>{const out
 test('Gráfico: datos pendientes no muestran saldos anteriores',()=>assert.match(render(null),/Por calcular/));
 test('Sintaxis de ambos scripts',()=>{for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);});
 assert.doesNotMatch(html,/id="multi-total-(meters|consumption|scrap)"/);
-const problemStart=html.indexOf('const PROBLEM_CATALOG_KEY=');
-const problemSource=html.slice(problemStart,html.indexOf('function redraw(){',problemStart));
-function problemContext(saved){const context={localStorage:{getItem:()=>saved},escapeHtml:s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')};vm.createContext(context);vm.runInContext(problemSource,context);return context;}
-test('Kirin 1C ofrece Material dañado como primera opción editable y mantiene motivos agregados',()=>{
- const c=problemContext('["Mala impresión","material dañado"]');
- c.roll={id:'Bobina 1',scrap:5};
- const show=()=>vm.runInContext("problemControls(roll,0,'kirin-1c')",c);
- assert.match(show(),/<select data-problem-select="0"><option value="Material dañado" selected>Material dañado<\/option><option value="Mala impresión">/);
- c.roll.problems=['Mala impresión'];assert.match(show(),/<option value="Mala impresión" selected>/);
- c.roll={id:'Bobina 1',scrap:8};assert.match(show(),/<option value="Material dañado" selected>/);
-});
-test('El motivo automático del Excel solo se registra con lonjas en Kirin 1C',()=>{
- const rolls=[[200,1000,10]], c=calculate([1000],rolls,'Otro papel',70,'kirin-1c');
- assert.deepEqual(Array.from(c.loads[0].problems),['Material dañado']);
- assert.equal(calculate([1000],[[200,1000,0]],'Otro papel',70,'kirin-1c').loads[0].problems.length,0);
- assert.equal(calculate([1000],rolls,'Otro papel',70,'kirin-4c').loads[0].problems.length,0);
-});
-test('Catálogo de problemáticas vacío y datos guardados inválidos',()=>{for(const saved of [null,'{','{}'])assert.equal(vm.runInContext('problemCatalog.length',problemContext(saved)),0);});
-test('Catálogo sin duplicados ni entradas inválidas',()=>{const c=problemContext(JSON.stringify([' Prueba   interna ','prueba interna',42,null,'']));assert.equal(vm.runInContext('problemCatalog.length',c),1);assert.equal(vm.runInContext('problemCatalog[0]',c),'Prueba interna');});
-test('Seleccionar problemáticas no duplica ni modifica el peso',()=>{const c=problemContext('[]');c.roll={scrap:'12'};vm.runInContext("assignProblem(roll,' Prueba A ');assignProblem(roll,'prueba a');assignProblem(roll,'Prueba B')",c);assert.equal(c.roll.problems.length,2);assert.equal(c.roll.scrap,'12');});
-test('Desplegable de problemáticas escapa nombres y comienza plegado',()=>{const c=problemContext('["<prueba>"]');c.roll={id:'Bobina 1'};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/&lt;prueba>/);assert.doesNotMatch(output,/<prueba>/);assert.doesNotMatch(output,/data-problems-roll="0" open/);});
 test('Redondeo visual a un decimal conserva saldo real sin mínimo',()=>{const r=calculate([1000],[[180.04,1000,10.05]]);near(r.saldo,99.99);assert.ok(!Object.hasOwn(r,'returnViolations'));assert.match(render(r),/100[.]0 <small>kg/);assert.match(render(r),/CON SALDO/);});
 test('Resumen de bobinas bajo el total, fuera de las filas de entrada',()=>{assert.match(html,/id="multi-roll-usage"/);assert.doesNotMatch(html,/class="bobbin-visual"/);assert.ok(html.indexOf('id="multi-roll-usage"')>html.indexOf('id="multi-delivery"'));assert.ok(html.indexOf('id="multi-roll-usage"')<html.indexOf('id="multi-delivery-status"'));});
 
-test('Motivo nuevo: formulario oculto hasta que se solicite',()=>{const c=problemContext('[]');c.roll={id:'Bobina 1'};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/Motivo y área de las lonjas/);assert.match(output,/class="reason-form problem-form" hidden/);assert.match(output,/data-problem-start/);assert.doesNotMatch(output,/Problemáticas del papel retirado/);});
-test('Motivo elegido reemplaza el selector y permite cambiar',()=>{const c=problemContext('["Motivo A"]');c.roll={id:'Bobina 1',problems:['Motivo A']};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/Motivo A/);assert.doesNotMatch(output,/data-problem-select/);assert.match(output,/data-problem-remove/);});
 const printStart=html.indexOf('function buildPrintSummary(r,stamp,archived=false){');
 const printSource=html.slice(printStart,html.indexOf('function preparePrintSummary(){',printStart));
 const tableStart=html.indexOf('function table(headers,rows){',html.indexOf('const EPS='));
@@ -97,22 +74,39 @@ test('Tara Book Cream: todos los gramajes y tipos por ancho',()=>{for(const pape
 test('Sin sobrante no descuenta tara; tara automática prevalece sobre dato viejo',()=>{near(calculate([100],[[200,480,0,0]],'Bond').loads[0].coreTare,0);near(calculate([100],[[200,480,0,10,99]],'Bond').loads[0].coreTare,.990);});
 test('Sobrante menor que tara se rechaza; tuco vacío deja cero papel',()=>{assert.throws(()=>calculate([100],[[200,480,0,.5]],'Bond'),/debe ser igual o mayor/);near(calculate([100],[[200,480,0,.990]],'Bond').loads[0].corePaper,0);});
 test('Tara y retiros con varias OP y anchos conservan masa',()=>{const r=calculate([600,1400],[[80,1000,5,10],[200,500,10,20]],'Book Cream');for(const b of r.loads)near(b.initial,b.used+b.retired+b.corePaper+b.left);near(r.details.reduce((s,d)=>s+d.metros,0),2000);assert.match(printReport(r),/TOTAL A ENTREGAR/);});
-test('Motivos explican alcance exclusivo del papel retirado',()=>{const c=problemContext('[]');c.roll={id:'Bobina 1'};assert.match(vm.runInContext('problemControls(roll,0)',c),/solo a las lonjas, no al sobrante de bobina/);});
 
 const noteStart=html.indexOf('function coreTareControls(');
 const noteSource=html.slice(noteStart,html.indexOf('function redraw(){',noteStart));
 test('La tara automática no muestra un aviso; sin referencia se pide el peso manual',()=>{const note={innerHTML:'',hidden:false,querySelector:()=>null};const roll={width:480,coreGross:25};let paper='Bond';const c={rolls:[roll],root:{querySelector:()=>note},$:()=>({value:paper}),numeric:Number,field:label=>label};vm.createContext(c);vm.runInContext(removalSource+noteSource+';refreshCoreTareNotes()',c);assert.equal(note.hidden,true);assert.equal(note.innerHTML,'');paper='Otro papel';vm.runInContext('refreshCoreTareNotes()',c);assert.equal(note.hidden,false);assert.match(note.innerHTML,/Tuco vacío/);roll.coreGross=0;vm.runInContext('refreshCoreTareNotes()',c);assert.equal(note.hidden,true);});
 
-test('Áreas: Almacén y Planta digital disponibles con catálogo vacío o inválido',()=>{for(const saved of [null,'{','{}']){const c=problemContext(saved);assert.equal(vm.runInContext('areaCatalog.join("|")',c),'Almacén|Planta digital');}});
-test('Áreas: selección múltiple sin duplicados y sin cambiar pesos',()=>{const c=problemContext('[]');c.roll={scrap:'12',coreGross:'8'};vm.runInContext("assignArea(roll,'Almacén');assignArea(roll,'almacén');assignArea(roll,' Planta digital ')",c);assert.equal(c.roll.areas.length,2);assert.equal(c.roll.scrap,'12');assert.equal(c.roll.coreGross,'8');});
-test('Áreas guardadas: limpia nombres y conserva opciones predeterminadas',()=>{const c=problemContext('["Mantenimiento","mantenimiento",null,42]');assert.equal(vm.runInContext('areaCatalog.join("|")',c),'Almacén|Planta digital|Mantenimiento');});
-test('Área elegida reemplaza el selector, con HTML escapado',()=>{const c=problemContext('[]');c.roll={id:'Bobina 2',areas:['<Área>']};const output=vm.runInContext('problemControls(roll,1)',c);assert.doesNotMatch(output,/data-area-select/);assert.doesNotMatch(output,/data-area-start/);assert.match(output,/&lt;Área>/);assert.doesNotMatch(output,/<Área>/);assert.match(output,/data-area-remove="0"/);});
 test('Impresión compacta muestra descuentos y saldo sin parámetros ni motivos',()=>{const r=calculate([1000],[[200,1000,10]]);r.usedRolls[0].problems=['<Daño>'];r.usedRolls[0].areas=['Almacén'];const output=printReport(r);assert.doesNotMatch(output,/Motivos de las lonjas|Áreas involucradas|Parámetros por OP|Libros set up|Copias/);assert.match(output,/Descuentos/);assert.equal(r.usedRolls[0].problems[0],'<Daño>');near(r.saldo,120);});
 
-test('Motivos y áreas ocultos con cero o vacío desde el primer dibujo',()=>{const c=problemContext('[]');for(const scrap of ['0','',0]){c.roll={id:'Bobina 1',scrap,areas:['Almacén'],problems:['Daño']};assert.match(vm.runInContext('problemControls(roll,0)',c),/class="roll-problems-wrap" hidden/);}c.roll.scrap='0.1';assert.doesNotMatch(vm.runInContext('problemControls(roll,0)',c),/class="roll-problems-wrap" hidden/);});
-test('Papel retirado positivo abre; cero y vacío ocultan solo esa bobina',()=>{const wrappers=[{hidden:true},{hidden:true}],panels=wrappers.map(w=>({open:false,closest:()=>w}));const c={localStorage:{getItem:()=>null},rolls:[{scrap:'0',problems:['Daño'],areas:['Almacén']},{scrap:'12'}],root:{querySelector:selector=>panels[Number(selector.match(/"(\d+)"/)[1])]}};vm.createContext(c);vm.runInContext(problemSource,c);vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,false);assert.equal(panels[1].open,true);for(const scrap of ['0','']){c.rolls[1].scrap=scrap;vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,true);assert.equal(panels[1].open,false);}assert.equal(wrappers[0].hidden,true);c.rolls[1].scrap='2';vm.runInContext('syncWithdrawalControls(1)',c);assert.equal(wrappers[1].hidden,false);assert.equal(c.rolls[0].problems[0],'Daño');assert.equal(c.rolls[0].areas[0],'Almacén');});
 
-test('Motivo y área seleccionados: no quedan desplegables ni botones de agregar',()=>{const c=problemContext('["Daño"]');c.roll={id:'Bobina 1',scrap:5,problems:['Daño'],areas:['Almacén'],problemsOpen:true};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/withdrawal-fields/);assert.match(output,/Datos completos/);assert.doesNotMatch(output,/<select|data-area-start|data-problem-start/);assert.match(output,/data-problem-remove/);assert.match(output,/data-area-remove/);c.roll.problems=[];const changed=vm.runInContext('problemControls(roll,0)',c);assert.match(changed,/data-problem-select/);assert.doesNotMatch(changed,/data-area-select/);});
 test('Resumen incluye máquina e ID sin cambiar kg ni tablas',()=>{const r=calculate([1000],[[200,1000,10]]);r.machine='Kirin 4C';r.recordId='KIRIN 4C-0001';const out=printReport(r);assert.match(out,/Máquina: Kirin 4C/);assert.match(out,/Registro: KIRIN 4C-0001/);assert.match(out,/TOTAL A ENTREGAR AL ALMACÉN <strong>120[.]0 kg/);});
 
 console.log(`${count} pruebas correctas y estructura del desglose verificada.`);
+
+test('Las lonjas no generan motivos ni áreas automáticamente en ninguna máquina',()=>{
+ for(const machine of ['kirin-1c','kirin-4c']){
+  const r=calculate([1000],[[200,1000,10]],'Otro papel',70,machine);
+  assert.equal(r.loads[0].problems.length,0);assert.equal(r.loads[0].areas.length,0);
+  near(r.loads[0].retired,10);
+ }
+});
+
+test('La rueda no modifica campos numéricos enfocados y permite desplazar el resto de la página',()=>{
+ const start=html.indexOf("document.addEventListener('wheel'");
+ const source=html.slice(start,html.indexOf("root.addEventListener('input'",start));
+ let handler,options;const input={},document={activeElement:input,addEventListener:(type,fn,config)=>{assert.equal(type,'wheel');handler=fn;options=config;}};
+ vm.runInNewContext(source,{document});let blocked=0;
+ handler({target:{closest:()=>input},preventDefault:()=>blocked++});assert.equal(blocked,1);
+ document.activeElement={};handler({target:{closest:()=>input},preventDefault:()=>blocked++});assert.equal(blocked,1);
+ handler({target:{closest:()=>null},preventDefault:()=>blocked++});assert.equal(blocked,1);
+ assert.equal(options.passive,false);assert.equal(options.capture,true);
+});
+test('Las filas de bobinas ya no construyen motivos ni áreas de lonjas',()=>{
+ const start=html.indexOf('function redraw(){'),end=html.indexOf('function formatSapInput(',start);
+ const source=html.slice(start,end);
+ assert.doesNotMatch(source,/problemControls|roll-problems|data-area|data-problem/);
+ assert.match(source,/Lonjas \(kg\)/);
+});
