@@ -95,13 +95,13 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
  async function save(job){
   const result=job.snapshot.result, fname=names[result.machineKey],record=scope.CimagrafRecord;
   if(!fname||record.missing(result))throw Error('Verifica la máquina, el lote y el SAP.');
-  const rows=record.rows(result,job.created,job.id,job.pdfReceipt?.pdfName||'');
+  const rows=record.localRows(result,job.created,job.id,job.pdfReceipt?.pdfName||'');
   rows.forEach(row=>{row[24]=job.draft?.localPhase==='production'?'PRODUCCIÓN':job.draft?.localPhase==='test'?'PRUEBA':'LOCAL';});
   if(!rows.length)throw Error('No hay movimientos para guardar.');
   const {Workbook}=await loadExcel(), book=new Workbook();
   const root=await phaseFolder(dir,result.machineKey,job.draft?.localPhase);
   const target=await subfolder(root,result.machineKey,'excel');
-  let handle=await existing(target,fname), sheet, before;
+  let handle=await existing(target,fname), sheet, before, schemaChanged=false;
   const current=handle?await handle.getFile():null;
   if(current&&!current.size&&!job.localNewBook)throw Error('El Excel local está vacío. Conserva el archivo y revisa la carpeta antes de reintentar.');
   // Si ya se usó la versión anterior, iniciar el libro nuevo con su historial.
@@ -115,17 +115,25 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
    await book.xlsx.load(before).catch(()=>{throw Error('No se pudo leer el Excel local. El archivo original se conservó.');});
    sheet=book.getWorksheet(sheetName);
    if(!sheet||record.headers.some((name,i)=>sheet.getRow(1).getCell(i+1).value!==name))throw Error('Los encabezados del Excel no coinciden. El archivo original se conservó.');
+   const header=sheet.getRow(1);
+   if([27,28].every(i=>header.getCell(i).value==null)){
+    for(let i=26;i<record.localHeaders.length;i++){
+     header.getCell(i+1).value=record.localHeaders[i];sheet.getColumn(i+1).width=18;
+    }
+    sheet.autoFilter='A1:AB'+sheet.rowCount;schemaChanged=true;
+   }
+   if(record.localHeaders.some((name,i)=>header.getCell(i+1).value!==name))throw Error('Las columnas de ahorro no coinciden. El archivo original se conservó.');
    }
   }
   if(!sheet){
    sheet=book.addWorksheet(sheetName,{views:[{state:'frozen',ySplit:1}]});
-   sheet.columns=record.headers.map(header=>({header,width:Math.max(14,header.length+3)}));
+   sheet.columns=record.localHeaders.map(header=>({header,width:Math.max(14,header.length+3)}));
    sheet.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};
    sheet.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF15385B'}};
-   sheet.autoFilter='A1:Z1';
+   sheet.autoFilter='A1:AB1';
   }
   // Una fila por grupo, en una hoja independiente: no repite el ahorro por OP/bobina.
-  const comparisonRow=record.comparisonRow(result,job.created,job.id);
+  const comparisonRow=result.savingsInRegister?null:record.comparisonRow(result,job.created,job.id);
   let comparisonAdded=false;
   if(comparisonRow){
    let comparisonSheet=book.getWorksheet('Comparación por grupo');
@@ -162,11 +170,15 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
   if(seen.size){
    if(seen.size!==rows.length||rows.some(row=>!seen.get(row[25])||row.some((v,i)=>(seen.get(row[25]).getCell(i+1).value??'')!==v)))throw Error('El Excel ya contiene parte de este registro. Verifica el archivo antes de reintentar.');
   }else{
-   sheet.addRows(rows);
-   sheet.autoFilter='A1:Z'+sheet.rowCount;
+   const added=sheet.addRows(rows);
+   for(const row of added)for(const i of [27,28]){
+    row.getCell(i).numFmt='0.0';
+    if(typeof row.getCell(i).value==='number')row.getCell(i).font={bold:true,color:{argb:row.getCell(i).value<0?'FFA1252D':'FF176641'}};
+   }
+   sheet.autoFilter='A1:AB'+sheet.rowCount;
   }
-  if(!seen.size||legacy||comparisonAdded){
-   const data=seen.size&&!comparisonAdded?before:await book.xlsx.writeBuffer();
+  if(!seen.size||legacy||comparisonAdded||schemaChanged){
+   const data=seen.size&&!comparisonAdded&&!schemaChanged?before:await book.xlsx.writeBuffer();
    job.plan={local:true};remember(job);onWrite();
    if(source){
     const latest=await (await source.getFile()).arrayBuffer();

@@ -45,3 +45,22 @@ test('El Excel registra despacho, asignado y la nueva base sin repetir el ahorro
  const row=R.comparisonRow(r,'2026-11-27T14:00:00Z','job');
  assert.equal(row.length,14);assert.deepEqual(row.slice(5),[100,120,20,5,'Ahorro','job',500,400,'Kg asignados']);
 });
+
+test('El registro local agrega solo ahorro en kg y porcentaje, una vez por grupo',()=>{
+ const {calculate}=require('./excel-fixture.cjs');
+ const r=calculate([{id:'A',books:100,copies:30,advance:240},{id:'B',books:100,copies:30,advance:240}]);
+ Object.assign(r,{comparisonBasis:'assigned',savingsInRegister:true,warehouseExpectedKg:50});
+ const c=R.comparison(r),rows=R.localRows(r,'2026-11-27T14:00:00Z','job');
+ assert.deepEqual(R.localHeaders.slice(26),['Ahorro (kg)','Ahorro (%)']);
+ assert.equal(rows.length,2);assert.equal(rows[0].length,28);
+ assert.deepEqual(rows[0].slice(26),[c.kg,c.percent]);assert.deepEqual(rows[1].slice(26),['','']);
+ assert.equal(rows.reduce((sum,row)=>sum+Number(row[26]),0),c.kg);
+ const previous=R.localRows({...r,savingsInRegister:false},'2026-11-27T14:00:00Z','old');
+ assert.deepEqual(previous[0].slice(26),['','']);
+});
+test('Sin referencia no inventa ahorro; un mayor consumo queda negativo en Excel',()=>{
+ const {calculate}=require('./excel-fixture.cjs'),r=calculate();
+ Object.assign(r,{comparisonBasis:'assigned',savingsInRegister:true});
+ assert.deepEqual(R.localRows(r,'2026-11-27T14:00:00Z','j')[0].slice(26),['','']);
+ r.warehouseExpectedKg=190;const row=R.localRows(r,'2026-11-27T14:00:00Z','j')[0];assert(row[26]<0);assert(row[27]<0);
+});

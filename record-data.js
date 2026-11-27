@@ -74,7 +74,8 @@ function comparisonHTML(r,details=true){
  const base=assigned?'Ahorro ÷ kg asignados × 100.':'Diferencia respecto a la devolución prevista por Almacén.';
  const noPercent=assigned?'Los kg asignados son 0: no se calcula un porcentaje sobre cero.':'Almacén indica 0 kg: no se calcula un porcentaje sobre cero.';
  const figures=assigned&&details?'<p>Despacho: <strong>'+nf(c.dispatched)+' kg</strong> · Devolución prevista: <strong>'+nf(c.expected)+' kg</strong> · Asignado: <strong>'+nf(c.assigned)+' kg</strong></p>':!assigned?'<p>Devolución prevista: <strong>'+nf(c.expected)+' kg</strong></p>':'';
- return '<section class="warehouse-comparison '+(c.kg>0?'saving':c.kg<0?'overuse':'equal')+'"><h3>Comparación con Almacén · todo el grupo</h3>'+figures+'<p>Saldo calculado: <strong>'+nf(c.actual)+' kg</strong></p><strong class="comparison-value">'+c.status+': '+nf(Math.abs(c.kg))+' kg · '+(c.percent===null?'Porcentaje no disponible':nf(Math.abs(c.percent))+' %')+'</strong><p class="comparison-note">'+(c.percent===null?noPercent:base+' Más saldo significa menos papel consumido.')+'</p></section>';
+ const highlight=details?'<strong class="comparison-value">'+c.status+': '+nf(Math.abs(c.kg))+' kg · '+(c.percent===null?'Porcentaje no disponible':nf(Math.abs(c.percent))+' %')+'</strong>':'<div class="comparison-focus"><span class="comparison-state">'+c.status+'</span><div class="comparison-numbers"><strong class="comparison-value">'+nf(Math.abs(c.kg))+' <small>kg</small></strong><strong class="comparison-percent">'+(c.percent===null?'—':nf(Math.abs(c.percent)))+' <small>%</small></strong></div></div>';
+ return '<section class="warehouse-comparison '+(c.kg>0?'saving':c.kg<0?'overuse':'equal')+'"><h3>Comparación con Almacén · todo el grupo</h3>'+figures+'<p>Saldo calculado: <strong>'+nf(c.actual)+' kg</strong></p>'+highlight+'<p class="comparison-note">'+(c.percent===null?noPercent:base+' Más saldo significa menos papel consumido.')+'</p></section>';
 }
 const comparisonHeaders=['Fecha','Hora','Máquina','Registro','OP del grupo','Devolución prevista (kg)','Saldo calculado (kg)','Diferencia (kg)','Diferencia (%)','Resultado','Clave registro','Despacho total (kg)','Kg asignados','Base del porcentaje'];
 function comparisonRow(r,created,jobId){
@@ -82,10 +83,16 @@ function comparisonRow(r,created,jobId){
  return [stamp.date,stamp.time,excelText(r.machine),excelText(r.recordId||r.group),excelText([...new Set(r.sourceOps.map(o=>o.id))].join(' / ')),c.expected,c.actual,c.kg,c.percent??'',c.status,jobId,c.dispatched??'',c.assigned??'',r.comparisonBasis==='assigned'?'Kg asignados':'Devolución prevista'];
 }
 
+const localHeaders=[...headers,'Ahorro (kg)','Ahorro (%)'];
+function localRows(r,created,jobId,pdfUrl=''){
+ const c=r.savingsInRegister?comparison(r):null;
+ return rows(r,created,jobId,pdfUrl).map((row,index)=>[...row,index===0&&c?c.kg:'',index===0&&c?(c.percent??''):'']);
+}
+
 function filename(r,extension='pdf'){
  const clean=value=>String(value??'').replace(/["*:<>?\/\\|#%\u0000-\u001f]/g,'-').trim().replace(/[. ]+$/g,'');
  const ops=Array.from([...new Set(r.sourceOps.map(o=>clean(o.id)))].join('_')).slice(0,130).join('').replace(/[. ]+$/g,'');
  return ops+'_'+clean(r.machine).replace(/\s+/g,'').toUpperCase()+'.'+extension;
 }
-scope.CimagrafRecord={comparison,comparisonHTML,comparisonHeaders,comparisonRow,headers,numericColumns,dateParts,movements,rows,missing,labelHTML,filename};
+scope.CimagrafRecord={localHeaders,localRows,comparison,comparisonHTML,comparisonHeaders,comparisonRow,headers,numericColumns,dateParts,movements,rows,missing,labelHTML,filename};
 })(typeof window==='undefined'?module.exports:window);
