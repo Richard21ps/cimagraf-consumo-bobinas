@@ -210,7 +210,7 @@
     </div></header>
 
     <section class="multi-workspace" id="multi-root" aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.24</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.25</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -218,8 +218,8 @@
         <details id="machine-setup"><summary>Configurar equipo</summary><div class="machine-settings"><div class="machine-setup-fields">
           <label>Máquina de esta PC<select id="machine-select"><option value="">Seleccionar máquina</option><option value="kirin-1c">Kirin 1C</option><option value="kirin-4c">Kirin 4C</option></select></label>
           <button id="machine-start" type="button" disabled>Iniciar producción</button>
-        </div><p id="machine-connection-note">El inicio de producción confirma la numeración compartida.</p>
-        <div id="machine-start-confirm" class="machine-start-confirm" hidden><p>Activar registros reales para esta máquina. Si ya tiene registros, continúa su numeración; nunca vuelve a 1.</p><button id="machine-start-confirm-button" type="button">Activar esta máquina</button> <button id="machine-start-cancel" type="button">Seguir en pruebas</button></div>
+        </div><p id="machine-connection-note">Haz las pruebas necesarias. Cuando termines, abre Configuración de equipo y pulsa Iniciar producción.</p>
+        <div id="machine-start-confirm" class="machine-start-confirm" hidden><p>La máquina quedará fija en esta PC. Se limpiará el formulario actual y las pruebas guardadas se conservarán en su carpeta. Los nuevos registros irán a Producción.</p><button id="machine-start-confirm-button" type="button">Activar esta máquina</button> <button id="machine-start-cancel" type="button">Seguir en pruebas</button></div>
         </div></details>
       </section>
       <div class="multi-layout"><div class="multi-editor">
@@ -909,7 +909,7 @@ function refreshOpQueue(){
  $('multi-op-registration-table').innerHTML=table(['OP','Libros set up','Libros corrida','Copias / libro','Calibración','Paradas','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.setupBooks??0,o.books,o.copies,o.calibration?'Sí':'No',o.stops??0,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  const missing=missingLabelData(result);
  const ready=!missing&&!!result.group&&!!window.CimagrafProduction?.ready()&&!window.CimagrafSaveUI?.blocked();
- $('multi-summary-status').textContent=missing?'Completa SAP y lote de '+missing.id+'.':!result.group?'Asigna la máquina de esta PC.':'Destino: '+result.machine+'.'+(result.runMode==='test'?' Se guardará en la hoja Pruebas.':'');
+ $('multi-summary-status').textContent=missing?'Completa SAP y lote de '+missing.id+'.':!result.group?'Asigna la máquina de esta PC.':'Destino: '+result.machine+'.'+(result.runMode==='test'?' Se guardará en la carpeta de pruebas.':'');
  $('multi-register').disabled=!ready&&!window.CimagrafSaveUI?.canSaveReceiptExcel();
  $('multi-print').disabled=!!missing||!result.usedRolls.some(b=>b.left>EPS);
  $('multi-save-pdf').disabled=!ready&&!window.CimagrafSaveUI?.canSaveReceiptPDF();
@@ -972,7 +972,7 @@ window.CimagrafArchive={
  <strong id="cloud-heading">Registro local</strong>
  <p id="cloud-status" role="status" aria-live="polite">Elige la carpeta de la máquina para guardar Excel y PDF.</p>
  <details id="cloud-error-details" hidden><summary>Ver detalle del error</summary><pre id="cloud-error-info"></pre></details>
- <p class="cloud-target" id="cloud-target">Elige una carpeta principal. Dentro se crean dos subcarpetas por máquina: Base de datos para el Excel acumulado y PDF para los informes individuales.</p>
+ <p class="cloud-target" id="cloud-target">Elige una carpeta principal. Las pruebas y la producción se guardan por separado, cada una con su Excel acumulado y sus PDF.</p>
  <div class="cloud-actions">
   <button class="multi-button" id="cloud-retry" type="button" hidden>Reintentar guardado</button>
   <button class="multi-button" id="cloud-edit" type="button" hidden>Volver para corregir</button>
@@ -981,8 +981,8 @@ window.CimagrafArchive={
 <script src="report-pdf.js?v=5.1.12"></script>
 <script>window.CimagrafLocalMode=true;</script>
 <script src="machine-registry.js?v=4.16.3"></script>
-<script src="production.js?v=5.1.22"></script>
-<script src="local-store.js?v=5.1.22"></script>
-<script src="cloud-excel.js?v=5.1.22"></script>
+<script src="production.js?v=5.1.25"></script>
+<script src="local-store.js?v=5.1.25"></script>
+<script src="cloud-excel.js?v=5.1.25"></script>
 </body>
 </html>

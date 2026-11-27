@@ -3,6 +3,11 @@
 'use strict';
 const names={'kirin-1c':'Registro_Kirin_1C_Local.xlsx','kirin-4c':'Registro_Kirin_4C_Local.xlsx'}, sheetName='Registros';
 const machines={'kirin-1c':'Kirin 1C','kirin-4c':'Kirin 4C'};
+function phaseFolder(dir,machine,phase){
+ if(!phase)return dir;
+ if(!machines[machine]||!['test','production'].includes(phase))throw Error('Verifica la máquina y el modo de guardado.');
+ return dir.getDirectoryHandle((phase==='production'?'Producción ':'Pruebas ')+machines[machine],{create:true});
+}
 function subfolder(dir,machine,kind){
  if(!machines[machine])throw Error('Verifica la máquina seleccionada.');
  return dir.getDirectoryHandle((kind==='pdf'?'PDF ':'Base de datos ')+machines[machine],{create:true});
@@ -60,6 +65,27 @@ function library(){
 async function existing(dir,name){
  try{return await dir.getFileHandle(name);}catch(e){if(e.name!=='NotFoundError')throw e;return null;}
 }
+async function prepareProduction(machine){
+ const root=await phaseFolder(await connect(machine),machine,'production');
+ const target=await subfolder(root,machine,'excel');
+ await subfolder(root,machine,'pdf');
+ const handle=await existing(target,names[machine]);
+ if(!handle)return 1;
+ const {Workbook}=await library(), book=new Workbook();
+ await book.xlsx.load(await (await handle.getFile()).arrayBuffer());
+ const sheet=book.getWorksheet(sheetName);
+ if(!sheet||sheet.getRow(1).getCell(4).value!=='Registro')throw Error('No se pudo recuperar la numeración del Excel de producción.');
+ let last=0;const prefix=machines[machine].toUpperCase()+' - ';
+ sheet.eachRow(row=>{
+  const value=row.getCell(4).value;
+  if(typeof value==='string'&&value.startsWith(prefix)){
+   const number=value.slice(prefix.length);
+   if(/^\d+$/.test(number)&&Number.isSafeInteger(Number(number)))last=Math.max(last,Number(number));
+  }
+ });
+ if(last>=Number.MAX_SAFE_INTEGER)throw Error('Se alcanzó el límite de numeración.');
+ return last+1;
+}
 async function write(handle,data){
  const output=await handle.createWritable({mode:'exclusive'});
  try{await output.write(data);await output.close();}catch(e){await output.abort().catch(()=>{});throw e;}
@@ -70,15 +96,16 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
   const result=job.snapshot.result, fname=names[result.machineKey],record=scope.CimagrafRecord;
   if(!fname||record.missing(result))throw Error('Verifica la máquina, el lote y el SAP.');
   const rows=record.rows(result,job.created,job.id,job.pdfReceipt?.pdfName||'');
-  rows.forEach(row=>{row[24]='LOCAL';});
+  rows.forEach(row=>{row[24]=job.draft?.localPhase==='production'?'PRODUCCIÓN':job.draft?.localPhase==='test'?'PRUEBA':'LOCAL';});
   if(!rows.length)throw Error('No hay movimientos para guardar.');
   const {Workbook}=await loadExcel(), book=new Workbook();
-  const target=await subfolder(dir,result.machineKey,'excel');
+  const root=await phaseFolder(dir,result.machineKey,job.draft?.localPhase);
+  const target=await subfolder(root,result.machineKey,'excel');
   let handle=await existing(target,fname), sheet, before;
   const current=handle?await handle.getFile():null;
   if(current&&!current.size&&!job.localNewBook)throw Error('El Excel local está vacío. Conserva el archivo y revisa la carpeta antes de reintentar.');
   // Si ya se usó la versión anterior, iniciar el libro nuevo con su historial.
-  const legacy=!current?.size?await existing(dir,fname):null;
+  const legacy=!current?.size?await existing(root,fname):null;
   const source=legacy||handle;
   if(source){
    const file=legacy?await legacy.getFile():current;
@@ -126,7 +153,8 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
  async function savePDF(job){
   const record=scope.CimagrafRecord,result=job.snapshot.result;
   const base=record.filename(result).replace(/\.pdf$/i,'');
-  const target=await subfolder(dir,result.machineKey,'pdf');
+  const root=await phaseFolder(dir,result.machineKey,job.draft?.localPhase);
+  const target=await subfolder(root,result.machineKey,'pdf');
   let name=job.pdfName||base+'.pdf',handle=await existing(target,name);
   for(let copy=2;!job.pdfName&&handle;copy++){
    if(copy>9999)throw Error('Hay demasiados informes con este nombre.');
@@ -136,7 +164,7 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
    if(!job.pdfHash||await digest(await (await handle.getFile()).arrayBuffer())!==job.pdfHash)throw Error('Ya existe otro PDF con este nombre. No se reemplazó.');
   }else{
    if(handle&&!job.pdfStarted)throw Error('Ya existe un PDF vacío con este nombre. No se reemplazó.');
-   const legacy=job.pdfStarted?await existing(dir,name):null;
+   const legacy=job.pdfStarted?await existing(root,name):null;
    const old=legacy?await legacy.getFile():null;
    const data=old?.size?await old.arrayBuffer():await renderPDF(result,job.created);
    const hash=await digest(data);
@@ -150,5 +178,5 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
  }
  return {save,savePDF};
 }
-scope.CimagrafLocalStore={choose,connect,authorizedFolder,create};
+scope.CimagrafLocalStore={choose,connect,authorizedFolder,prepareProduction,create};
 })(typeof window==='undefined'?module.exports:window);

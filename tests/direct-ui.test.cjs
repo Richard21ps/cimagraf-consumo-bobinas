@@ -8,7 +8,7 @@ function ui({local=storage(),session=storage(),failure='',query='',hold=false,sh
  let snapshot={result:JSON.parse(JSON.stringify(calculate())),ops:[{id:'D13924'}],rolls:[],paper:'Bond',gsm:75,width:480,group:'PRUEBA · KIRIN 1C - 01'};
  const targets=[];
  const window={addEventListener:(name,fn)=>events[name]=fn,CimagrafRegistry:registry,CimagrafSharePointDestination:sharePoint?{}:null,CimagrafLocalMode:localMode,
-  CimagrafLocalStore:{choose:async key=>{authorized.add(key);return 'Bobinas';},authorizedFolder:async key=>authorized.has(key)?{name:'Bobinas'}:null,connect:async()=>({}),create:options=>window.CimagrafExcelStore.create(options)},
+  CimagrafLocalStore:{choose:async key=>{authorized.add(key);return 'Bobinas';},authorizedFolder:async key=>authorized.has(key)?{name:'Bobinas'}:null,prepareProduction:async key=>{if(!authorized.has(key))throw Error('Primero elige la carpeta.');return 1;},connect:async()=>({}),create:options=>window.CimagrafExcelStore.create(options)},
   CimagrafArchive:{refresh(){},preflight:()=>true,snapshot:()=>structuredClone(snapshot),reportHTML:()=>'<article>Rótulo</article>',restore:s=>{restores++;snapshot=structuredClone(s);},reset(){resets++;window.CimagrafProduction.reset();},print(){prints++;}},
   CimagrafCloud:{connect:async(kind,machine,target)=>{routes.push([kind,machine]);targets.push(target);connections++;if(fail==='auth')throw Error('Sin acceso');if(fail&&typeof fail==='object')throw fail;return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
   CimagrafReportPDF:{render:async()=>new ArrayBuffer(1)},
@@ -230,7 +230,7 @@ test('Modo local no conecta a Microsoft ni consume pendientes de OneDrive',async
  local.setItem('cimagraf-excel-pending-v1',JSON.stringify({id:'registro-en-nube'}));
  const f=ui({local,localMode:true});f.choose('kirin-1c');
  assert.equal(f.node('multi-save-pdf').textContent,'Guardar PDF');
- assert.match(f.window.CimagrafProduction.metadata().recordId,/LOCAL/);
+ assert.match(f.window.CimagrafProduction.metadata().recordId,/PRUEBA/);
  await f.click('local-folder');
  await f.click('multi-register');await f.click('multi-save-pdf');
  assert.equal(f.stats().connections,0);
@@ -250,4 +250,24 @@ test('Elegir carpeta se oculta con permiso vigente y vuelve a aparecer si se rev
  assert.equal(next.node('local-folder').hidden,true);
  authorized.clear();await next.events.focus();
  assert.equal(next.node('local-folder').hidden,false);
+});
+
+test('La producción local espera al cierre de la prueba, fija la máquina e inicia su propio contador',async()=>{
+ const f=ui({localMode:true});f.choose('kirin-1c');await f.click('local-folder');
+ await f.click('multi-register');
+ assert.equal(f.lastSaved().draft.localPhase,'test');
+ assert.equal(f.node('machine-start').disabled,true);
+ await f.click('machine-start-confirm-button');
+ assert.equal(f.window.CimagrafProduction.metadata().runMode,'test');
+ await f.click('multi-save-pdf');
+ f.click('cloud-next');
+ await f.click('machine-start-confirm-button');
+ assert.equal(f.node('machine-start').hidden,true);
+ assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 1C - 01');
+ f.choose('kirin-4c');assert.equal(f.window.CimagrafProduction.metadata().machineKey,'kirin-1c');
+ await f.click('multi-register');assert.equal(f.lastSaved().draft.localPhase,'production');
+ await f.click('multi-save-pdf');f.click('cloud-next');
+ assert.equal(f.window.CimagrafProduction.metadata().recordId,'KIRIN 1C - 02');
+ const reload=ui({local:f.local,session:f.session,localMode:true});assert.equal(reload.node('machine-start').hidden,true);
+ assert.equal(reload.window.CimagrafProduction.metadata().recordId,'KIRIN 1C - 02');
 });
