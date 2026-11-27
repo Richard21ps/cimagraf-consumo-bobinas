@@ -61,18 +61,27 @@ function comparison(r){
  const expected=Number(raw),actual=Number(r.saldo);
  if(!Number.isFinite(expected)||expected<0||!Number.isFinite(actual))return null;
  const delta=actual-expected,kg=Math.abs(delta)<1e-8?0:delta;
- return {expected,actual,kg,percent:expected>0?kg/expected*100:null,status:kg>0?'Ahorro':kg<0?'Mayor consumo':'Sin diferencia'};
+ // Los pendientes anteriores conservan su base original al reintentar.
+ if(r.comparisonBasis!=='assigned')return {expected,actual,kg,percent:expected>0?kg/expected*100:null,status:kg>0?'Ahorro':kg<0?'Mayor consumo':'Sin diferencia'};
+ const dispatched=(r.loads||[]).reduce((total,b)=>total+Number(b.initial),0),assigned=dispatched-expected;
+ if(!r.loads?.length||!Number.isFinite(dispatched)||dispatched<0||assigned<0)return null;
+ return {expected,actual,dispatched,assigned,kg,percent:assigned>0?kg/assigned*100:null,status:kg>0?'Ahorro':kg<0?'Mayor consumo':'Sin diferencia'};
 }
-function comparisonHTML(r){
+function comparisonHTML(r,details=true){
  const c=comparison(r);if(!c)return '';
  const nf=v=>new Intl.NumberFormat('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);
- return '<section class="warehouse-comparison '+(c.kg>0?'saving':c.kg<0?'overuse':'equal')+'"><h3>Comparación con Almacén · todo el grupo</h3><p>Devolución prevista: <strong>'+nf(c.expected)+' kg</strong> · Saldo calculado: <strong>'+nf(c.actual)+' kg</strong></p><strong class="comparison-value">'+c.status+': '+nf(Math.abs(c.kg))+' kg · '+(c.percent===null?'Porcentaje no disponible':nf(Math.abs(c.percent))+' %')+'</strong><p class="comparison-note">'+(c.percent===null?'Almacén indica 0 kg: no se calcula un porcentaje sobre cero.':'Diferencia respecto a la devolución prevista por Almacén. Más saldo significa menos papel consumido.')+'</p></section>';
+ const assigned=r.comparisonBasis==='assigned';
+ const base=assigned?'Ahorro ÷ kg asignados × 100.':'Diferencia respecto a la devolución prevista por Almacén.';
+ const noPercent=assigned?'Los kg asignados son 0: no se calcula un porcentaje sobre cero.':'Almacén indica 0 kg: no se calcula un porcentaje sobre cero.';
+ const figures=assigned&&details?'<p>Despacho: <strong>'+nf(c.dispatched)+' kg</strong> · Devolución prevista: <strong>'+nf(c.expected)+' kg</strong> · Asignado: <strong>'+nf(c.assigned)+' kg</strong></p>':!assigned?'<p>Devolución prevista: <strong>'+nf(c.expected)+' kg</strong></p>':'';
+ return '<section class="warehouse-comparison '+(c.kg>0?'saving':c.kg<0?'overuse':'equal')+'"><h3>Comparación con Almacén · todo el grupo</h3>'+figures+'<p>Saldo calculado: <strong>'+nf(c.actual)+' kg</strong></p><strong class="comparison-value">'+c.status+': '+nf(Math.abs(c.kg))+' kg · '+(c.percent===null?'Porcentaje no disponible':nf(Math.abs(c.percent))+' %')+'</strong><p class="comparison-note">'+(c.percent===null?noPercent:base+' Más saldo significa menos papel consumido.')+'</p></section>';
 }
-const comparisonHeaders=['Fecha','Hora','Máquina','Registro','OP del grupo','Devolución prevista (kg)','Saldo calculado (kg)','Diferencia (kg)','Diferencia (%)','Resultado','Clave registro'];
+const comparisonHeaders=['Fecha','Hora','Máquina','Registro','OP del grupo','Devolución prevista (kg)','Saldo calculado (kg)','Diferencia (kg)','Diferencia (%)','Resultado','Clave registro','Despacho total (kg)','Kg asignados','Base del porcentaje'];
 function comparisonRow(r,created,jobId){
  const c=comparison(r);if(!c)return null;const stamp=dateParts(created);
- return [stamp.date,stamp.time,excelText(r.machine),excelText(r.recordId||r.group),excelText([...new Set(r.sourceOps.map(o=>o.id))].join(' / ')),c.expected,c.actual,c.kg,c.percent??'',c.status,jobId];
+ return [stamp.date,stamp.time,excelText(r.machine),excelText(r.recordId||r.group),excelText([...new Set(r.sourceOps.map(o=>o.id))].join(' / ')),c.expected,c.actual,c.kg,c.percent??'',c.status,jobId,c.dispatched??'',c.assigned??'',r.comparisonBasis==='assigned'?'Kg asignados':'Devolución prevista'];
 }
+
 function filename(r,extension='pdf'){
  const clean=value=>String(value??'').replace(/["*:<>?\/\\|#%\u0000-\u001f]/g,'-').trim().replace(/[. ]+$/g,'');
  const ops=Array.from([...new Set(r.sourceOps.map(o=>clean(o.id)))].join('_')).slice(0,130).join('').replace(/[. ]+$/g,'');

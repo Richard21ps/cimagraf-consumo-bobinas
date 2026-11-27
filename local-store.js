@@ -130,7 +130,17 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
   if(comparisonRow){
    let comparisonSheet=book.getWorksheet('Comparación por grupo');
    if(comparisonSheet){
-    if(record.comparisonHeaders.some((name,i)=>comparisonSheet.getRow(1).getCell(i+1).value!==name))throw Error('Los encabezados de comparación no coinciden. El archivo original se conservó.');
+    const header=comparisonSheet.getRow(1);
+    const legacy=record.comparisonHeaders.slice(0,11).every((name,i)=>header.getCell(i+1).value===name)&&[12,13,14].every(i=>header.getCell(i).value==null);
+    if(legacy){
+     // Añadir columnas sin recalcular el porcentaje histórico ni tocar sus datos.
+     for(let i=11;i<record.comparisonHeaders.length;i++){
+      header.getCell(i+1).value=record.comparisonHeaders[i];comparisonSheet.getColumn(i+1).width=Math.max(18,record.comparisonHeaders[i].length+3);
+     }
+     comparisonSheet.eachRow((row,n)=>{if(n>1)row.getCell(14).value='Devolución prevista';});
+     comparisonAdded=true;
+    }
+    if(record.comparisonHeaders.some((name,i)=>header.getCell(i+1).value!==name))throw Error('Los encabezados de comparación no coinciden. El archivo original se conservó.');
    }else{
     comparisonSheet=book.addWorksheet('Comparación por grupo',{views:[{state:'frozen',ySplit:1}]});
     comparisonSheet.columns=record.comparisonHeaders.map(header=>({header,width:Math.max(18,header.length+3)}));
@@ -141,11 +151,11 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
    if(matches.length>1||matches.length&&comparisonRow.some((v,i)=>(matches[0].getCell(i+1).value??'')!==v))throw Error('La comparación de este registro ya existe con otros datos. Conserva el archivo y revisa el registro.');
    if(!matches.length){
     const row=comparisonSheet.addRow(comparisonRow);
-    for(let i=6;i<=9;i++)row.getCell(i).numFmt='0.0';
+    for(const i of [6,7,8,9,12,13])row.getCell(i).numFmt='0.0';
     row.getCell(10).font={bold:true,color:{argb:comparisonRow[7]>0?'FF176641':comparisonRow[7]<0?'FFA1252D':'FF355367'}};
     comparisonAdded=true;
    }
-   comparisonSheet.autoFilter='A1:K'+comparisonSheet.rowCount;
+   comparisonSheet.autoFilter='A1:N'+comparisonSheet.rowCount;
   }
   const seen=new Map();
   sheet.eachRow(row=>{const key=row.getCell(26).value;if(typeof key==='string'&&key.startsWith(job.id+':'))seen.set(key,seen.has(key)?null:row);});

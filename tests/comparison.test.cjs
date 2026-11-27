@@ -16,9 +16,32 @@ test('Una fila de comparación representa todo el grupo con varias OP y bobinas'
  const result={warehouseExpectedKg:100,saldo:120,machine:'Kirin 4C',recordId:'KIRIN 4C - 01',sourceOps:[{id:'001'},{id:'002'}]};
  const before=JSON.stringify(result),row=R.comparisonRow(result,'2026-11-27T14:00:00Z','job');
  assert.equal(row.length,R.comparisonHeaders.length);
- assert.equal(row[4],'001 / 002');assert.deepEqual(row.slice(5),[100,120,20,20,'Ahorro','job']);
+ assert.equal(row[4],'001 / 002');assert.deepEqual(row.slice(5),[100,120,20,20,'Ahorro','job','','','Devolución prevista']);
  assert.equal(JSON.stringify(result),before);
  assert.match(R.comparisonHTML(result),/saving/);
  assert.match(R.comparisonHTML({...result,saldo:80}),/overuse/);
  assert.equal(R.comparisonHTML({...result,warehouseExpectedKg:null}),'');
+});
+
+test('La base nueva es despacho menos devolución y el ahorro es respecto a lo asignado',()=>{
+ const r={comparisonBasis:'assigned',warehouseExpectedKg:100,saldo:120,loads:[{initial:200},{initial:300}]};
+ assert.deepEqual(R.comparison(r),{expected:100,actual:120,dispatched:500,assigned:400,kg:20,percent:5,status:'Ahorro'});
+ assert.equal(R.comparison({...r,saldo:80}).percent,-5);
+ assert.equal(R.comparison({...r,saldo:100}).percent,0);
+ assert.match(R.comparisonHTML(r),/Asignado: <strong>400.0 kg/);
+ assert.match(R.comparisonHTML(r),/Ahorro: 20.0 kg · 5.0 %/);
+ assert.doesNotMatch(R.comparisonHTML(r,false),/Despacho: /);
+});
+test('Con devolución cero usa todo el despacho; asignado cero no divide ni inventa porcentaje',()=>{
+ const r={comparisonBasis:'assigned',loads:[{initial:500}],saldo:120};
+ assert.equal(R.comparison({...r,warehouseExpectedKg:0}).percent,24);
+ const c=R.comparison({...r,warehouseExpectedKg:500});assert.equal(c.assigned,0);assert.equal(c.percent,null);
+ assert.match(R.comparisonHTML({...r,warehouseExpectedKg:500}),/kg asignados son 0/);
+ assert.equal(R.comparison({...r,warehouseExpectedKg:501}),null);
+ assert.equal(R.comparison({...r,warehouseExpectedKg:100,loads:[]}),null);
+});
+test('El Excel registra despacho, asignado y la nueva base sin repetir el ahorro por bobina',()=>{
+ const r={comparisonBasis:'assigned',warehouseExpectedKg:100,saldo:120,loads:[{initial:500}],machine:'Kirin 1C',recordId:'KIRIN 1C - 01',sourceOps:[{id:'001'},{id:'002'}]};
+ const row=R.comparisonRow(r,'2026-11-27T14:00:00Z','job');
+ assert.equal(row.length,14);assert.deepEqual(row.slice(5),[100,120,20,5,'Ahorro','job',500,400,'Kg asignados']);
 });
