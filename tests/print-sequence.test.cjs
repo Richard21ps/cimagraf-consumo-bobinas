@@ -44,7 +44,7 @@ test('El PDF local resume los kilos, y la impresión mantiene el rótulo con SAP
  assert.match(out,/<th>Bobina<\/th><th>Estado<\/th><th>Saldo final<\/th>/);
  assert.match(out,/TOTAL A ENTREGAR AL ALMACÉN/);
  assert.doesNotMatch(out,/Número de lote|007-C|CÓDIGO SAP/);
- assert.match(html,/reportHTML:\(r,created\)=>buildPrintSummary[^\n]+true\)/);
+ assert.match(html,/reportHTML:\(r,created\)=>\{/);
  const {CimagrafRecord}=require('../record-data.js');
  const labels=CimagrafRecord.labelHTML(r,'2026-11-27T14:00:00.000Z');
  assert.match(labels,/CÓDIGO SAP/);
@@ -55,5 +55,22 @@ test('El enlace normal activa el guardado local y no carga la conexión a Micros
  assert.match(html,/window\.CimagrafLocalMode=true/);
  assert.doesNotMatch(html,/<script src="(?:cloud-storage|access-gate|cloud-destination)\.js|id="access-signin"/);
  for(const button of ['Elegir carpeta','Guardar Excel','Guardar PDF'])assert.ok(html.includes('>'+button+'</button>'));
+});
+test('Guardar PDF incluye el informe antes del rótulo; sin saldo no agrega una hoja vacía',()=>{
+ const {CimagrafRecord}=require('../record-data.js');
+ const fn=html.slice(html.indexOf('reportHTML:(r,created)=>')+'reportHTML:'.length,html.indexOf('\n print:(r,created)=>'));
+ const run=(r)=>{
+  const c={r,created:'2026-11-27T14:00:00.000Z',window:{CimagrafRecord},document:{querySelector:()=>({getAttribute:()=>''})},buildPrintSummary:()=>'<h1>Informe actual</h1>'};
+  return vm.runInNewContext('('+fn.replace(/,$/,'')+')(r,created)',c);
+ };
+ const r=calculate([{books:100}],[{kg:500,lot:'0001',sap:'00123'}]);
+ const out=run(r);
+ assert.ok(out.indexOf('Informe actual')<out.indexOf('CÓDIGO SAP'));
+ assert.equal((out.match(/class="bobbin-label/g)||[]).length,1);
+ assert.match(out,/LOTE: 0001/);
+ const none={...r,usedRolls:r.usedRolls.map(b=>({...b,left:0}))};
+ assert.equal(run(none),'<h1>Informe actual</h1>');
+ const css=fs.readFileSync(require('node:path').join(__dirname,'../report-summary.css'),'utf8');
+ assert.match(css,/\.pdf-label-pages\{break-before:page;page-break-before:always/);
 });
 console.log(count+' pruebas de secuencia e impresión correctas.');
