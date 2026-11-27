@@ -20,3 +20,21 @@ test('El PDF usa OP y máquina, numera repeticiones y conserva el nombre al rein
  assert.equal(a.pdfName,'D1233_KIRIN1C.pdf');assert.equal(b.pdfName,'D1233_KIRIN1C (2).pdf');
  assert.deepEqual([...files.keys()],[a.pdfName,b.pdfName]);assert.equal(renders,2);
 });
+
+test('Pruebas y producción guardan el mismo nombre en carpetas distintas',async()=>{
+ const paths=[];
+ function folder(prefix=''){
+  return {getDirectoryHandle:async name=>folder(prefix+name+'/'),getFileHandle:async(name,options)=>{
+   if(!options?.create)throw Object.assign(Error(),{name:'NotFoundError'});
+   paths.push(prefix+name);return {createWritable:async()=>({write:async()=>{},close:async()=>{}})};
+  }};
+ }
+ const script=require('node:fs').readFileSync(require('node:path').join(__dirname,'../local-store.js'),'utf8');
+ const window={CimagrafRecord};
+ require('node:vm').runInNewContext(script,{window,crypto:require('node:crypto').webcrypto,Uint8Array,Error});
+ const store=window.CimagrafLocalStore.create({dir:folder(),remember(){},renderPDF:async()=>new Uint8Array([37,80,68,70])});
+ const result={machineKey:'kirin-4c',machine:'Kirin 4C',sourceOps:[{id:'D1233'}]};
+ for(const localPhase of ['test','production'])await store.savePDF({id:localPhase,draft:{localPhase},snapshot:{result}});
+ await store.savePDF({id:'pendiente-antiguo',draft:{mode:'test'},snapshot:{result}});
+ assert.deepEqual(paths,['Pruebas Kirin 4C/PDF Kirin 4C/D1233_KIRIN4C.pdf','Producción Kirin 4C/PDF Kirin 4C/D1233_KIRIN4C.pdf','PDF Kirin 4C/D1233_KIRIN4C.pdf']);
+});

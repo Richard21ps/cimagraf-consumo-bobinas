@@ -42,7 +42,7 @@ async function refreshFolder(){
   if(check===folderCheck)chooser.hidden=!!folder;
  }catch(_){if(check===folderCheck)chooser.hidden=false;}
 }
-window.CimagrafSaveUI={blocked,canSaveReceiptPDF,canSaveReceiptExcel,refreshFolder,printSnapshot:()=>excelSaved()?(job.excelReceipt||job):pdfSaved()?(job.pdfReceipt||job):null};
+window.CimagrafSaveUI={blocked,hasPending:()=>!!job,canSaveReceiptPDF,canSaveReceiptExcel,refreshFolder,printSnapshot:()=>excelSaved()?(job.excelReceipt||job):pdfSaved()?(job.pdfReceipt||job):null};
 function message(text,error=false){$('cloud-status').textContent=text;$('cloud-status').classList.toggle('cloud-error',error);if($('cloud-error-details'))$('cloud-error-details').hidden=true;}
 function errorDetails(error){
  const d=error.details,panel=$('cloud-error-details'),info=$('cloud-error-info');
@@ -69,6 +69,7 @@ function ui(){
  }
  const heading=$('cloud-heading');if(heading)heading.textContent=local?'Registro local':'Registro en '+service(job);
  $('machine-select').disabled=blocked()||window.CimagrafProduction.metadata().runMode==='production'||!!window.CimagrafProduction.state()?.sent;
+ if(local)$('machine-start').disabled=!!job||!window.CimagrafProduction.ready()||window.CimagrafProduction.activating();
  $('cloud-retry').hidden=!job||settled||running;
  $('cloud-edit').hidden=!job;
  $('cloud-next').hidden=!done();
@@ -122,7 +123,7 @@ async function save(){
  }finally{running=false;ui();refreshFolder();}
 }
 async function guardedSave(){
- if(running)return;
+ if(running||local&&window.CimagrafProduction.activating())return;
  if(editing()){
   if(!window.CimagrafArchive.preflight())return;
   job.snapshot=window.CimagrafArchive.snapshot();job.draft=window.CimagrafProduction.state();delete job.editing;remember(job);
@@ -136,6 +137,7 @@ async function guardedSave(){
  }else await save();
 }
 async function start(kind,receipt=null){
+ if(local&&window.CimagrafProduction.activating())return;
  if(running){message('El guardado sigue en curso. Puedes editar un borrador mientras Microsoft responde.');return;}
  if(job&&!receipt&&!editing()){message('Hay una versión anterior pendiente. Tus cambios quedan en un borrador; Reintentar recupera la versión anterior.');return;}
  if(!receipt&&!window.CimagrafArchive.preflight())return;
