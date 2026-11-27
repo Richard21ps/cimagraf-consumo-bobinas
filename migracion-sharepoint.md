@@ -1,9 +1,10 @@
 # Traslado del registro de bobinas a SharePoint
 
-La aplicación admite una biblioteca de documentos de SharePoint con cinco
-carpetas distintas. Con `CimagrafSharePointDestination=null` sigue guardando
-en OneDrive. No configurar el cambio hasta verificar el sitio, la biblioteca
-y los permisos.
+La aplicación admite la biblioteca del sitio privado Registro de Bobinas
+Digital con cinco carpetas distintas. El enlace normal guarda en OneDrive.
+La URL con `?prueba=sharepoint` guarda datos de ejemplo en SharePoint y
+separa los pendientes y la numeración del navegador. No se activa
+producción desde el enlace de prueba.
 
 | Uso | Carpeta propuesta | Archivo |
 | --- | --- | --- |

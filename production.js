@@ -1,11 +1,12 @@
 /* Máquina de esta PC y numeración central para el registro directo. */
 (function(){
 'use strict';
-const $=id=>document.getElementById(id),CONFIG='cimagraf-machine-v1',DRAFT='cimagraf-registration-v1';
+const pilot=window.CimagrafSharePointPilot===true,suffix=pilot?'-sharepoint-prueba':'';
+const $=id=>document.getElementById(id),CONFIG='cimagraf-machine-v1'+suffix,DRAFT='cimagraf-registration-v1'+suffix;
 const machines=window.CimagrafRegistry.machines;
 const parse=(storage,key)=>{try{return JSON.parse(storage.getItem(key)||'null');}catch(_){return null;}};
 let config=parse(localStorage,CONFIG)||{},draft=parse(sessionStorage,DRAFT),busy=false;
-const pending=parse(localStorage,'cimagraf-excel-pending-v1');
+const pending=parse(localStorage,'cimagraf-excel-pending-v1'+suffix);
 if(pending?.draft&&draft?.id!==pending.draft.id)draft=pending.draft;
 if(!machines[config.machine])config={};
 if(!draft||!machines[draft.machine]||typeof draft.id!=='string')draft=null;
@@ -23,10 +24,10 @@ function render(){
  $('machine-select').disabled=busy||!!draft?.sent||!!config.production||!!window.CimagrafSaveUI?.blocked();
  $('machine-name').textContent=machines[config.machine]||'Asigna esta computadora';
  $('machine-mode').textContent=config.production?'PRODUCCIÓN':'PRUEBAS';$('machine-mode').classList.toggle('is-production',!!config.production);
- $('machine-start').hidden=!!config.production;$('machine-start').disabled=busy||!draft||!!draft.sent;
+ $('machine-start').hidden=pilot||!!config.production;$('machine-start').disabled=pilot||busy||!draft||!!draft.sent;
  $('machine-setup').open=!config.machine;$('machine-connection-note').hidden=!!config.production;
  $('multi-group').value=id();$('multi-group').readOnly=true;
- status(!draft?'Elige la máquina de esta PC.':draft.mode==='test'?'Las pruebas se guardan en una hoja separada.':draft.sent?'Número reservado para este registro.':'El ID se confirma al guardar.');
+ status(pilot?'Prueba de SharePoint: usa datos de ejemplo.':!draft?'Elige la máquina de esta PC.':draft.mode==='test'?'Las pruebas se guardan en una hoja separada.':draft.sent?'Número reservado para este registro.':'El ID se confirma al guardar.');
  window.CimagrafArchive.refresh();
 }
 function reset(){draft=null;sessionStorage.removeItem(DRAFT);makeDraft();render();}
@@ -47,7 +48,7 @@ function complete(){
  persist();render();
 }
 async function activate(){
- if(busy||!draft||draft.sent||window.CimagrafSaveUI?.blocked())return;
+ if(pilot||busy||!draft||draft.sent||window.CimagrafSaveUI?.blocked())return;
  busy=true;
  try{
   draft.action='activate';draft.snapshot=window.CimagrafArchive.snapshot();persist();

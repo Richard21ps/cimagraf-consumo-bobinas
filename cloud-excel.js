@@ -1,7 +1,8 @@
 /* Excel y PDF son operaciones independientes, con recuperación por operación. */
 (function(){
 'use strict';
-const $=id=>document.getElementById(id),KEY='cimagraf-excel-pending-v1',EDITOR='cimagraf-editor-copy-v1';
+const suffix=window.CimagrafSharePointPilot===true?'-sharepoint-prueba':'';
+const $=id=>document.getElementById(id),KEY='cimagraf-excel-pending-v1'+suffix,EDITOR='cimagraf-editor-copy-v1'+suffix;
 let running=false,job,copy;
 try{job=JSON.parse(localStorage.getItem(KEY)||'null');}catch(_){job=null;}
 try{copy=JSON.parse(localStorage.getItem(EDITOR)||'null');}catch(_){copy=null;}
@@ -115,7 +116,7 @@ async function guardedSave(){
   job.snapshot=window.CimagrafArchive.snapshot();job.draft=window.CimagrafProduction.state();delete job.editing;remember(job);
  }
  if(navigator.locks){
-  await navigator.locks.request('cimagraf-excel-save',{ifAvailable:true},async lock=>{
+  await navigator.locks.request('cimagraf-excel-save'+suffix,{ifAvailable:true},async lock=>{
    if(!lock){message('Otra pestaña de este equipo está guardando. Espera a que termine.',true);return;}
    const latest=JSON.parse(localStorage.getItem(KEY)||'null');if(latest?.id===job?.id)job=latest;
    await save();
