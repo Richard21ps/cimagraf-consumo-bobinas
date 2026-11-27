@@ -57,7 +57,7 @@ function create({cloud,remember,loadTemplate,renderPDF,status=()=>{},onWrite=()=
   }
   job.pdfSize=data.byteLength;job.pdfStarted=true;remember(job);
   onWrite();
-  status('Guardando el PDF en OneDrive…');
+  status('Guardando el PDF en '+(cloud.target==='sharepoint'?'SharePoint':'OneDrive')+'…');
   const saved=await file(dir,job.pdfName,data,'application/pdf');
   if(saved.size!==job.pdfSize)throw Error('No se pudo confirmar el PDF completo. Reintenta este registro.');
   job.pdfId=saved.id;job.pdfUrl=saved.webUrl;remember(job);

@@ -1,13 +1,21 @@
 /* Excel y PDF son operaciones independientes, con recuperación por operación. */
 (function(){
 'use strict';
-const $=id=>document.getElementById(id),KEY='cimagraf-excel-pending-v1',EDITOR='cimagraf-editor-copy-v1';
+const suffix=window.CimagrafSharePointPilot===true?'-sharepoint-prueba':'';
+const $=id=>document.getElementById(id),KEY='cimagraf-excel-pending-v1'+suffix,EDITOR='cimagraf-editor-copy-v1'+suffix;
 let running=false,job,copy;
 try{job=JSON.parse(localStorage.getItem(KEY)||'null');}catch(_){job=null;}
 try{copy=JSON.parse(localStorage.getItem(EDITOR)||'null');}catch(_){copy=null;}
 function remember(value){localStorage.setItem(KEY,JSON.stringify(value));job=value;}
 function rememberCopy(value){copy=value;if(value)localStorage.setItem(EDITOR,JSON.stringify(value));else localStorage.removeItem(EDITOR);}
 function currentCopy(){return copy&&copy.pendingId===(job?.id||null)?copy:null;}
+function cloudTarget(value,draft=value?.draft){
+ if(value?.cloudTarget)return value.cloudTarget;
+ if(value?.plan||value?.lockAcquired||value?.pdfStarted||value?.pdfId||value?.saved||
+    value?.excelReceipt||value?.pdfReceipt||draft?.attempt||draft?.sent)return 'onedrive';
+ return window.CimagrafSharePointDestination?'sharepoint':'onedrive';
+}
+const service=value=>cloudTarget(value)==='sharepoint'?'SharePoint':'OneDrive';
 function canCorrect(value=job){return !!value&&!value.excelReceipt&&!value.pdfReceipt&&!value.plan&&!value.pdfStarted&&!value.saved&&(!value.lockAcquired||value.lockReleased);}
 function editing(){return !!job?.editing&&canCorrect();}
 function preserveEdits(){
@@ -42,13 +50,14 @@ function ui(){
  $('multi-root').inert=false;
  for(const [id,confirmed,available,label] of [
   ['multi-register',excelSaved(),canSaveReceiptExcel(),'Guardar en Excel'],
-  ['multi-save-pdf',pdfSaved(),canSaveReceiptPDF(),'Guardar PDF en OneDrive']
+  ['multi-save-pdf',pdfSaved(),canSaveReceiptPDF(),'Guardar PDF en '+service(job)]
  ]){
   const button=$(id);
   button.classList.toggle('save-confirmed',confirmed);
   button.textContent=confirmed?(id==='multi-register'?'✓ Excel guardado':'✓ PDF guardado'):label;
   if(blocked())button.disabled=confirmed||!available;
  }
+ const heading=$('cloud-heading');if(heading)heading.textContent='Registro en '+service(job);
  $('machine-select').disabled=blocked()||window.CimagrafProduction.metadata().runMode==='production'||!!window.CimagrafProduction.state()?.sent;
  $('cloud-retry').hidden=!job||settled||running;
  $('cloud-edit').hidden=!job;
@@ -69,10 +78,11 @@ function showProgress(value,step,error=false){
 async function save(){
  if(running||!job)return;running=true;ui();
  saveLabel=job.kind==='pdf'?'PDF':'Excel';
- showProgress(20,'Conectando con OneDrive…');
+ showProgress(20,'Conectando con '+service(job)+'…');
  try{
-  message('Conectando con OneDrive. Conservamos los datos mientras se guardan…');
-  const cloud=await window.CimagrafCloud.connect(job.kind||'legacy',job.draft?.machine||job.snapshot.result.machineKey);if(!cloud){showProgress(20,'Inicia sesión en Microsoft.');return;}
+  job.cloudTarget=cloudTarget(job);remember(job);
+  message('Conectando con '+service(job)+'. Conservamos los datos mientras se guardan…');
+  const cloud=await window.CimagrafCloud.connect(job.kind||'legacy',job.draft?.machine||job.snapshot.result.machineKey,job.cloudTarget);if(!cloud){showProgress(20,'Inicia sesión en Microsoft.');return;}
   showProgress(20,'Preparando el guardado…');
   const identity=await window.CimagrafProduction.prepare(cloud);
   Object.assign(job.snapshot.result,identity);job.snapshot.result.group=identity.recordId;job.snapshot.group=identity.recordId;
@@ -106,7 +116,7 @@ async function guardedSave(){
   job.snapshot=window.CimagrafArchive.snapshot();job.draft=window.CimagrafProduction.state();delete job.editing;remember(job);
  }
  if(navigator.locks){
-  await navigator.locks.request('cimagraf-excel-save',{ifAvailable:true},async lock=>{
+  await navigator.locks.request('cimagraf-excel-save'+suffix,{ifAvailable:true},async lock=>{
    if(!lock){message('Otra pestaña de este equipo está guardando. Espera a que termine.',true);return;}
    const latest=JSON.parse(localStorage.getItem(KEY)||'null');if(latest?.id===job?.id)job=latest;
    await save();
@@ -121,6 +131,7 @@ async function start(kind,receipt=null){
   const draft=window.CimagrafProduction.state(),snapshot=receipt?JSON.parse(JSON.stringify(receipt.snapshot)):window.CimagrafArchive.snapshot();
   const previous=editing()&&job.kind===kind?job:null;
   const pending={id:previous?.id||(kind==='excel'?draft.id+'-excel':crypto.randomUUID()),kind,created:receipt?.created||previous?.created||new Date().toISOString(),snapshot,draft,naming:previous?.naming||1};
+  pending.cloudTarget=cloudTarget(receipt||previous,draft);
   if(receipt)pending[kind==='pdf'?'excelReceipt':'pdfReceipt']=receipt;
   const changes=currentCopy();
   remember(pending);
