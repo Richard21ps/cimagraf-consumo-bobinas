@@ -2,6 +2,11 @@
 (function(scope){
 'use strict';
 const names={'kirin-1c':'Registro_Kirin_1C_Local.xlsx','kirin-4c':'Registro_Kirin_4C_Local.xlsx'}, sheetName='Registros';
+const machines={'kirin-1c':'Kirin 1C','kirin-4c':'Kirin 4C'};
+function subfolder(dir,machine,kind){
+ if(!machines[machine])throw Error('Verifica la máquina seleccionada.');
+ return dir.getDirectoryHandle((kind==='pdf'?'PDF ':'Base de datos ')+machines[machine],{create:true});
+}
 let db, excel;
 function folders(){
  if(db)return db;
@@ -63,9 +68,15 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
   rows.forEach(row=>{row[24]='LOCAL';});
   if(!rows.length)throw Error('No hay movimientos para guardar.');
   const {Workbook}=await loadExcel(), book=new Workbook();
-  let handle=await existing(dir,fname), sheet, before;
-  if(handle){
-   const file=await handle.getFile();
+  const target=await subfolder(dir,result.machineKey,'excel');
+  let handle=await existing(target,fname), sheet, before;
+  const current=handle?await handle.getFile():null;
+  if(current&&!current.size&&!job.localNewBook)throw Error('El Excel local está vacío. Conserva el archivo y revisa la carpeta antes de reintentar.');
+  // Si ya se usó la versión anterior, iniciar el libro nuevo con su historial.
+  const legacy=!current?.size?await existing(dir,fname):null;
+  const source=legacy||handle;
+  if(source){
+   const file=legacy?await legacy.getFile():current;
    if(file.size===0&&!job.localNewBook)throw Error('El Excel local está vacío. Conserva el archivo y revisa la carpeta antes de reintentar.');
    before=await file.arrayBuffer();
    if(file.size>0){
@@ -88,15 +99,20 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
   }else{
    sheet.addRows(rows);
    sheet.autoFilter='A1:Z'+sheet.rowCount;
-   const data=await book.xlsx.writeBuffer();
+  }
+  if(!seen.size||legacy){
+   const data=seen.size?before:await book.xlsx.writeBuffer();
    job.plan={local:true};remember(job);onWrite();
-   if(handle){
-    const latest=await (await handle.getFile()).arrayBuffer();
+   if(source){
+    const latest=await (await source.getFile()).arrayBuffer();
     if(await digest(latest)!==await digest(before))throw Error('El Excel cambió mientras se guardaba. Cierra Excel y reintenta.');
+   }
+   if(handle){
+    if(legacy&&(await handle.getFile()).size)throw Error('El Excel de destino cambió. Reintenta el mismo registro.');
    }else{
-    if(await existing(dir,fname))throw Error('Se creó el Excel en otra ventana. Reintenta el mismo registro.');
+    if(await existing(target,fname))throw Error('Se creó el Excel en otra ventana. Reintenta el mismo registro.');
     job.localNewBook=true;remember(job);
-    handle=await dir.getFileHandle(fname,{create:true});
+    handle=await target.getFileHandle(fname,{create:true});
    }
    await write(handle,data);
   }
@@ -106,14 +122,19 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
   const record=scope.CimagrafRecord,result=job.snapshot.result;
   const base=record.filename(result).replace(/\.pdf$/i,'');
   const name=job.pdfName||(base+'_'+job.id.replace(/[^\w-]/g,'')+'.pdf');
-  let handle=await existing(dir,name);
+  const target=await subfolder(dir,result.machineKey,'pdf');
+  let handle=await existing(target,name);
   if(handle&&(await handle.getFile()).size){
    if(!job.pdfHash||await digest(await (await handle.getFile()).arrayBuffer())!==job.pdfHash)throw Error('Ya existe otro PDF con este nombre. No se reemplazó.');
   }else{
    if(handle&&!job.pdfStarted)throw Error('Ya existe un PDF vacío con este nombre. No se reemplazó.');
-   const data=await renderPDF(result,job.created);
-   job.pdfName=name;job.pdfHash=await digest(data);job.pdfStarted=true;remember(job);onWrite();
-   if(!handle)handle=await dir.getFileHandle(name,{create:true});
+   const legacy=job.pdfStarted?await existing(dir,name):null;
+   const old=legacy?await legacy.getFile():null;
+   const data=old?.size?await old.arrayBuffer():await renderPDF(result,job.created);
+   const hash=await digest(data);
+   if(old?.size&&hash!==job.pdfHash)throw Error('El PDF anterior no coincide con este registro. No se reemplazó.');
+   job.pdfName=name;job.pdfHash=hash;job.pdfStarted=true;remember(job);onWrite();
+   if(!handle)handle=await target.getFileHandle(name,{create:true});
    await write(handle,data);
   }
   job.saved=true;job.lockReleased=true;remember(job);
