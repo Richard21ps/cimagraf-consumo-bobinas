@@ -2,12 +2,13 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 const {CimagrafRegistry:registry}=require('../machine-registry.js');
 const {calculate}=require('./excel-fixture.cjs');
 function storage(){const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)};}
-function ui({local=storage(),session=storage(),failure='',query='',hold=false,sharePoint=false}={}){
+function ui({local=storage(),session=storage(),failure='',query='',hold=false,sharePoint=false,localMode=false}={}){
  const nodes={},handlers={},events={},document={getElementById:id=>node(id)};const routes=[];let connections=0,saves=0,resets=0,prints=0,restores=0,pdfSaves=0,lastSaved,release,fail=failure;
  const node=id=>nodes[id]??={value:'',hidden:false,disabled:false,inert:false,open:false,textContent:'',classList:{toggle(name,on){this[name]=on;}},addEventListener:(kind,fn)=>handlers[id+':'+kind]=fn,removeAttribute(k){delete this[k];}};
  let snapshot={result:JSON.parse(JSON.stringify(calculate())),ops:[{id:'D13924'}],rolls:[],paper:'Bond',gsm:75,width:480,group:'PRUEBA · KIRIN 1C - 01'};
  const targets=[];
- const window={addEventListener:(name,fn)=>events[name]=fn,CimagrafRegistry:registry,CimagrafSharePointDestination:sharePoint?{}:null,
+ const window={addEventListener:(name,fn)=>events[name]=fn,CimagrafRegistry:registry,CimagrafSharePointDestination:sharePoint?{}:null,CimagrafLocalMode:localMode,
+  CimagrafLocalStore:{choose:async()=> 'Bobinas',connect:async()=>({}),create:options=>window.CimagrafExcelStore.create(options)},
   CimagrafArchive:{refresh(){},preflight:()=>true,snapshot:()=>structuredClone(snapshot),reportHTML:()=>'<article>Rótulo</article>',restore:s=>{restores++;snapshot=structuredClone(s);},reset(){resets++;window.CimagrafProduction.reset();},print(){prints++;}},
   CimagrafCloud:{connect:async(kind,machine,target)=>{routes.push([kind,machine]);targets.push(target);connections++;if(fail==='auth')throw Error('Sin acceso');if(fail&&typeof fail==='object')throw fail;return {request:async()=>({value:[]}),destination:{drive:'d',id:'root'}};}},
   CimagrafReportPDF:{render:async()=>new ArrayBuffer(1)},
@@ -222,4 +223,19 @@ test('El progreso espera la confirmación y no marca 100% en un fallo de PDF',as
  assert.equal(f.node('save-progress-bar').value,100);
  assert.match(f.node('save-progress-label').textContent,/PDF/);
  f.click('cloud-next');assert.equal(f.node('save-progress').hidden,true);
+});
+
+test('Modo local no conecta a Microsoft ni consume pendientes de OneDrive',async()=>{
+ const local=storage();
+ local.setItem('cimagraf-excel-pending-v1',JSON.stringify({id:'registro-en-nube'}));
+ const f=ui({local,localMode:true});f.choose('kirin-1c');
+ assert.match(f.node('multi-save-pdf').textContent,/esta PC/);
+ assert.match(f.window.CimagrafProduction.metadata().recordId,/LOCAL/);
+ await f.click('local-folder');
+ await f.click('multi-register');await f.click('multi-save-pdf');
+ assert.equal(f.stats().connections,0);
+ assert.equal(f.node('cloud-next').hidden,false);
+ f.click('cloud-next');
+ assert.equal(JSON.parse(local.getItem('cimagraf-excel-pending-v1')).id,'registro-en-nube');
+ assert.match(f.window.CimagrafProduction.metadata().recordId,/02$/);
 });

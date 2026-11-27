@@ -7,6 +7,7 @@ window.CimagrafDestinations=Object.freeze({
 /* Activar solo con la biblioteca y las cinco carpetas verificadas en SharePoint.
    Formato: {driveId, controlId, folders:{'kirin-1c':{excel,pdf}, 'kirin-4c':{excel,pdf}}}.
    Son identificadores de Microsoft Graph, no enlaces de uso compartido. */
+window.CimagrafLocalMode=new URLSearchParams(location.search).get('modo')==='local';
 const spPilotParam=new URLSearchParams(location.search).get('prueba');
 let spPilot=spPilotParam==='sharepoint';
 try{
