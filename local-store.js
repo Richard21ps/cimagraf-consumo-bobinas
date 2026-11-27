@@ -124,6 +124,29 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
    sheet.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF15385B'}};
    sheet.autoFilter='A1:Z1';
   }
+  // Una fila por grupo, en una hoja independiente: no repite el ahorro por OP/bobina.
+  const comparisonRow=record.comparisonRow(result,job.created,job.id);
+  let comparisonAdded=false;
+  if(comparisonRow){
+   let comparisonSheet=book.getWorksheet('Comparación por grupo');
+   if(comparisonSheet){
+    if(record.comparisonHeaders.some((name,i)=>comparisonSheet.getRow(1).getCell(i+1).value!==name))throw Error('Los encabezados de comparación no coinciden. El archivo original se conservó.');
+   }else{
+    comparisonSheet=book.addWorksheet('Comparación por grupo',{views:[{state:'frozen',ySplit:1}]});
+    comparisonSheet.columns=record.comparisonHeaders.map(header=>({header,width:Math.max(18,header.length+3)}));
+    comparisonSheet.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};
+    comparisonSheet.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF15385B'}};
+   }
+   const matches=[];comparisonSheet.eachRow(row=>{if(row.getCell(11).value===job.id)matches.push(row);});
+   if(matches.length>1||matches.length&&comparisonRow.some((v,i)=>(matches[0].getCell(i+1).value??'')!==v))throw Error('La comparación de este registro ya existe con otros datos. Conserva el archivo y revisa el registro.');
+   if(!matches.length){
+    const row=comparisonSheet.addRow(comparisonRow);
+    for(let i=6;i<=9;i++)row.getCell(i).numFmt='0.0';
+    row.getCell(10).font={bold:true,color:{argb:comparisonRow[7]>0?'FF176641':comparisonRow[7]<0?'FFA1252D':'FF355367'}};
+    comparisonAdded=true;
+   }
+   comparisonSheet.autoFilter='A1:K'+comparisonSheet.rowCount;
+  }
   const seen=new Map();
   sheet.eachRow(row=>{const key=row.getCell(26).value;if(typeof key==='string'&&key.startsWith(job.id+':'))seen.set(key,seen.has(key)?null:row);});
   if(seen.size){
@@ -132,8 +155,8 @@ function create({dir,remember,onWrite=()=>{},renderPDF,loadExcel=library}){
    sheet.addRows(rows);
    sheet.autoFilter='A1:Z'+sheet.rowCount;
   }
-  if(!seen.size||legacy){
-   const data=seen.size?before:await book.xlsx.writeBuffer();
+  if(!seen.size||legacy||comparisonAdded){
+   const data=seen.size&&!comparisonAdded?before:await book.xlsx.writeBuffer();
    job.plan={local:true};remember(job);onWrite();
    if(source){
     const latest=await (await source.getFile()).arrayBuffer();
