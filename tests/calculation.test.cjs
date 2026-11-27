@@ -6,16 +6,16 @@ const html = readFileSync(require('node:path').join(__dirname, '../index.html'),
 const start = html.indexOf('function validate(', html.indexOf('const EPS='));
 const source = html.slice(start, html.indexOf('\nfunction table(', start));
 const removalSource=html.slice(html.indexOf('function coreTareFor('),start);
-function calculate(meters, bobbins, paper='Otro papel', gsm=70) {
+function calculate(meters, bobbins, paper='Otro papel', gsm=70, machine='') {
   // Estos escenarios fijan el METRAJE TOTAL para aislar la regresión de masa y
   // asignación. Las pruebas process.test.cjs verifican producción y extras por separado.
   const splices=Math.max(meters.length,bobbins.length);
   const context = {ops: meters.map((m,i)=>({id:'OP'+i,books:m-20*(1+(i===meters.length-1?splices-meters.length:0)),copies:1,advance:1000,setupBooks:0,calibration:false,stops:0})),
     rolls: bobbins.map(([kg,width,scrap=0,coreGross=0,coreTare=''],i)=>({id:'Bobina '+(i+1),kg,width,scrap,coreGross,coreTare})),
     $: id=>({value:id==='multi-gsm'?String(gsm):paper}), numeric:Number,
-    nf:String};
+    nf:String,machine};
   vm.createContext(context);
-  return vm.runInContext(removalSource+source+';validate()',context);
+  return vm.runInContext(removalSource+source+';validate(machine)',context);
 }
 function near(actual, expected) {assert.ok(Math.abs(actual-expected)<1e-7, `${actual} != ${expected}`);}
 let count=0;
@@ -48,6 +48,20 @@ assert.doesNotMatch(html,/id="multi-total-(meters|consumption|scrap)"/);
 const problemStart=html.indexOf('const PROBLEM_CATALOG_KEY=');
 const problemSource=html.slice(problemStart,html.indexOf('function redraw(){',problemStart));
 function problemContext(saved){const context={localStorage:{getItem:()=>saved},escapeHtml:s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')};vm.createContext(context);vm.runInContext(problemSource,context);return context;}
+test('Kirin 1C ofrece Material dañado como primera opción editable y mantiene motivos agregados',()=>{
+ const c=problemContext('["Mala impresión","material dañado"]');
+ c.roll={id:'Bobina 1',scrap:5};
+ const show=()=>vm.runInContext("problemControls(roll,0,'kirin-1c')",c);
+ assert.match(show(),/<select data-problem-select="0"><option value="Material dañado" selected>Material dañado<\/option><option value="Mala impresión">/);
+ c.roll.problems=['Mala impresión'];assert.match(show(),/<option value="Mala impresión" selected>/);
+ c.roll={id:'Bobina 1',scrap:8};assert.match(show(),/<option value="Material dañado" selected>/);
+});
+test('El motivo automático del Excel solo se registra con lonjas en Kirin 1C',()=>{
+ const rolls=[[200,1000,10]], c=calculate([1000],rolls,'Otro papel',70,'kirin-1c');
+ assert.deepEqual(Array.from(c.loads[0].problems),['Material dañado']);
+ assert.equal(calculate([1000],[[200,1000,0]],'Otro papel',70,'kirin-1c').loads[0].problems.length,0);
+ assert.equal(calculate([1000],rolls,'Otro papel',70,'kirin-4c').loads[0].problems.length,0);
+});
 test('Catálogo de problemáticas vacío y datos guardados inválidos',()=>{for(const saved of [null,'{','{}'])assert.equal(vm.runInContext('problemCatalog.length',problemContext(saved)),0);});
 test('Catálogo sin duplicados ni entradas inválidas',()=>{const c=problemContext(JSON.stringify([' Prueba   interna ','prueba interna',42,null,'']));assert.equal(vm.runInContext('problemCatalog.length',c),1);assert.equal(vm.runInContext('problemCatalog[0]',c),'Prueba interna');});
 test('Seleccionar problemáticas no duplica ni modifica el peso',()=>{const c=problemContext('[]');c.roll={scrap:'12'};vm.runInContext("assignProblem(roll,' Prueba A ');assignProblem(roll,'prueba a');assignProblem(roll,'Prueba B')",c);assert.equal(c.roll.problems.length,2);assert.equal(c.roll.scrap,'12');});
