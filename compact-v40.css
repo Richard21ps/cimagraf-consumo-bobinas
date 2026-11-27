@@ -217,18 +217,24 @@ header{margin-bottom:14px}
 
 /* 4.10.3: primero el resumen y después el registro, con pasos compactos. */
 #multi-root .multi-footer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:620px}
-#multi-print,#multi-register{display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:10px 14px;font-size:15px;line-height:1.3;border:1px solid #145b83}
-#multi-print{background:#eff6fa;color:#145b83}
+#multi-register{display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:10px 14px;font-size:15px;line-height:1.3;border:1px solid #145b83}
+#multi-print{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:64px;margin:12px 0 16px;padding:13px 16px;border:2px solid #a45d12;border-bottom-width:5px;border-radius:12px;background:#ffcb66;color:#342000;font-size:clamp(1rem,2.1vw,1.2rem);line-height:1.25;font-weight:850;cursor:pointer;transition:background-color .15s,border-color .15s}
+#multi-print:disabled{background:#f3efe7;color:#756b5b;border-color:#c9bcaa;cursor:not-allowed}
 #multi-register{background:#145b83;color:#fff}
 #multi-print::before,#multi-register::before,#multi-save-pdf::before{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;border-radius:50%;font-size:13px;font-weight:850}
-#multi-print::before{content:'1';background:#d9e9f3;color:#145b83}
+#multi-print::before{content:'1';flex-basis:32px;width:32px;height:32px;background:#623601;color:#fff;font-size:16px}
+#multi-print:disabled::before{background:#ded5c6;color:#645645}
 #multi-register::before{content:'2';background:#fff;color:#145b83}
 #multi-save-pdf{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 #multi-save-pdf::before{content:'3';background:#d9e9f3;color:#145b83}
-#multi-print:not(:disabled):hover{background:#deedf6}
+#multi-print:not(:disabled):hover{background:#ffba3f}
+#multi-print:not(:disabled):active{border-bottom-color:#7b4308;background:#eea72b}
 #multi-register:not(:disabled):hover{background:#0d4669}
-#multi-print:focus-visible,#multi-register:focus-visible{outline:3px solid #d5a457;outline-offset:3px}
-@media(max-width:480px){#multi-root .multi-footer-actions{grid-template-columns:1fr;gap:8px}#multi-print,#multi-register{justify-content:flex-start;min-height:48px}}
+#multi-print:focus-visible{outline:3px solid #623601;outline-offset:3px}
+#multi-register:focus-visible{outline:3px solid #d5a457;outline-offset:3px}
+@media(max-width:480px){#multi-root .multi-footer-actions{grid-template-columns:1fr;gap:8px}#multi-register{justify-content:flex-start;min-height:48px}}
+
+@media(prefers-reduced-motion:reduce){#multi-print{transition:none}}
 
 .cloud-pdf-panel{width:min(100% - 28px,1480px);margin:0 auto 24px;padding:16px;background:#fff;border:1px solid #d7e3ea;border-radius:12px;color:#35576c;font-size:13px;box-sizing:border-box}.cloud-pdf-panel p{margin:7px 0}.cloud-pdf-panel details{margin-top:12px}.cloud-pdf-panel summary{cursor:pointer}.cloud-pdf-panel input{width:100%;margin:6px 0 10px}.cloud-pdf-panel [hidden]{display:none!important}.cloud-pdf-panel a{display:inline-block;margin:8px;color:#145b83}.cloud-error{color:#942d2d;font-weight:700}@media print{.cloud-pdf-panel{display:none!important}}
 
