@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="unico-v27.css?v=e9da0329">
 <link rel="stylesheet" href="minimal-v28.css?v=72af7f10">
 <link rel="stylesheet" href="compact-v40.css?v=5.1.24">
-<link rel="stylesheet" href="report-summary.css?v=5.1.32">
+<link rel="stylesheet" href="report-summary.css?v=5.1.33">
 <link rel="stylesheet" href="production.css?v=4.16.1">
 <link rel="stylesheet" href="labels.css?v=5.1.13">
 <link rel="stylesheet" href="intro.css?v=4.14.1">
@@ -210,7 +210,7 @@
     </div></header>
 
     <section class="multi-workspace" id="multi-root" aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.32</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.33</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -274,13 +274,18 @@
           <h3 id="multi-consolidated-title">4 · Resumen y registro</h3>
           <section class="warehouse-entry" aria-labelledby="warehouse-title">
             <h4 id="warehouse-title">Comparación con Almacén</h4>
-            <div class="warehouse-cards">
-              <div class="warehouse-stat dispatch"><span class="warehouse-badge">Automático</span><span class="warehouse-field-title">Total despachado</span><output id="warehouse-dispatched">0.0 kg</output><small>Suma de los kg iniciales de las bobinas</small></div>
-              <div class="warehouse-stat expected"><span class="warehouse-badge">Completar</span><label for="warehouse-expected">Devolución prevista</label><div class="warehouse-input-unit"><input id="warehouse-expected" type="number" min="0" step="any" placeholder="Ej.: 100" aria-describedby="warehouse-help"><span>kg</span></div><small>Lo que Almacén indica devolver</small></div>
-              <div class="warehouse-stat assigned"><span class="warehouse-badge">Automático</span><span class="warehouse-field-title">Kg asignados</span><output id="warehouse-assigned">— kg</output><small>Despacho menos devolución prevista</small></div>
+            <div class="warehouse-row">
+              <div class="warehouse-stat expected"><label for="warehouse-expected">Kg que debes devolver a Almacén</label><div class="warehouse-input-unit"><input id="warehouse-expected" type="number" min="0" step="any" placeholder="Ej.: 100" aria-describedby="warehouse-help"><span>kg</span></div></div>
+              <div id="warehouse-comparison" aria-live="polite"></div>
             </div>
-            <p id="warehouse-help" class="multi-muted">Completa solo la devolución prevista de todo el grupo. El ahorro se compara con los kg asignados.</p>
-            <div id="warehouse-comparison" aria-live="polite"></div>
+            <details id="warehouse-details" class="warehouse-details">
+              <summary>Ver despacho, kg asignados y cálculo del ahorro</summary>
+              <div class="warehouse-cards">
+                <div class="warehouse-stat dispatch"><span class="warehouse-field-title">Total despachado</span><output id="warehouse-dispatched">0.0 kg</output><small>Suma de los kg iniciales de todas las bobinas del grupo.</small></div>
+                <div class="warehouse-stat assigned"><span class="warehouse-field-title">Kg asignados</span><output id="warehouse-assigned">— kg</output><small>Total despachado menos lo que debes devolver a Almacén.</small></div>
+              </div>
+              <p id="warehouse-help" class="multi-muted">Completa solo la devolución prevista de todo el grupo. El ahorro en kg es el saldo calculado menos la devolución prevista. El porcentaje es ahorro en kg ÷ kg asignados × 100. Si hay mayor consumo, se muestra en rojo.</p>
+            </details>
           </section>
           <p class="multi-muted" id="multi-action-guide">Guarda el registro en el Excel consolidado de la máquina y el PDF por OP. Cuando ambos botones estén en verde, podrás pasar al siguiente grupo.</p>
           <p class="multi-muted" id="multi-summary-status" role="status" aria-live="polite">Completa los datos. El consumo se calculará automáticamente.</p>
@@ -806,7 +811,7 @@ function refreshOpQueue(){
  if(!missing&&!result.usedRolls.some(b=>b.left>EPS))$('multi-summary-status').textContent+=' No hay saldo para rótulos; el PDF guardará el resumen del consumo.';
 }
 function resetMultiAfterConfirmation(){
- $('multi-calculation-details').open=false;
+ $('multi-calculation-details').open=false;$('warehouse-details').open=false;
  $('warehouse-expected').value='';$('warehouse-comparison').replaceChildren();updateWarehouseFigures();
  ops=[{id:'',books:'',copies:'',advance:'',setupBooks:'0',calibration:false,stops:'0'}];
  rolls=[blankRoll()];
