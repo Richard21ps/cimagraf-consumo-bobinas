@@ -28,3 +28,7 @@
 .cimagraf-report .print-flow td:last-child{background:#edf6ef;font-weight:bold}
 .cimagraf-report .print-bobbin-lots th:nth-child(2){width:34%}
 .cimagraf-report .print-bobbin-lots td:nth-child(2),.cimagraf-report .print-bobbin-lots td:nth-child(3){text-align:left}
+
+/* El informe precede a los rótulos; cada bobina con saldo usa una hoja nueva. */
+.cimagraf-report .pdf-label-pages{break-before:page;page-break-before:always}
+.cimagraf-report .pdf-label-pages .bobbin-label{break-inside:avoid;page-break-inside:avoid}
