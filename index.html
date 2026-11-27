@@ -210,7 +210,7 @@
     </div></header>
 
     <section class="multi-workspace" id="multi-root" aria-label="Cálculo avanzado de OP y bobinas">
-      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.25</p>
+      <p class="multi-muted" id="motor-version">Calculadora de producción · versión 5.1.26</p>
       <h2>Consumo y devolución de bobinas por OP</h2>
       <section class="machine-toolbar" aria-label="Máquina y numeración">
         <strong id="machine-name">Asigna esta computadora</strong><span id="machine-mode" class="machine-mode">PRUEBAS</span>
@@ -441,7 +441,7 @@ function redraw(){
  rolls.forEach((roll,i)=>{roll.id='Bobina '+(i+1);});
  $('multi-op-list').innerHTML=ops.map((o,i)=>'<div class="multi-row op-process-row"><div class="multi-row-head"><strong>OP '+(i+1)+'</strong><button class="multi-remove" data-kind="op" data-remove="'+i+'" type="button" '+(ops.length===1?'disabled':'')+'>Quitar OP</button></div><div class="multi-row-fields op-process-groups"><div class="op-phase-group op-group-info"><h4 class="op-phase-title" id="op-phase-info-'+i+'">Datos de OP</h4><fieldset class="op-phase op-phase-info" aria-labelledby="op-phase-info-'+i+'"><div class="op-phase-fields">'
   +field('Número de OP',o.id,'data-op="'+i+'" data-field="id" placeholder="OP" maxlength="45"')
-  +field('Copias por libro',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')
+  +field('Número de pliegos',o.copies,'type="number" min="1" step="1" data-op="'+i+'" data-field="copies"')
   +field('Avance (mm)',o.advance,'type="number" min="0" step="any" data-op="'+i+'" data-field="advance"')
   +'</div></fieldset></div><div class="op-phase-group op-group-setup"><h4 class="op-phase-title" id="op-phase-setup-'+i+'">Set up</h4><fieldset class="op-phase op-phase-setup" aria-labelledby="op-phase-setup-'+i+'"><div class="op-phase-fields">'
   +field('Libros · set up',o.setupBooks??'0','type="number" min="0" step="1" data-op="'+i+'" data-field="setupBooks"')
@@ -895,7 +895,7 @@ function scheduleAuto(){
    if(!$('multi-gsm').value)missing.push('gramaje');
    if(ops.some(o=>!o.id.trim()))missing.push('número de OP');
    if(ops.some(o=>!o.books))missing.push('libros de corrida');
-   if(ops.some(o=>!o.copies))missing.push('copias por libro');
+   if(ops.some(o=>!o.copies))missing.push('número de pliegos');
    if(ops.some(o=>!o.advance))missing.push('avance');
    if(rolls.some(r=>!r.width))missing.push('ancho del papel');
    if(rolls.some(r=>!r.kg))missing.push('kg iniciales netos');
@@ -906,7 +906,7 @@ function scheduleAuto(){
 
 function refreshOpQueue(){
  if(!result)return;
- $('multi-op-registration-table').innerHTML=table(['OP','Libros set up','Libros corrida','Copias / libro','Calibración','Paradas','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.setupBooks??0,o.books,o.copies,o.calibration?'Sí':'No',o.stops??0,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
+ $('multi-op-registration-table').innerHTML=table(['OP','Libros set up','Libros corrida','Número de pliegos','Calibración','Paradas','Consumo (kg)','Bobinas'],result.sourceOps.map((o,i)=>[o.id,o.setupBooks??0,o.books,o.copies,o.calibration?'Sí':'No',o.stops??0,nf(result.sums[i].kg),result.details.filter(d=>d.op===o.id).map(d=>d.bobina).join(', ')]));
  const missing=missingLabelData(result);
  const ready=!missing&&!!result.group&&!!window.CimagrafProduction?.ready()&&!window.CimagrafSaveUI?.blocked();
  $('multi-summary-status').textContent=missing?'Completa SAP y lote de '+missing.id+'.':!result.group?'Asigna la máquina de esta PC.':'Destino: '+result.machine+'.'+(result.runMode==='test'?' Se guardará en la carpeta de pruebas.':'');
