@@ -50,15 +50,15 @@ function ui(){
  // El estado de OneDrive bloquea nuevos envíos, nunca los campos del editor.
  $('multi-root').inert=false;
  for(const [id,confirmed,available,label] of [
-  ['multi-register',excelSaved(),canSaveReceiptExcel(),'Guardar en Excel'],
-  ['multi-save-pdf',pdfSaved(),canSaveReceiptPDF(),'Guardar PDF en '+service(job)]
+  ['multi-register',excelSaved(),canSaveReceiptExcel(),local?'Guardar Excel':'Guardar en Excel'],
+  ['multi-save-pdf',pdfSaved(),canSaveReceiptPDF(),local?'Guardar PDF':'Guardar PDF en '+service(job)]
  ]){
   const button=$(id);
   button.classList.toggle('save-confirmed',confirmed);
   button.textContent=confirmed?(id==='multi-register'?'✓ Excel guardado':'✓ PDF guardado'):label;
   if(blocked())button.disabled=confirmed||!available;
  }
- const heading=$('cloud-heading');if(heading)heading.textContent='Registro en '+service(job);
+ const heading=$('cloud-heading');if(heading)heading.textContent=local?'Registro local':'Registro en '+service(job);
  $('machine-select').disabled=blocked()||window.CimagrafProduction.metadata().runMode==='production'||!!window.CimagrafProduction.state()?.sent;
  $('cloud-retry').hidden=!job||settled||running;
  $('cloud-edit').hidden=!job;
@@ -143,11 +143,9 @@ async function start(kind,receipt=null){
  }catch(e){message('No se pudo conservar el grupo: '+e.message,true);ui();}
 }
 if(local){
- const chooser=$('local-folder'), intro=$('app-intro'), hint=$('cloud-target');
- if(intro)intro.textContent='Calcula el consumo y guarda Excel y PDF en una carpeta de esta PC.';
- if(hint)hint.textContent='Los archivos se guardan solo en esta PC. Elige una carpeta para cada máquina.';
+ const chooser=$('local-folder');
  chooser.hidden=false;
- message('Selecciona tu máquina y pulsa «Elegir o habilitar carpeta».');
+ message('Selecciona tu máquina y pulsa «Elegir carpeta».');
  chooser.addEventListener('click',async()=>{
   if(running)return;
   chooser.disabled=true;

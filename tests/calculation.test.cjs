@@ -57,7 +57,7 @@ test('Resumen de bobinas bajo el total, fuera de las filas de entrada',()=>{asse
 
 test('Motivo nuevo: formulario oculto hasta que se solicite',()=>{const c=problemContext('[]');c.roll={id:'Bobina 1'};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/Motivo y área de las lonjas/);assert.match(output,/class="reason-form problem-form" hidden/);assert.match(output,/data-problem-start/);assert.doesNotMatch(output,/Problemáticas del papel retirado/);});
 test('Motivo elegido reemplaza el selector y permite cambiar',()=>{const c=problemContext('["Motivo A"]');c.roll={id:'Bobina 1',problems:['Motivo A']};const output=vm.runInContext('problemControls(roll,0)',c);assert.match(output,/Motivo A/);assert.doesNotMatch(output,/data-problem-select/);assert.match(output,/data-problem-remove/);});
-const printStart=html.indexOf('function buildPrintSummary(r,stamp){');
+const printStart=html.indexOf('function buildPrintSummary(r,stamp,archived=false){');
 const printSource=html.slice(printStart,html.indexOf('function preparePrintSummary(){',printStart));
 const tableStart=html.indexOf('function table(headers,rows){',html.indexOf('const EPS='));
 const tableSource=html.slice(tableStart,html.indexOf('function renderRollUsage(r){',tableStart));

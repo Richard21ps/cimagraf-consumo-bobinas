@@ -7,7 +7,7 @@ const start=html.indexOf('function buildPrintSummary('),report=html.slice(start,
 const nf=html.match(/const nf=x=>[^;]+;/)[0];
 const base={books:1,copies:1,advance:1000,setupBooks:0,calibration:false,stops:0};
 function calculate(ops,rolls){const c={ops:ops.map((o,i)=>({...base,id:'OP'+(i+1),...o})),rolls:rolls.map((r,i)=>({id:'Bobina '+(i+1),width:1000,scrap:0,coreGross:0,coreTare:0,...r})),$:id=>({value:id==='multi-gsm'?'100':'Otro papel'}),numeric:Number};vm.createContext(c);vm.runInContext(nf+engine,c);return vm.runInContext('validate()',c);}
-function print(r){const c={r,escapeHtml:s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};vm.createContext(c);return vm.runInContext(nf+table+report+";buildPrintSummary(r,'Prueba')",c);}
+function print(r,archived=false){const c={r,archived,escapeHtml:s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};vm.createContext(c);return vm.runInContext(nf+table+report+";buildPrintSummary(r,'Prueba',archived)",c);}
 function rows(output){return [...output.match(/<tbody>([\s\S]*?)<\/tbody>/)[1].matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m=>[...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(c=>c[1]));}
 const number=s=>Number(s.replace(/,/g,''));
 let count=0;function test(name,fn){fn();count++;console.log('OK '+name);}
@@ -27,12 +27,33 @@ test('Lonjas y sobrante neto solo se descuentan al abrir la bobina',()=>{const r
 test('Bobina totalmente retirada antes de máquina conserva su movimiento y saldo cero',()=>{const r=calculate([{books:100}],[{kg:5,scrap:5},{kg:100}]);const data=rows(print(r));assert.deepEqual(data[0],['—','Bobina 1','5.0','0.0','5.0','0.0']);assert.equal(data[1][2],'100.0');assert.match(print(r),/Agotada/);});
 test('Bobinas no utilizadas figuran con su lote y sin saldo a devolver; anchos solo arriba',()=>{const r=calculate([{books:1000}],[{kg:50,width:1000},{kg:100,width:500},{kg:100,width:700,lot:'003-C'}]);const out=print(r),data=rows(out);assert.equal(data.length,2);assert.match(out,/<td>Bobina 3<\/td><td class="num">003-C<\/td><td class="num">No utilizada<\/td><td class="num">—<\/td>/);assert.match(out,/Bobina 1: <strong>1,000.0 mm/);assert.match(out,/Bobina 2: <strong>500.0 mm/);});
 test('Instantáneas anteriores sin separación de proceso siguen siendo imprimibles',()=>{const r={paper:'Bond',gsm:90,saldo:380,usedRolls:[{id:'Bobina 1',initial:500,width:480,retired:20,corePaper:0,left:380}],details:[{op:'ANTERIOR',bobina:'Bobina 1',kg:100,saldo:380}]};assert.deepEqual(rows(print(r))[0],['ANTERIOR','Bobina 1','500.0','100.0','20.0','380.0']);});
-test('El PDF conserva el lote de cada bobina, ceros iniciales y texto seguro',()=>{
+test('El resumen anterior conserva el lote de cada bobina, ceros iniciales y texto seguro',()=>{
  const r=calculate([{books:600}],[{kg:50,lot:' 000123-A '},{kg:500,lot:'007<&'}]);
  assert.deepEqual(Array.from(r.loads,b=>b.lot),['000123-A','007<&']);
  const out=print(r);
  assert.match(out,/<th>Número de lote<\/th>/);
  assert.match(out,/<td>Bobina 1<\/td><td class="num">000123-A<\/td>/);
  assert.match(out,/<td>Bobina 2<\/td><td class="num">007&lt;&amp;<\/td>/);
+});
+test('El PDF local resume los kilos, y la impresión mantiene el rótulo con SAP y lote',()=>{
+ const r=calculate([{books:600}],[{kg:50,lot:'000123-A',sap:'00777'},{kg:500,lot:'007-C',sap:'00123'}]);
+ const out=print(r,true);
+ assert.match(out,/Consumo y devolución de bobinas/);
+ assert.match(out,/Consumo por OP y bobina · kg/);
+ assert.match(out,/Devolver por bobina · kg/);
+ assert.match(out,/<th>Bobina<\/th><th>Estado<\/th><th>Saldo final<\/th>/);
+ assert.match(out,/TOTAL A ENTREGAR AL ALMACÉN/);
+ assert.doesNotMatch(out,/Número de lote|007-C|CÓDIGO SAP/);
+ assert.match(html,/reportHTML:\(r,created\)=>buildPrintSummary[^\n]+true\)/);
+ const {CimagrafRecord}=require('../record-data.js');
+ const labels=CimagrafRecord.labelHTML(r,'2026-11-27T14:00:00.000Z');
+ assert.match(labels,/CÓDIGO SAP/);
+ assert.match(labels,/LOTE: 007-C/);
+ assert.match(html,/const labels=window\.CimagrafRecord\.labelHTML/);
+});
+test('El enlace normal activa el guardado local y no carga la conexión a Microsoft',()=>{
+ assert.match(html,/window\.CimagrafLocalMode=true/);
+ assert.doesNotMatch(html,/<script src="(?:cloud-storage|access-gate|cloud-destination)\.js|id="access-signin"/);
+ for(const button of ['Elegir carpeta','Guardar Excel','Guardar PDF'])assert.ok(html.includes('>'+button+'</button>'));
 });
 console.log(count+' pruebas de secuencia e impresión correctas.');

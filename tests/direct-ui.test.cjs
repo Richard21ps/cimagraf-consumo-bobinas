@@ -229,7 +229,7 @@ test('Modo local no conecta a Microsoft ni consume pendientes de OneDrive',async
  const local=storage();
  local.setItem('cimagraf-excel-pending-v1',JSON.stringify({id:'registro-en-nube'}));
  const f=ui({local,localMode:true});f.choose('kirin-1c');
- assert.match(f.node('multi-save-pdf').textContent,/esta PC/);
+ assert.equal(f.node('multi-save-pdf').textContent,'Guardar PDF');
  assert.match(f.window.CimagrafProduction.metadata().recordId,/LOCAL/);
  await f.click('local-folder');
  await f.click('multi-register');await f.click('multi-save-pdf');

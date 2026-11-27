@@ -31,7 +31,7 @@ async function choose(machine){
 async function connect(machine){
  const dir=await directory(machine);
  if(!dir||await dir.queryPermission({mode:'readwrite'})!=='granted')
-  throw Error('Pulsa «Elegir o habilitar carpeta» y permite el acceso. Luego reintenta el guardado.');
+  throw Error('Pulsa «Elegir carpeta» y permite el acceso. Luego reintenta el guardado.');
  return dir;
 }
 function library(){
